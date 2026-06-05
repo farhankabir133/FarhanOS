@@ -1,0 +1,6 @@
+{
+  "name": "FarhanOS",
+  "description": "An interactive AI-powered digital ecosystem showcasing Farhan Kabir as an AI Engineer, Researcher, Full Stack Developer, and Writer.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
