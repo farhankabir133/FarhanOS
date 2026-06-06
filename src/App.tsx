@@ -57,6 +57,8 @@ export default function App() {
     profTimeline: { x: 160, y: 240, isMaximized: false },
   });
 
+  const [osTimelineProgress, setOsTimelineProgress] = useState(0);
+
   // Dynamic CPU Load for telemetry
   const [cpuLoad, setCpuLoad] = useState(12);
   useEffect(() => {
@@ -985,7 +987,16 @@ export default function App() {
               </div>
 
               {/* Window Content Frame Container */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-5 text-xs font-sans scrollbar-thin scrollbar-thumb-zinc-800">
+              <div 
+                className="flex-1 overflow-y-auto p-4 md:p-5 text-xs font-sans scrollbar-thin scrollbar-thumb-zinc-800"
+                onScroll={(e) => {
+                  if (winId === 'profTimeline') {
+                    const target = e.currentTarget;
+                    const progress = target.scrollTop / (target.scrollHeight - target.clientHeight || 1);
+                    setOsTimelineProgress(progress);
+                  }
+                }}
+              >
                 
                 {/* A. DIGITAL TWIN AI ASSISTANT PANEL */}
                 {winId === 'twin' && (
@@ -1633,7 +1644,10 @@ export default function App() {
                     <div className="relative pl-6 md:pl-0 pt-4">
                       {/* Vertical line */}
                       <div className="absolute left-[13px] md:left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-indigo-500/60 via-cyan-500/20 to-transparent -translate-x-1/2 pointer-events-none z-0"></div>
-                      <div className="absolute left-[13px] md:left-1/2 top-0 bottom-16 w-[2px] bg-gradient-to-b from-cyan-400 to-purple-600 -translate-x-1/2 origin-top pointer-events-none z-10"></div>
+                      <div 
+                        className="absolute left-[13px] md:left-1/2 top-0 bottom-16 w-[2px] bg-gradient-to-b from-cyan-400 to-purple-600 -translate-x-1/2 origin-top pointer-events-none z-10"
+                        style={{ transform: `scaleY(${osTimelineProgress})`, transformOrigin: 'top' }}
+                      ></div>
 
                       <div className="space-y-10 relative z-10">
                         {portfolioData.professionalTimeline.map((item, idx) => {
