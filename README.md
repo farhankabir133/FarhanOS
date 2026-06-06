@@ -16,7 +16,8 @@
 ---
 
 ## 🔗 Live Deployments
-* **Interactive Web Platform**: [https://farhankabir133.github.io/FarhanOS/](https://farhankabir133.github.io/FarhanOS/)
+* **Official Website (Custom Domain)**: [https://farhankabir.me/](https://farhankabir.me/)
+* **Alternative GitHub Pages URL**: [https://farhankabir133.github.io/FarhanOS/](https://farhankabir133.github.io/FarhanOS/)
 * **Digital Twin Backend Endpoint**: [http://localhost:3001](http://localhost:3001) (when running locally)
 
 ---
@@ -150,6 +151,13 @@ To build and publish the frontend bundle directly to your GitHub repository page
 npm run deploy
 ```
 *Note: The asset base URL automatically updates to `/FarhanOS/` under static deployment to prevent resource load errors.*
+
+### Custom Domain Static Deployment
+To build and publish the frontend bundle with a root base path (`/`) and push your custom domain settings to GitHub Pages, run:
+```bash
+npm run deploy:domain
+```
+*Note: The CNAME configuration is located under `public/CNAME` and will be bundled automatically during the build process.*
 
 ---
 
