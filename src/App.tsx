@@ -10,9 +10,10 @@ import {
 import { portfolioData } from './data/portfolioData';
 import { playRawPcm, playSynthTick } from './utils/audioPlay';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
-import ThreeWormhole from './components/ThreeWormhole';
+import LandingPage from './components/LandingPage';
 import Whiteboard from './components/Whiteboard';
 import DecryptText from './components/DecryptText';
+import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
 
 
 export default function App() {
@@ -69,7 +70,12 @@ export default function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      setWindowWidth(window.innerWidth);
+      setWindowWidth(prev => {
+        if (prev !== window.innerWidth) {
+          return window.innerWidth;
+        }
+        return prev;
+      });
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -250,7 +256,8 @@ export default function App() {
         throw new Error();
       }
     } catch {
-      setLandingReply("Simulation matrix synced. I can verify Farhan's robust TypeScript integrations, clinical research pipelines, and mental health classifiers.");
+      const fallbackReply = getAskTwinFallback(q, []);
+      setLandingReply(fallbackReply);
     } finally {
       setLandingChatLoading(false);
     }
@@ -372,8 +379,20 @@ export default function App() {
         }, playTimeSec * 1000);
       }
     } catch (err) {
-      console.error('Narrator service unreachable:', err);
-      setPlayingMessageIndex(null);
+      console.error('Narrator service unreachable, falling back to client voice:', err);
+      try {
+        const audioControl = speakTextClient(text, () => {
+          setPlayingMessageIndex(null);
+        });
+        if (audioControl) {
+          setCurrentTTSAudio(audioControl);
+        } else {
+          setPlayingMessageIndex(null);
+        }
+      } catch (clientErr) {
+        console.error('Client speech synthesis failed:', clientErr);
+        setPlayingMessageIndex(null);
+      }
     }
   };
 
@@ -419,8 +438,17 @@ export default function App() {
         throw new Error(data.error || 'General twin system fault.');
       }
     } catch (err: any) {
-      setTwinMessages(prev => [...prev, { role: 'assistant', content: `Error compiling neural thoughts: ${err.message || 'System failed to fetch reply.'}` }]);
+      console.warn('Backend twin service failed, using local fallback:', err);
+      const historyPayload = twinMessages.map(m => ({
+        role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
+        content: m.content
+      }));
+      const fallbackReply = getAskTwinFallback(userMsg, historyPayload);
+      setTwinMessages(prev => [...prev, { role: 'assistant', content: fallbackReply }]);
       setTwinLoading(false);
+      if (voiceOn) {
+        speakText(fallbackReply, twinMessages.length + 1);
+      }
     }
   };
 
@@ -440,7 +468,9 @@ export default function App() {
         setBriefSummary(data.summary);
       }
     } catch (err) {
-      setBriefSummary('Unable to complete AI Feasibility Assessment. Please check internet connection.');
+      console.warn('Backend brief summarizer failed, using local fallback:', err);
+      const fallbackSummary = generateClientBriefSummary(briefForm);
+      setBriefSummary(fallbackSummary);
     } finally {
       setBriefLoading(false);
     }
@@ -665,541 +695,16 @@ export default function App() {
   const styleSet = getThemeStyles();
 
   return (
-    <div className={`min-h-screen ${styleSet.bg} transition-colors duration-500 overflow-hidden select-none flex flex-col relative`}>
+    <div className={`h-full w-full ${styleSet.bg} transition-colors duration-500 overflow-hidden select-none flex flex-col relative`}>
       {viewMode === 'landing' ? (
-        <div className="absolute inset-0 z-50 flex flex-col min-h-screen w-full relative">
-          <ThreeWormhole isWarping={isWarping} theme={theme} />
-          
-          {/* Landing Header */}
-          <header className={`h-14 px-6 flex items-center justify-between border-b border-zinc-850/50 backdrop-blur-md bg-black/45 z-20 select-none transition-all duration-700 ${isWarping ? 'opacity-0 translate-y-[-20px]' : 'opacity-100'}`}>
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_#6366f1]" />
-              <div className="flex flex-col">
-                <span className="text-xs font-black tracking-widest text-slate-100 uppercase font-sans">FARHAN KABIR</span>
-                <span className="text-[8.5px] font-mono text-zinc-550 uppercase tracking-widest">CLINICAL NLP & SAAS ENGINE v2.4</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {/* Theme Selector inside landing header */}
-              <div className="hidden md:flex items-center gap-1 bg-zinc-950/70 border border-zinc-900 px-1.5 py-0.5 rounded-lg">
-                <span className="text-[9.5px] text-zinc-550 font-bold mr-1">MOOD:</span>
-                {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
-                  <button 
-                    key={t}
-                    onClick={() => { setTheme(t as any); triggerSound(800, 0.02); }}
-                    className={`text-[9.5px] px-1.5 py-0.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#1e1b4b] text-indigo-300 font-bold border border-indigo-500/20' : 'text-zinc-550 hover:text-zinc-355'}`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-
-              {/* Sound indicators */}
-              <button 
-                onClick={() => { setSoundOn(!soundOn); playSynthTick(1000, 0.02); }}
-                className={`p-1.5 rounded-lg border border-zinc-900 bg-zinc-950/60 cursor-pointer hover:bg-zinc-90 w ${soundOn ? 'text-indigo-400' : 'text-zinc-650'}`}
-                title="Toggle Sound Effects"
-              >
-                {soundOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-              </button>
-
-              <button 
-                onClick={handleWarpAndEnter}
-                className="bg-indigo-650 hover:bg-indigo-600 font-sans text-white font-extrabold p-1.5 px-4 border border-indigo-400/50 rounded-lg text-[10px] cursor-pointer shadow-lg tracking-tight uppercase transition-all active:scale-95 animate-pulse"
-              >
-                Launch OS
-              </button>
-            </div>
-          </header>
-
-          {/* Floating Paper abstract modal renderer */}
-          {selectedResearchPaper && (
-            <div className="fixed inset-0 bg-black/95 z-[2000] flex items-center justify-center p-4 backdrop-blur-md animate-scale-up select-text">
-              <div className="bg-zinc-950 border border-indigo-500/35 rounded-2xl w-full max-w-2xl p-6 relative shadow-[0_0_50px_rgba(99,102,241,0.25)] select-text">
-                <button 
-                  onClick={() => { setSelectedResearchPaper(null); triggerSound(400, 0.03); }}
-                  className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="border-b border-zinc-900 pb-3 mb-3">
-                  <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase tracking-widest">CLINICAL NLP SCIENTIFIC PAPER ABSTRACT</span>
-                  <h3 className="text-sm font-black text-white leading-relaxed mt-2 select-text">{selectedResearchPaper.title}</h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-zinc-500 font-mono">
-                    <span>Year: {selectedResearchPaper.year || '2025'}</span>
-                    <span>·</span>
-                    <span>Index: Cognitive Sentiment Computing Matrix</span>
-                  </div>
-                </div>
-                <div className="space-y-4 text-xs text-slate-300 leading-relaxed pr-2 select-text font-normal max-h-[300px] overflow-y-auto">
-                  <div>
-                    <span className="block font-bold text-indigo-300 uppercase font-mono text-[9.5px] tracking-wide mb-1">Theoretical Abstract:</span>
-                    <p>{selectedResearchPaper.abstract}</p>
-                  </div>
-                  <div>
-                    <span className="block font-bold text-indigo-300 uppercase font-mono text-[9.5px] tracking-wide mb-1">Findings Outline:</span>
-                    <ul className="list-disc pl-4 space-y-1">
-                      <li>Evaluated state-of-the-art classifier accuracies of {selectedResearchPaper.accuracy || '91.4%'} using custom fine-tuned weighted matrices.</li>
-                      <li>Calculated topological maps mapping emotional distress patterns across social wellness forums.</li>
-                      <li>Configured strict data anonymity frameworks matching peak health security standards.</li>
-                    </ul>
-                  </div>
-                </div>
-                <div className="border-t border-zinc-900 pt-3 mt-4 flex items-center justify-between">
-                  <span className="text-[9.5px] text-zinc-500 font-mono">FARHANOS MEDICAL RESEARCH ARCHIVE</span>
-                  <button 
-                    onClick={() => { setSelectedResearchPaper(null); triggerSound(500, 0.02); }}
-                    className="bg-zinc-900 border border-zinc-800 text-zinc-350 px-4 py-1.5 rounded-lg text-[10.5px] cursor-pointer hover:text-white font-bold"
-                  >
-                    Close Abstract PDF Reader
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Main Landing viewport */}
-          <main className="flex-1 flex flex-col justify-center items-center px-4 py-6 md:py-10 select-none overflow-y-auto max-h-[calc(100vh-3.5rem)] scrollbar-none z-10 relative">
-            
-            {/* Singularity core gravity well with orbiting orbits */}
-            <div className="flex flex-col items-center justify-center text-center max-w-4xl w-full mb-10">
-              
-              <div className="relative mb-6 select-none flex items-center justify-center">
-                <div className="absolute w-36 h-36 md:w-44 md:h-44 rounded-full border border-dashed border-sky-450/20 animate-spin-slow" />
-                <div className="absolute w-40 h-40 md:w-48 md:h-48 rounded-full border border-indigo-500/10 animate-spin-reverse" />
-                <div className="absolute -inset-4 bg-sky-500/5 rounded-full filter blur-xl animate-pulse" />
-
-                <div 
-                  onClick={handleWarpAndEnter}
-                  className="relative w-28 h-28 md:w-34 md:h-34 rounded-full bg-black/85 border-2 border-indigo-500/35 hover:border-[#00ffcc] flex flex-col items-center justify-center p-2 shadow-2xl z-10 overflow-hidden cursor-pointer group transition-all duration-300 hover:scale-105"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-tr from-[#00ffcc]/10 to-[#818cf8]/10 opacity-30 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative text-center z-10">
-                    <Compass className="w-8 h-8 md:w-10 md:h-10 text-sky-400 mx-auto animate-spin-slow group-hover:text-[#00ffcc]" />
-                    <span className="text-[7.5px] font-mono tracking-widest text-[#00ffcc] block mt-1 uppercase animate-pulse">
-                      {isWarping ? "Warp Active" : "Gateway Ready"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={`transition-all duration-500 ${isWarping ? 'opacity-0 scale-90 blur-xs' : 'opacity-100 scale-100'}`}>
-                <span className="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full text-center">
-                  <DecryptText text="FARHAN KABIR // CLINICAL NLP ARCHITECT" speed={25} />
-                </span>
-                <h1 className="text-3xl md:text-5xl font-black text-white uppercase mt-4 mb-2 tracking-tight leading-none font-sans">
-                  <DecryptText text="COGNITIVE DIALECTICS OS" speed={30} delay={400} />
-                </h1>
-                <p className="text-xs text-zinc-400 font-sans max-w-xl mx-auto leading-relaxed mb-6 font-normal">
-                  Explore clinical linguistics research papers, conceptual garden maps, and AI SaaS agent architectures within an interactive, high-fidelity windowed operating system simulator.
-                </p>
-
-                {/* Warp trigger keys */}
-                <button 
-                  onClick={handleWarpAndEnter}
-                  disabled={isWarping}
-                  className="group relative bg-[#0d0f1c] border border-indigo-500/40 hover:border-[#00ffcc] px-8 py-4 rounded-xl text-[11px] font-mono text-indigo-300 hover:text-[#00ffcc] tracking-widest select-none cursor-pointer transition-all duration-200 uppercase shadow-lg shadow-indigo-950/20 hover:shadow-[0_0_30px_rgba(0,255,204,0.25)] active:scale-95"
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2 font-black">
-                    <Rocket className="w-4 h-4 text-indigo-400 group-hover:text-[#00ffcc] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                    <span>{isWarping ? "CHARGING CORES WARPING..." : "ACTIVATE COSMIC PORTAL"}</span>
-                  </span>
-                </button>
-
-                {/* Quick Actions Dock */}
-                <div className="flex flex-wrap items-center justify-center gap-2 mt-6 max-w-lg mx-auto font-mono text-[9.5px]">
-                  <button 
-                    onClick={() => handleOpenWindowDirectly('resume')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/70 hover:bg-indigo-500/10 hover:border-indigo-500/30 text-indigo-300 hover:text-indigo-200 transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>GET RESUME (CV)</span>
-                  </button>
-                  <button 
-                    onClick={() => handleOpenWindowDirectly('brief')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/70 hover:bg-rose-500/10 hover:border-rose-500/30 text-rose-300 hover:text-rose-200 transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <PhoneCall className="w-3.5 h-3.5" />
-                    <span>MISSION BRIEF (CONTACT)</span>
-                  </button>
-                  <button 
-                    onClick={() => handleOpenWindowDirectly('github')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/70 hover:bg-zinc-855 hover:text-white transition-all cursor-pointer shadow-xs active:scale-95 text-zinc-400"
-                  >
-                    <GitBranch className="w-3.5 h-3.5" />
-                    <span>GITHUB MONITOR</span>
-                  </button>
-                  <button 
-                    onClick={() => handleOpenWindowDirectly('twin')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950/70 hover:bg-purple-500/10 hover:border-purple-500/30 text-purple-300 hover:text-purple-200 transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>LAUNCH AI CO-PILOT</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Bento modules */}
-            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl w-full select-none transition-all duration-750 ${isWarping ? 'opacity-0 translate-y-36 blur-lg' : 'opacity-100 translate-y-0'}`}>
-              
-              {/* Column 1: Clone chat capsule */}
-              <div className="bg-[#0b0c14]/75 backdrop-blur-md border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between hover:border-indigo-500/25 transition-all">
-                <div>
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-900 font-mono">
-                    <Terminal className="w-4 h-4 text-purple-400 animate-pulse" />
-                    <span className="text-[10px] uppercase font-bold text-zinc-300">
-                      <DecryptText text="CLONE TERMINAL v1" speed={20} delay={600} />
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-normal font-sans mb-3 select-text select-none">
-                    Engage Farhan's certified virtual clone. Real-time predictive response matrices.
-                  </p>
-
-                  <div className="bg-black/55 border border-zinc-900 p-2.5 rounded-lg mb-2 select-text">
-                    <div className="text-[9.5px] font-mono leading-relaxed select-text min-h-[50px] max-h-[120px] overflow-y-auto scrollbar-none">
-                      {landingChatLoading ? (
-                        <div className="text-purple-400 animate-pulse">⏳ Compiling token layers...</div>
-                      ) : landingReply ? (
-                        <p className="text-zinc-300 font-sans">{landingReply}</p>
-                      ) : (
-                        <span className="text-zinc-650 block italic font-sans text-[10px]">Submit query details in input matrix...</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Instant Chips */}
-                  <div className="flex flex-wrap gap-1 mb-2.5">
-                    {[
-                      { label: "F1 Metrics?", text: "What are your classifier F1 scores?" },
-                      { label: "Clinical Focus?", text: "What is your clinical NLP focus?" },
-                      { label: "SaaS Products?", text: "What SaaS products have you built?" }
-                    ].map((chip) => (
-                      <button
-                        key={chip.label}
-                        onClick={() => {
-                          setLandingQuery(chip.text);
-                          triggerSound(900, 0.02);
-                        }}
-                        className="text-[8px] font-mono px-1.5 py-0.5 rounded border border-zinc-900 hover:border-indigo-500/40 hover:text-indigo-300 bg-zinc-950/40 text-zinc-500 cursor-pointer transition-colors"
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1">
-                    <input 
-                      type="text"
-                      value={landingQuery}
-                      onChange={(e) => setLandingQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSendLandingChat()}
-                      placeholder="e.g. F1 Diagnostic scores?"
-                      className="flex-1 bg-black/60 border border-zinc-900 rounded-lg px-2 py-1 text-[10px] text-white focus:outline-hidden focus:border-indigo-500/55 font-mono"
-                    />
-                    <button 
-                      onClick={handleSendLandingChat}
-                      disabled={!landingQuery.trim() || landingChatLoading}
-                      className="bg-indigo-650 hover:bg-indigo-600 border border-indigo-400/45 p-1 px-3.5 rounded-lg text-white font-bold text-[10px] cursor-pointer"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 2: Papers indexes */}
-              <div className="bg-[#0b0c14]/75 backdrop-blur-md border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between hover:border-indigo-500/25 transition-all">
-                <div>
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-900 font-mono">
-                    <BookOpen className="w-4 h-4 text-emerald-400" />
-                    <span className="text-[10px] uppercase font-bold text-zinc-300">
-                      <DecryptText text="MONOGRAPHS & PATENTS" speed={20} delay={800} />
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-normal font-sans mb-3 select-none">
-                    Select indices below to read theoretic clinical abstracts:
-                  </p>
-
-                  <div className="space-y-2">
-                    {[
-                      { 
-                        title: "Did the Prompt Break the Model?: Perplexity-Based Detection of Adversarial Attacks on LLMs", 
-                        abstract: "A perplexity-based real-time detection framework identifying adversarial prompt injection attacks. Maps input token perplexity metrics before core LLM propagation to secure safety alignments.",
-                        accuracy: "94.2% accuracy target",
-                        year: 2025
-                      },
-                      { 
-                        title: "AI-Driven Live Interview System for Candidate Evaluation Using NLP & Computer Vision",
-                        abstract: "Dynamic interview pipeline combining Wav2Vec transcript NLP processing and MediaPipe posture keypoint detection for real-time candidate suitability scoring.",
-                        accuracy: "91.6% late-fusion accuracy",
-                        year: 2025
-                      }
-                    ].map((paper, idx) => (
-                      <button 
-                        key={idx}
-                        onClick={() => { setSelectedResearchPaper(paper); triggerSound(950, 0.03); }}
-                        className="w-full text-left p-2 rounded-lg bg-black/45 border border-zinc-900 flex flex-col hover:border-[#00ffcc]/30 text-indigo-400 hover:text-emerald-300 transition-all font-mono"
-                      >
-                        <span className="text-[9.5px] font-bold truncate block">{paper.title}</span>
-                        <div className="flex items-center justify-between text-[7px] text-zinc-500 mt-1 font-mono">
-                          <span>{paper.accuracy}</span>
-                          <span>Year: {paper.year}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Column 3: Stack modules */}
-              <div className="bg-[#0b0c14]/75 backdrop-blur-md border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between hover:border-indigo-500/25 transition-all">
-                <div>
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-900 font-mono">
-                    <Cpu className="w-4 h-4 text-indigo-400 animate-spin-slow" />
-                    <span className="text-[10px] uppercase font-bold text-zinc-300">
-                      <DecryptText text="ENGINE MATRIX" speed={20} delay={1000} />
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-normal font-sans mb-3 select-none">
-                    Pristine frontend elements matched with scalable server systems.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-1 px-0.5">
-                    {[
-                      { name: "TypeScript", role: "Type Safety" },
-                      { name: "PyTorch", role: "Transformers" },
-                      { name: "React 19", role: "Vite App" },
-                      { name: "GCP Cloud", role: "Docker containers" }
-                    ].map((st) => (
-                      <div 
-                        key={st.name}
-                        onClick={() => triggerSound(900, 0.02)}
-                        className="p-1 rounded-lg border border-zinc-900 bg-black/20 text-center font-mono hover:text-[#00ffcc] text-[9px] cursor-pointer"
-                      >
-                        <span className="font-bold block text-slate-300">{st.name}</span>
-                        <span className="text-[7.1px] text-zinc-500 block">{st.role}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button 
-                    onClick={() => { setViewMode('os'); triggerSound(800, 0.04); }}
-                    className="w-full text-center py-1.5 rounded-lg border border-zinc-900 bg-zinc-950 text-[10px] font-mono text-zinc-500 hover:text-white hover:border-zinc-800 transition-all cursor-pointer"
-                  >
-                    Bypass Wormhole Portal
-                  </button>
-                </div>
-              </div>
-
-              {/* Column 4: System Telemetry Dashboard */}
-              <div className="bg-[#0b0c14]/75 backdrop-blur-md border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between hover:border-[#00ffcc]/25 transition-all font-mono">
-                <div>
-                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-zinc-900">
-                    <Activity className="w-4 h-4 text-sky-400 animate-pulse" />
-                    <span className="text-[10px] uppercase font-bold text-zinc-300">
-                      <DecryptText text="SYSTEM TELEMETRY" speed={20} delay={1200} />
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400 leading-normal font-sans mb-3 select-none">
-                    Real-time status monitor of clinical NLP nodes and active pipelines.
-                  </p>
-                  
-                  <div className="space-y-2 text-[9px]">
-                    <div className="flex justify-between border-b border-zinc-900 pb-1">
-                      <span className="text-zinc-500">CPU LOAD:</span>
-                      <span className="text-sky-400 font-bold">{cpuLoad}%</span>
-                    </div>
-                    <div className="flex justify-between border-b border-zinc-900 pb-1">
-                      <span className="text-zinc-500">MEMORY:</span>
-                      <span className="text-indigo-400">142MB / 512MB</span>
-                    </div>
-                    <div className="flex justify-between border-b border-zinc-900 pb-1">
-                      <span className="text-zinc-500">CLINICAL HEAD:</span>
-                      <span className="text-emerald-400 font-bold">RoBERTa (v2.4)</span>
-                    </div>
-                    <div className="flex justify-between border-b border-zinc-900 pb-1">
-                      <span className="text-zinc-500">F1-ACCURACY:</span>
-                      <span className="text-emerald-400">0.914 ACTIVE</span>
-                    </div>
-                    <div className="flex justify-between pb-1">
-                      <span className="text-zinc-500">TTS QUEUE:</span>
-                      <span className="text-purple-400">0ms LATENCY</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-zinc-950/60 border border-zinc-900 p-1.5 rounded-lg text-center mt-2">
-                  <span className="text-[8px] text-zinc-500 uppercase tracking-widest block font-bold">Linguistic Engine</span>
-                  <span className="text-[8.5px] text-emerald-400 font-bold block mt-0.5">ONLINE & AGENT SYNCED</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Expanded Showcase Sections */}
-            <div className={`mt-16 w-full max-w-6xl space-y-16 pb-12 select-text transition-all duration-750 ${isWarping ? 'opacity-0 translate-y-36 blur-lg' : 'opacity-100 translate-y-0'}`}>
-              
-              {/* Section 1: Featured Innovations (Projects) */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-3 border-b border-zinc-900 pb-3 font-mono">
-                  <span className="w-2 h-2 rounded bg-indigo-500 shadow-[0_0_8px_#6366f1]" />
-                  <h2 className="text-sm font-black tracking-widest text-slate-100 uppercase">FEATURED INNOVATIONS</h2>
-                  <span className="text-[10px] text-zinc-550 ml-auto uppercase font-mono">SANDBOX MODULES READY</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {portfolioData.projects.slice(0, 3).map((project) => (
-                    <div 
-                      key={project.id}
-                      className="bg-[#0b0c14]/60 backdrop-blur-md border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between hover:border-indigo-500/30 transition-all group shadow-sm hover:shadow-[0_0_20px_rgba(99,102,241,0.05)]"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-3 font-mono">
-                          <span className="text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/20 bg-indigo-500/5 text-indigo-300 uppercase tracking-wider font-bold">
-                            {project.category}
-                          </span>
-                          <span className="text-[9px] text-zinc-550">{project.timeline}</span>
-                        </div>
-                        
-                        <h3 className="text-sm font-extrabold text-white group-hover:text-indigo-400 transition-colors leading-snug">
-                          {project.title}
-                        </h3>
-                        
-                        <p className="text-[11px] text-zinc-400 leading-relaxed font-sans mt-2">
-                          {project.description}
-                        </p>
-
-                        {/* Metrics Panel */}
-                        <div className="grid grid-cols-3 gap-1.5 my-4 bg-zinc-950/40 border border-zinc-900/60 p-2 rounded-xl font-mono text-center">
-                          {project.metrics.slice(0, 3).map((m) => (
-                            <div key={m.label} className="p-1">
-                              <span className="text-[8.5px] text-[#00ffcc] font-bold block">{m.value}</span>
-                              <span className="text-[7.2px] text-zinc-650 block uppercase tracking-tight mt-0.5 line-clamp-1">{m.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        {/* Tech tags */}
-                        <div className="flex flex-wrap gap-1">
-                          {project.techStack.slice(0, 4).map((tech) => (
-                            <span key={tech} className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-zinc-900/60 text-zinc-400 border border-zinc-900/40">
-                              {tech}
-                            </span>
-                          ))}
-                        </div>
-
-                        <button 
-                          onClick={() => handleOpenProjectDirectly(project)}
-                          className="w-full text-center py-2 rounded-xl border border-zinc-800 bg-zinc-950/80 hover:bg-indigo-650 hover:border-indigo-500/30 hover:text-white text-[10px] font-mono text-zinc-350 transition-all cursor-pointer font-bold active:scale-98"
-                        >
-                          LAUNCH SANDBOX VIEW →
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Section 2: Clinical & System Skill Cloud */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-3 border-b border-zinc-900 pb-3 font-mono">
-                  <span className="w-2 h-2 rounded bg-sky-400 shadow-[0_0_8px_#38bdf8]" />
-                  <h2 className="text-sm font-black tracking-widest text-slate-100 uppercase">LINGUISTIC & ARCHITECTURAL STACK</h2>
-                  <span className="text-[10px] text-zinc-550 ml-auto uppercase font-mono">MODEL WEIGHTS SYNCHRONIZED</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 font-mono">
-                  {['AI/ML', 'Frontend', 'Backend', 'Systems & Devops'].map((cat) => {
-                    const groupSkills = portfolioData.skills.filter(s => s.category === cat || (cat === 'Systems & Devops' && s.category === 'Systems & Devops'));
-                    return (
-                      <div key={cat} className="bg-[#0b0c14]/50 border border-zinc-900 p-5 rounded-2xl space-y-4">
-                        <span className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block border-b border-zinc-900/50 pb-1.5">
-                          {cat === 'AI/ML' ? 'AI / MACHINE LEARNING' : cat === 'Systems & Devops' ? 'SYSTEMS & DEVOPS' : cat.toUpperCase()}
-                        </span>
-                        
-                        <div className="space-y-3">
-                          {groupSkills.slice(0, 4).map((skill) => (
-                            <div key={skill.name} className="space-y-1">
-                              <div className="flex justify-between text-[9px] text-slate-300">
-                                <span>{skill.name}</span>
-                                <span className="text-zinc-550">{skill.weight * 20}%</span>
-                              </div>
-                              <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full" 
-                                  style={{ width: `${skill.weight * 20}%` }}
-                                />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-
-              {/* Section 3: Publications & Articles Notebook */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-3 border-b border-zinc-900 pb-3 font-mono">
-                  <span className="w-2 h-2 rounded bg-purple-500 shadow-[0_0_8px_#a855f7]" />
-                  <h2 className="text-sm font-black tracking-widest text-slate-100 uppercase">PUBLICATIONS & RESEARCH NOTES</h2>
-                  <span className="text-[10px] text-zinc-550 ml-auto uppercase font-mono">KNOWLEDGE ARCHIVES ONLINE</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans">
-                  {portfolioData.articles.slice(0, 2).map((article) => (
-                    <div 
-                      key={article.id}
-                      className="bg-[#0b0c14]/60 backdrop-blur-md border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between hover:border-purple-500/30 transition-all group shadow-sm font-normal"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-3 font-mono text-[9px]">
-                          <span className="text-purple-400 uppercase font-bold tracking-wider">{article.category}</span>
-                          <div className="flex items-center gap-2 text-zinc-550">
-                            <span>{article.date}</span>
-                            <span>·</span>
-                            <span>{article.readTime}</span>
-                          </div>
-                        </div>
-
-                        <h3 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors leading-relaxed">
-                          {article.title}
-                        </h3>
-
-                        <p className="text-[11px] text-zinc-400 leading-relaxed mt-2.5">
-                          {article.excerpt}
-                        </p>
-                      </div>
-
-                      <div className="mt-5 border-t border-zinc-900 pt-4 flex items-center justify-between select-none">
-                        <span className="text-[9.5px] text-zinc-550 font-mono">FARHANOS ARCHIVE NODE</span>
-                        <button 
-                          onClick={() => handleOpenArticleDirectly(article)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950 hover:bg-purple-950/20 hover:border-purple-500/20 text-purple-400 hover:text-purple-300 text-[10px] font-mono transition-all cursor-pointer active:scale-95"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>READ & NARRATE IN OS →</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-            </div>
-
-          </main>
-        </div>
+        <LandingPage
+          isWarping={isWarping}
+          theme={theme}
+          soundOn={soundOn}
+          triggerSound={triggerSound}
+          onLaunchOS={handleWarpAndEnter}
+          onOpenWindowDirectly={handleOpenWindowDirectly}
+        />
       ) : (
         <>
           {/* 1. INITIAL SYSTEM BOOT SCREEN */}
@@ -1369,7 +874,7 @@ export default function App() {
 
         {/* Desktop Folders Grid Layout */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-x-4 gap-y-6 max-w-5xl relative z-10 p-2 pointer-events-auto">
-          {desktopIcons.map((ico) => {
+          {desktopIcons.map((ico, idx) => {
             const ActiveIcon = ico.icon;
             const isOpen = openWindows.includes(ico.id);
             const isFocus = focusedWindow === ico.id && !minimizedWindows.includes(ico.id);
@@ -1378,7 +883,8 @@ export default function App() {
               <div 
                 key={ico.id} 
                 onClick={() => openWindow(ico.id)}
-                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border border-transparent hover:border-zinc-800/40 hover:bg-zinc-950/20 hover:backdrop-blur-md cursor-pointer transition-all duration-150 active:scale-95 group text-center relative ${isOpen ? 'bg-zinc-950/10' : ''}`}
+                style={{ animationDelay: `${idx * 45}ms` }}
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border border-transparent hover:border-zinc-800/40 hover:bg-zinc-950/25 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] cursor-pointer transition-all duration-300 active:scale-95 group text-center relative animate-fade-in opacity-0 ${isOpen ? 'bg-zinc-950/15' : ''}`}
               >
                 <div className={`p-4 rounded-2xl ${ico.color} transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200 relative`}>
                   <ActiveIcon className="w-6 h-6" />
@@ -1435,7 +941,7 @@ export default function App() {
               id={`window-${winId}`}
               style={windowStyle}
               onClick={() => { setFocusedWindow(winId); triggerSound(400, 0.01); }}
-              className={`flex flex-col rounded-xl overflow-hidden shadow-2xl transition-all duration-150 transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'}`}
+              className={`flex flex-col rounded-xl overflow-hidden shadow-2xl transition-all duration-150 transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'} animate-window-open`}
             >
               
               {/* Window Bar Header */}

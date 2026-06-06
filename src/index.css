@@ -1,1 +1,92 @@
 @import "tailwindcss";
+
+/* Viewport Stabilization & Anti-Shaking for Mobile Chrome */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  height: -webkit-fill-available;
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  /* Prevent system fonts scaling */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Custom Tailwind v4 Theme & Keyframes Definitions */
+@theme {
+  --animate-spin-slow: spin 25s linear infinite;
+  --animate-spin-reverse: spin-reverse 20s linear infinite;
+  --animate-scale-up: scale-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  --animate-pulse-slow: pulse-slow 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-bounce-short: bounce-short 1.2s ease-out;
+  --animate-window-open: window-open 0.35s cubic-bezier(0.25, 1.1, 0.5, 1.1) forwards;
+  --animate-fade-in: fade-in 0.4s ease-out forwards;
+
+  @keyframes spin-reverse {
+    from {
+      transform: rotate(360deg);
+    }
+    to {
+      transform: rotate(0deg);
+    }
+  }
+
+  @keyframes scale-up {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 0.35;
+    }
+    50% {
+      opacity: 0.15;
+    }
+  }
+
+  @keyframes bounce-short {
+    0%, 100% {
+      transform: translate(-50%, 0);
+    }
+    50% {
+      transform: translate(-50%, -4px);
+    }
+  }
+
+  @keyframes window-open {
+    from {
+      transform: scale(0.92) translateY(15px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

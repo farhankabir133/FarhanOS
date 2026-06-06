@@ -29,7 +29,7 @@ export interface Paper {
 }
 
 export interface TimelineEvent {
-  year: number;
+  year: string;
   title: string;
   company: string;
   role: string;

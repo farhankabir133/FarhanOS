@@ -2,7 +2,7 @@ import { PortfolioData } from '../types';
 
 export const portfolioData: PortfolioData = {
   name: 'Farhan Kabir',
-  title: 'AI Engineer & Research Scientist',
+  title: 'Lead AI Engineer | Full-Stack Developer | Specializing in Agentic Workflows & NLP | Mental Health |',
   tagline: 'Designing deep linguistic networks to analyze cognitive states, autism indicators, and mental-health text semantics.',
   about: 'I am an AI Engineer, Researcher, and Full Stack Developer. I build highly robust predictive AI systems, conduct quantitative linguistic analysis, and implement Stripe-polished digital experiences.',
   focus: 'Evaluating Large Language Models for automated cognitive health screenings and zero-shot NLP behavioral diagnostic support.',
@@ -175,56 +175,52 @@ export const portfolioData: PortfolioData = {
 
   timeline: [
     {
-      year: 2026,
-      title: 'Architect & AI Researcher',
-      company: 'Cognitive Diagnostics Lab',
-      role: 'Principal systems designer for text analytics and mental wellness semantic mapping NLP assets.',
-      description: 'Leading research on LLMs as clinical screening support tooling, authoring publications on clinical mental state evaluation.',
+      year: 'April 2024 - Present',
+      title: 'Lead Developer',
+      company: 'Auto Spark',
+      role: 'Lead Developer',
+      description: 'Developed responsive web applications, ensuring compatibility across various browsers and devices. Implemented efficient front-end solutions and collaborated on back-end development tasks.',
       achievements: [
-        'Designed custom zero-shot and classification-optimized clinical prediction systems',
-        'Implemented modern low-latency model evaluation dashboards processing high-volume text queues',
-        'Established rigid testing criteria ensuring patient confidentiality and data safety parameters'
+        'Developed responsive web applications, ensuring compatibility across various browsers and devices.',
+        'Implemented efficient front-end solutions and collaborated on back-end development tasks.'
       ],
-      technologies: ['PyTorch', 'Transformer NLP', 'React/Next.js', 'Go', 'TailwindCSS v4']
+      technologies: ['TypeScript', 'React', 'REST APIs', 'Node.js', 'Tailwind']
     },
     {
-      year: 2024,
-      title: 'Senior AI System Dev',
-      company: 'Synthetix Solutions',
-      role: 'Backend AI systems Architect constructing robust SaaS solutions for custom automation.',
-      description: 'Engineered backend pipeline components for TypeRush and SafeSide, connecting client data stores securely with deep learning backends.',
+      year: '2022 - 2023',
+      title: 'Full Stack Developer (Remote)',
+      company: 'Hire My Tech',
+      role: 'Full Stack Developer',
+      description: 'Built responsive web applications using React and modern JavaScript frameworks, collaborated with design team on user experience improvements.',
       achievements: [
-        'Decreased standard inference lag by over 30% through selective quantization and model distillation techniques',
-        'Built real-time telemetry systems capturing user performance states with sub-10ms capture profiles',
-        'Orchestrated automated data extraction workers scaling securely according to traffic profiles'
+        'Built responsive web applications using React and modern JavaScript frameworks.',
+        'Collaborated with design team on user experience improvements.'
       ],
-      technologies: ['Express/Node.js', 'Redis', 'Python', 'Docker', 'Google Cloud Platform']
+      technologies: ['React', 'Next.js', 'PostgreSQL', 'Dexie.js', 'Tailwind']
     },
     {
-      year: 2022,
-      title: 'Full Stack Engineer & Researcher',
-      company: 'Mental Health Tech',
-      role: 'Frontend lead and mental wellness text classifier research dev.',
-      description: 'Conducted rigorous fine-tuning experiments on classic BERT structures, designing clinical-grade data visualizers.',
+      year: '2020 - 2021',
+      title: 'UI/UX Designer',
+      company: 'Design Studio',
+      role: 'UI/UX Designer',
+      description: 'Created user-centered designs for web and mobile applications, conducted user research and usability testing.',
       achievements: [
-        'Created the first generation interactive mental wellness support system evaluating distress levels',
-        'Co-authored 2 high-impact research publications outlining bimodal emotion evaluation metrics',
-        'Designed completely responsive portfolio workspaces utilizing high-frequency animations'
+        'Created user-centered designs for web and mobile applications.',
+        'Conducted user research and usability testing.'
       ],
-      technologies: ['React', 'Redux', 'D3.js', 'Hugging Face Transformers', 'Python/Flask']
+      technologies: ['TypeScript', 'Node.js', 'SQLite', 'Tailwind']
     },
     {
-      year: 2020,
-      title: 'Open Source Contributor & Dev',
-      company: 'Independent / Farhan Lab',
-      role: 'Developing open source utilities and studying linguistic text processing.',
-      description: 'Began building interactive web layouts, contributing heavily to developer workspaces and Markdown tooling libraries.',
+      year: '2019 - 2020',
+      title: 'Junior Developer',
+      company: 'WebAgency',
+      role: 'Junior Developer',
+      description: 'Developed websites and web applications, learned modern development practices and agile methodologies.',
       achievements: [
-        'Built and deployed TypeRush, an open-source terminal typing game',
-        'Developed interactive developer portfolios earning deep community feedback',
-        'Acquired expertise in system design, Docker containers, and React orchestration'
+        'Developed websites and web applications.',
+        'Learned modern development practices and agile methodologies.'
       ],
-      technologies: ['React', 'Docker', 'Framer Motion', 'Node.js', 'SQLite']
+      technologies: ['Next.js', 'Webpack', 'CSS Modules', 'Node.js']
     }
   ],
 

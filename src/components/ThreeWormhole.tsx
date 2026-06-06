@@ -10,6 +10,11 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const isWarpingRef = useRef(isWarping);
+  useEffect(() => {
+    isWarpingRef.current = isWarping;
+  }, [isWarping]);
+
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -55,7 +60,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       alpha: true,
       powerPreference: 'high-performance',
     });
-    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setSize(container.clientWidth, container.clientHeight, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     // 4. Create 3D Wormhole Tunnel
@@ -80,7 +85,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       color: primaryColor,
       wireframe: true,
       transparent: true,
-      opacity: 0.14,
+      opacity: 0.0,
       side: THREE.DoubleSide,
     });
     const innerTunnel = new THREE.Mesh(innerGeom, innerMat);
@@ -159,7 +164,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
             intensity += whiteGlowVal;
           }
 
-          float finalAlpha = intensity * (0.12 + uWarpProgress * 0.68) * depthFade;
+          float finalAlpha = intensity * (uWarpProgress * (0.12 + uWarpProgress * 0.68)) * depthFade;
           finalAlpha = clamp(finalAlpha, 0.0, 1.0);
 
           gl_FragColor = vec4(finalColor, finalAlpha);
@@ -204,7 +209,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       color: secondaryColor,
       wireframe: true,
       transparent: true,
-      opacity: 0.09,
+      opacity: 0.0,
       side: THREE.DoubleSide,
     });
     const outerTunnel = new THREE.Mesh(outerGeom, outerMat);
@@ -219,7 +224,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       const ringMat = new THREE.MeshBasicMaterial({
         color: i % 2 === 0 ? primaryColor : secondaryColor,
         transparent: true,
-        opacity: 0.65,
+        opacity: 0.0,
       });
       const ring = new THREE.Mesh(ringGeom, ringMat);
       // Evenly space rings from Z = -tunnelLength/2 to Z = tunnelLength/2
@@ -305,7 +310,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       const h = container.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(w, h, false);
     };
 
     const resizeObserver = new ResizeObserver(() => {
@@ -322,10 +327,11 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     let animationFrameId: number;
 
     const animate = () => {
+      const warping = isWarpingRef.current;
       // Warp speed acceleration physics loop
-      timeAccumulator += isWarping ? 0.024 : 0.012; // Time acceleration on warp speed
+      timeAccumulator += warping ? 0.024 : 0.012; // Time acceleration on warp speed
 
-      if (isWarping) {
+      if (warping) {
         warpProgressVal = Math.min(1.0, warpProgressVal + 0.018);
         warpVelocity = Math.min(6.5, warpVelocity + 0.18);
         speed = Math.min(4.8, speed + 0.15);
@@ -352,6 +358,10 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
         if (singularityGlow.scale.x > 1.0) singularityGlow.scale.set(1, 1, 1);
       }
 
+      // Update materials opacities dynamically to materialize the tunnel on warp
+      innerMat.opacity = 0.14 * warpProgressVal;
+      outerMat.opacity = 0.09 * warpProgressVal;
+
       // Sync custom WebGL shader uniforms
       warpShaderMat.uniforms.uWarpProgress.value = warpProgressVal;
       warpShaderMat.uniforms.uTime.value = timeAccumulator;
@@ -373,8 +383,13 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
         }
 
         // Pulse scale a bit on warp
-        const scaleMult = 1 + Math.sin(now + idx) * 0.03 + (isWarping ? 0.08 : 0);
+        const scaleMult = 1 + Math.sin(now + idx) * 0.03 + (warping ? 0.08 : 0);
         ring.scale.set(scaleMult, scaleMult, 1);
+
+        // Dynamic opacity for rings
+        if (ring.material && !Array.isArray(ring.material)) {
+          (ring.material as THREE.MeshBasicMaterial).opacity = 0.65 * warpProgressVal;
+        }
       });
 
       // Update interactive mouse smoothing
@@ -396,7 +411,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
         positions[idx + 1] = Math.sin(particleAngles[i]) * particleRadii[i];
 
         // Direct scroll along Z axis
-        const particleSpeed = particleSpeeds[i] * (isWarping ? 14.5 : 1.0) + speed;
+        const particleSpeed = particleSpeeds[i] * (warping ? 14.5 : 1.0) + speed;
         positions[idx + 2] += particleSpeed;
 
         // Reset particles that fly past camera
@@ -408,7 +423,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       }
 
       // Dynamically override sizeAttenuation when warping to create long trail streaks
-      if (isWarping) {
+      if (warping) {
         pMaterial.size = Math.min(0.42, pMaterial.size + 0.015);
       } else {
         pMaterial.size = Math.max(0.12, pMaterial.size - 0.01);
@@ -441,7 +456,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       glowGeom.dispose();
       glowMat.dispose();
     };
-  }, [isWarping, theme]);
+  }, [theme]);
 
   return (
     <div 
