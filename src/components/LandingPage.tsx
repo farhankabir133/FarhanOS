@@ -3,9 +3,10 @@ import {
   Rocket, Compass, PhoneCall, Download, GitBranch, Sparkles, BookOpen, 
   Cpu, Activity, Terminal, ArrowUp, Mail, MapPin, Phone, Github, Linkedin, 
   ExternalLink, Award, Calendar, ChevronRight, ChevronLeft, Star, Quote, 
-  ArrowRight, Check, Send, Sparkle, RefreshCw, Instagram, User
+  ArrowRight, Check, Send, Sparkle, RefreshCw, Instagram, User, Clock
 } from 'lucide-react';
 import { portfolioData } from '../data/portfolioData';
+import { Article } from '../types';
 import DecryptText from './DecryptText';
 import ThreeWormhole from './ThreeWormhole';
 import avatarImg from '../../assets/avatar.png';
@@ -144,6 +145,8 @@ interface LandingPageProps {
   triggerSound: (freq?: number, dur?: number) => void;
   onLaunchOS: () => void;
   onOpenWindowDirectly: (winId: string) => void;
+  articles?: Article[];
+  onOpenArticleDirectly?: (article: Article) => void;
 }
 
 export default function LandingPage({
@@ -152,7 +155,9 @@ export default function LandingPage({
   soundOn,
   triggerSound,
   onLaunchOS,
-  onOpenWindowDirectly
+  onOpenWindowDirectly,
+  articles = [],
+  onOpenArticleDirectly
 }: LandingPageProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -867,6 +872,109 @@ export default function LandingPage({
             </div>
           ))}
         </div>
+      </section>
+
+      {/* SECTION 4.5: LATEST STORIES (MEDIUM FEED) */}
+      <section id="writings" className="relative px-6 md:px-12 py-24 max-w-6xl w-full mx-auto space-y-12 z-10">
+        
+        {/* Section title */}
+        <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
+          <span className="w-2.5 h-2.5 rounded bg-amber-500 shadow-[0_0_8px_#f59e0b]" />
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04.5 // MEDIUM WRITING SYNDICATE</h2>
+          <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">DYNAMIC RSS CHANNELS ACTIVE</span>
+        </div>
+
+        {/* Dynamic Medium articles display */}
+        {articles.length === 0 ? (
+          <div className="text-center py-10 bg-zinc-950/20 border border-zinc-900/80 rounded-3xl p-6 font-mono text-zinc-550 text-xs">
+            ⏳ Synchronizing narrative telemetry vectors...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {articles.slice(0, 6).map((article, idx) => {
+              const isFirst = idx === 0;
+              return (
+                <div 
+                  key={article.id}
+                  className={`bg-[#0b0c14]/55 border border-zinc-900/80 p-6 rounded-3xl flex flex-col justify-between hover:border-amber-500/30 hover:shadow-[0_10px_35px_rgba(245,158,11,0.04)] transition-all duration-300 group select-text ${
+                    isFirst ? 'md:col-span-2 lg:col-span-1' : ''
+                  }`}
+                >
+                  <div className="space-y-4">
+                    {/* Header info */}
+                    <div className="flex items-center justify-between font-mono text-[9px]">
+                      <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${
+                        theme === 'light' ? 'bg-amber-100 text-amber-800 border-amber-250' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                      }`}>
+                        {article.category}
+                      </span>
+                      <span className="text-zinc-550 font-semibold">{article.date}</span>
+                    </div>
+
+                    {/* Optional Thumbnail Image */}
+                    {article.imageUrl ? (
+                      <div className="w-full h-36 rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-950 relative">
+                        <img 
+                          src={article.imageUrl} 
+                          alt={article.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c14]/90 via-transparent to-transparent" />
+                      </div>
+                    ) : (
+                      <div className="w-full h-1 bg-gradient-to-r from-amber-500/10 to-transparent rounded" />
+                    )}
+
+                    <h3 className={`text-xs sm:text-sm font-extrabold group-hover:text-amber-400 transition-colors leading-snug select-text ${
+                      theme === 'light' ? 'text-slate-800' : 'text-white'
+                    }`}>
+                      {article.title}
+                    </h3>
+
+                    <p className="text-[11px] leading-relaxed text-zinc-400 font-sans select-text">
+                      {article.excerpt}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-4 border-t border-zinc-900/60 mt-4 select-none">
+                    <div className="flex items-center gap-2 text-[8.5px] font-mono text-zinc-500">
+                      <Clock className="w-3 h-3 text-amber-500" />
+                      <span>{article.readTime}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          if (onOpenArticleDirectly) {
+                            onOpenArticleDirectly(article);
+                          } else {
+                            onOpenWindowDirectly('writing');
+                          }
+                        }}
+                        className="flex-1 text-center py-2.5 rounded-xl border border-zinc-800/80 bg-zinc-950 text-[9.5px] font-mono text-zinc-350 hover:text-white hover:border-zinc-750 transition-all cursor-pointer font-bold active:scale-98"
+                      >
+                        WARP & READ IN OS →
+                      </button>
+                      
+                      {article.link && (
+                        <a 
+                          href={article.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={() => triggerSound(900, 0.02)}
+                          className="p-2.5 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-950/60 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
+                          title="Read on Medium"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* SECTION 6: CERTIFICATIONS */}

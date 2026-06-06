@@ -126,8 +126,107 @@ export default function App() {
   // UI Interactive States
   const [selectedProject, setSelectedProject] = useState<Project>(portfolioData.projects[0]);
   const [selectedPaper, setSelectedPaper] = useState<Paper>(portfolioData.papers[0]);
+  const [articles, setArticles] = useState<Article[]>(portfolioData.articles);
   const [selectedArticle, setSelectedArticle] = useState<Article>(portfolioData.articles[0]);
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineEvent>(portfolioData.timeline[0]);
+
+  useEffect(() => {
+    const fetchMediumStories = async () => {
+      try {
+        const res = await fetch('/api/medium-stories');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setArticles(data);
+            setSelectedArticle(data[0]);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend Medium stories endpoint unavailable, trying client fallback:', err);
+      }
+
+      // Client-side fallback using public rss2json converter for static host environments (GitHub Pages)
+      try {
+        const rssRes = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@farhankabir133');
+        if (rssRes.ok) {
+          const feedData = await rssRes.json();
+          if (feedData.status === 'ok' && Array.isArray(feedData.items)) {
+            const mapped = feedData.items.slice(0, 6).map((item: any, idx: number) => {
+              const descHtml = item.description || '';
+              const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
+              const imageUrl = imgMatch ? imgMatch[1] : '';
+              
+              const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
+              let snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+              
+              const cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+              if (!snippet) {
+                snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
+              }
+
+              let category: 'AI' | 'Engineering' | 'Productivity' | 'Research' | 'Life' | 'Startups' | 'Design' | 'Philosophy' = 'Life';
+              const lowercaseCategories = (item.categories || []).map((c: string) => c.toLowerCase());
+              if (lowercaseCategories.some((c: string) => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) {
+                category = 'AI';
+              } else if (lowercaseCategories.some((c: string) => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('architecture') || c.includes('engineering'))) {
+                category = 'Engineering';
+              } else if (lowercaseCategories.some((c: string) => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) {
+                category = 'Productivity';
+              } else if (lowercaseCategories.some((c: string) => c.includes('research') || c.includes('science') || c.includes('clinic'))) {
+                category = 'Research';
+              } else if (lowercaseCategories.some((c: string) => c.includes('design') || c.includes('ux') || c.includes('ui'))) {
+                category = 'Design';
+              } else if (lowercaseCategories.some((c: string) => c.includes('startup') || c.includes('business') || c.includes('saas'))) {
+                category = 'Startups';
+              } else if (lowercaseCategories.some((c: string) => c.includes('philosoph') || c.includes('think'))) {
+                category = 'Philosophy';
+              }
+
+              let formattedDate = item.pubDate;
+              try {
+                const d = new Date(item.pubDate);
+                if (!isNaN(d.getTime())) {
+                  formattedDate = d.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+                }
+              } catch (e) {}
+
+              const wordCount = cleanContent.split(/\s+/).length;
+              const readTimeMins = Math.max(1, Math.ceil(wordCount / 225));
+              const readTime = `${readTimeMins} min read`;
+
+              const guidIdMatch = (item.guid || '').match(/\/p\/([a-f0-9]+)$/) || (item.link || '').match(/-([a-f0-9]+)$/);
+              const id = guidIdMatch ? guidIdMatch[1] : `medium-${idx}`;
+
+              return {
+                id,
+                title: item.title,
+                category,
+                readTime,
+                date: formattedDate,
+                excerpt: snippet,
+                content: cleanContent || snippet || item.title,
+                link: item.link,
+                imageUrl
+              };
+            });
+
+            if (mapped.length > 0) {
+              setArticles(mapped);
+              setSelectedArticle(mapped[0]);
+            }
+          }
+        }
+      } catch (clientErr) {
+        console.warn('Client-side rss2json fallback failed:', clientErr);
+      }
+    };
+    fetchMediumStories();
+  }, []);
   const [skillFilter, setSkillFilter] = useState<'all' | 'AI/ML' | 'Frontend' | 'Backend' | 'Research' | 'Systems'>('all');
   const [resumeAudience, setResumeAudience] = useState<'recruiter' | 'investor' | 'founder' | 'researcher'>('recruiter');
 
@@ -671,7 +770,7 @@ export default function App() {
         results.push({ type: 'Research Paper', title: p.title, subtitle: `${p.year} - ${p.journal}`, action: () => { openWindow('research'); setSelectedPaper(p); setCommandPaletteOpen(false); } });
       }
     });
-    portfolioData.articles.forEach(a => {
+    articles.forEach(a => {
       if (a.title.toLowerCase().includes(term) || a.excerpt.toLowerCase().includes(term)) {
         results.push({ type: 'Blog/Article', title: a.title, subtitle: a.category, action: () => { openWindow('writing'); setSelectedArticle(a); setCommandPaletteOpen(false); } });
       }
@@ -791,6 +890,8 @@ export default function App() {
           triggerSound={triggerSound}
           onLaunchOS={handleWarpAndEnter}
           onOpenWindowDirectly={handleOpenWindowDirectly}
+          articles={articles}
+          onOpenArticleDirectly={handleOpenArticleDirectly}
         />
       ) : (
         <>
@@ -1436,7 +1537,7 @@ export default function App() {
                     <div className="w-full md:w-56 border-r border-[#2d2f3d] pr-4 flex flex-col gap-2 select-none">
                       <span className={styleSet.panelHeader}>NARRATIVE CHRONICLES</span>
                       <div className="space-y-1">
-                        {portfolioData.articles.map((a) => (
+                        {articles.map((a) => (
                           <button 
                             key={a.id}
                             onClick={() => { setSelectedArticle(a); triggerSound(800, 0.03); }}
@@ -1491,10 +1592,23 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="border-b border-zinc-850 pb-2">
-                        <span className="text-[9.5px] bg-amber-500/20 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded uppercase font-mono">{selectedArticle.category} COLUMN</span>
-                        <h3 className="text-xs font-black text-white tracking-snug mt-1.5 leading-relaxed select-text">{selectedArticle.title}</h3>
-                        <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block mt-1">Written on {selectedArticle.date} · {selectedArticle.readTime}</span>
+                      <div className="border-b border-zinc-850 pb-2 flex items-start justify-between">
+                        <div>
+                          <span className="text-[9.5px] bg-amber-500/20 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded uppercase font-mono">{selectedArticle.category} COLUMN</span>
+                          <h3 className="text-xs font-black text-white tracking-snug mt-1.5 leading-relaxed select-text">{selectedArticle.title}</h3>
+                          <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block mt-1">Written on {selectedArticle.date} · {selectedArticle.readTime}</span>
+                        </div>
+                        {selectedArticle.link && (
+                          <a 
+                            href={selectedArticle.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => triggerSound(900, 0.02)}
+                            className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 font-mono uppercase tracking-wider ml-2"
+                          >
+                            <span>Read on Medium ↗</span>
+                          </a>
+                        )}
                       </div>
 
                       <div className="text-[10.5px] leading-relaxed text-slate-300 font-sans select-all font-normal space-y-2 mt-2 max-h-[180px] overflow-y-auto pr-1">
@@ -1693,7 +1807,7 @@ export default function App() {
                       <div className="border-b border-[#2c2d3a] pb-2">
                         <span className="bg-sky-500/10 text-sky-300 border border-sky-500/20 px-1 py-0.5 rounded text-[9.5px] font-mono">YEAR: {selectedTimeline.year} EXP</span>
                         <h4 className="text-xs font-black text-white mt-1.5">{selectedTimeline.title}</h4>
-                        <span className="text-[9.5px] text-zinc-500 font-serif block">{selectedTimeline.company} · Role: {selectedTimeline.role}</span>
+                        <span className="text-[9.5px] text-zinc-500 font-sans block">{selectedTimeline.company} · Role: {selectedTimeline.role}</span>
                       </div>
 
                       <p className="text-[11px] leading-relaxed text-zinc-400 font-sans select-text">{selectedTimeline.description}</p>

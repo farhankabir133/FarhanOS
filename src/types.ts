@@ -46,6 +46,8 @@ export interface Article {
   date: string;
   excerpt: string;
   content: string;
+  link?: string;
+  imageUrl?: string;
 }
 
 export interface BuildLog {
