@@ -155,7 +155,6 @@ export default function App() {
 
   // Draggable State Management (Simple manual drag handler to avoid external libraries complexity)
   const [draggedWindow, setDraggedWindow] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // System Sound Effect player wrap
   const triggerSound = (freq: number = 800, dur: number = 0.03) => {
@@ -283,30 +282,58 @@ export default function App() {
   }, [soundOn]);
 
   // Drag Window logic handlers
+  const draggedWindowRef = useRef<string | null>(null);
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const currentDragPosRef = useRef({ x: 0, y: 0 });
+
   const handleMouseDown = (windowId: string, e: React.MouseEvent) => {
     if (windowPositions[windowId]?.isMaximized) return;
     setFocusedWindow(windowId);
+    
+    const startX = windowPositions[windowId]?.x || 0;
+    const startY = windowPositions[windowId]?.y || 0;
+    
+    draggedWindowRef.current = windowId;
+    dragOffsetRef.current = {
+      x: e.clientX - startX,
+      y: e.clientY - startY
+    };
+    currentDragPosRef.current = { x: startX, y: startY };
+    
     setDraggedWindow(windowId);
-    setDragOffset({
-      x: e.clientX - (windowPositions[windowId]?.x || 0),
-      y: e.clientY - (windowPositions[windowId]?.y || 0)
-    });
     triggerSound(500, 0.01);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (draggedWindow) {
-      const nx = e.clientX - dragOffset.x;
-      const ny = e.clientY - dragOffset.y;
-      setWindowPositions(prev => ({
-        ...prev,
-        [draggedWindow]: { ...prev[draggedWindow], x: Math.max(0, nx), y: Math.max(0, ny) }
-      }));
+    const activeWindow = draggedWindowRef.current;
+    if (activeWindow) {
+      const nx = Math.max(0, e.clientX - dragOffsetRef.current.x);
+      const ny = Math.max(0, e.clientY - dragOffsetRef.current.y);
+      
+      currentDragPosRef.current = { x: nx, y: ny };
+      
+      const winEl = document.getElementById(`window-${activeWindow}`);
+      if (winEl) {
+        winEl.style.left = `${nx}px`;
+        winEl.style.top = `${ny}px`;
+      }
     }
   };
 
   const handleMouseUp = () => {
-    setDraggedWindow(null);
+    const activeWindow = draggedWindowRef.current;
+    if (activeWindow) {
+      const finalX = currentDragPosRef.current.x;
+      const finalY = currentDragPosRef.current.y;
+      
+      setWindowPositions(prev => ({
+        ...prev,
+        [activeWindow]: { ...prev[activeWindow], x: finalX, y: finalY }
+      }));
+      
+      draggedWindowRef.current = null;
+      setDraggedWindow(null);
+    }
   };
 
   useEffect(() => {
@@ -318,7 +345,7 @@ export default function App() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggedWindow, dragOffset]);
+  }, [draggedWindow]);
 
   // Opening & Focusing a window
   const openWindow = (windowId: string) => {
