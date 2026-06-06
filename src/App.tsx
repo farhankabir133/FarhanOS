@@ -21,6 +21,17 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'landing' | 'os'>('landing');
   const [isWarping, setIsWarping] = useState(false);
 
+  useEffect(() => {
+    if (viewMode === 'os') {
+      document.documentElement.classList.add('os-mode');
+    } else {
+      document.documentElement.classList.remove('os-mode');
+    }
+    return () => {
+      document.documentElement.classList.remove('os-mode');
+    };
+  }, [viewMode]);
+
   // Landing Page Interactive States
   const [landingQuery, setLandingQuery] = useState('');
   const [landingReply, setLandingReply] = useState('');
@@ -57,7 +68,7 @@ export default function App() {
     profTimeline: { x: 160, y: 240, isMaximized: false },
   });
 
-  const [osTimelineProgress, setOsTimelineProgress] = useState(0);
+  const osTimelineProgressLineRef = useRef<HTMLDivElement | null>(null);
 
   // Dynamic CPU Load for telemetry
   const [cpuLoad, setCpuLoad] = useState(12);
@@ -284,7 +295,9 @@ export default function App() {
   // Drag Window logic handlers
   const draggedWindowRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
-  const currentDragPosRef = useRef({ x: 0, y: 0 });
+  const dragRafIdRef = useRef<number | null>(null);
+  const targetPosRef = useRef({ x: 0, y: 0 });
+  const currentPosRef = useRef({ x: 0, y: 0 });
 
   const handleMouseDown = (windowId: string, e: React.MouseEvent) => {
     if (windowPositions[windowId]?.isMaximized) return;
@@ -298,10 +311,49 @@ export default function App() {
       x: e.clientX - startX,
       y: e.clientY - startY
     };
-    currentDragPosRef.current = { x: startX, y: startY };
+    targetPosRef.current = { x: startX, y: startY };
+    currentPosRef.current = { x: startX, y: startY };
+    
+    const winEl = document.getElementById(`window-${windowId}`);
+    if (winEl) {
+      winEl.style.transition = 'none';
+    }
     
     setDraggedWindow(windowId);
     triggerSound(500, 0.01);
+
+    if (dragRafIdRef.current) cancelAnimationFrame(dragRafIdRef.current);
+    
+    const animateDrag = () => {
+      const activeWindow = draggedWindowRef.current;
+      if (!activeWindow) return;
+      
+      const easeFactor = 0.16; // Buttery smooth spring factor
+      const dx = targetPosRef.current.x - currentPosRef.current.x;
+      const dy = targetPosRef.current.y - currentPosRef.current.y;
+      
+      currentPosRef.current.x += dx * easeFactor;
+      currentPosRef.current.y += dy * easeFactor;
+      
+      const vx = dx * easeFactor;
+      
+      // Calculate inertial Z-tilt based on velocity
+      const maxTilt = 4.0; // max angle in degrees
+      const tiltAngle = Math.min(Math.max(-vx * 0.14, -maxTilt), maxTilt);
+      
+      const winEl = document.getElementById(`window-${activeWindow}`);
+      if (winEl) {
+        winEl.style.left = `${currentPosRef.current.x}px`;
+        winEl.style.top = `${currentPosRef.current.y}px`;
+        winEl.style.transform = `rotateZ(${tiltAngle}deg) scale(1.025)`;
+        winEl.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.65)';
+        winEl.style.zIndex = '100';
+      }
+      
+      dragRafIdRef.current = requestAnimationFrame(animateDrag);
+    };
+    
+    dragRafIdRef.current = requestAnimationFrame(animateDrag);
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -309,22 +361,26 @@ export default function App() {
     if (activeWindow) {
       const nx = Math.max(0, e.clientX - dragOffsetRef.current.x);
       const ny = Math.max(0, e.clientY - dragOffsetRef.current.y);
-      
-      currentDragPosRef.current = { x: nx, y: ny };
-      
-      const winEl = document.getElementById(`window-${activeWindow}`);
-      if (winEl) {
-        winEl.style.left = `${nx}px`;
-        winEl.style.top = `${ny}px`;
-      }
+      targetPosRef.current = { x: nx, y: ny };
     }
   };
 
   const handleMouseUp = () => {
     const activeWindow = draggedWindowRef.current;
     if (activeWindow) {
-      const finalX = currentDragPosRef.current.x;
-      const finalY = currentDragPosRef.current.y;
+      if (dragRafIdRef.current) cancelAnimationFrame(dragRafIdRef.current);
+      dragRafIdRef.current = null;
+      
+      const finalX = currentPosRef.current.x;
+      const finalY = currentPosRef.current.y;
+      
+      const winEl = document.getElementById(`window-${activeWindow}`);
+      if (winEl) {
+        winEl.style.transition = '';
+        winEl.style.transform = '';
+        winEl.style.boxShadow = '';
+        winEl.style.zIndex = '';
+      }
       
       setWindowPositions(prev => ({
         ...prev,
@@ -726,7 +782,7 @@ export default function App() {
   const styleSet = getThemeStyles();
 
   return (
-    <div className={`h-full w-full ${styleSet.bg} transition-colors duration-500 overflow-hidden select-none flex flex-col relative`}>
+    <div className={`w-full ${viewMode === 'os' ? 'h-full overflow-hidden select-none' : 'min-h-screen'} ${styleSet.bg} transition-colors duration-500 flex flex-col relative`}>
       {viewMode === 'landing' ? (
         <LandingPage
           isWarping={isWarping}
@@ -1020,7 +1076,9 @@ export default function App() {
                   if (winId === 'profTimeline') {
                     const target = e.currentTarget;
                     const progress = target.scrollTop / (target.scrollHeight - target.clientHeight || 1);
-                    setOsTimelineProgress(progress);
+                    if (osTimelineProgressLineRef.current) {
+                      osTimelineProgressLineRef.current.style.transform = `scaleY(${progress})`;
+                    }
                   }
                 }}
               >
@@ -1672,8 +1730,9 @@ export default function App() {
                       {/* Vertical line */}
                       <div className="absolute left-[13px] md:left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-indigo-500/60 via-cyan-500/20 to-transparent -translate-x-1/2 pointer-events-none z-0"></div>
                       <div 
+                        ref={osTimelineProgressLineRef}
                         className="absolute left-[13px] md:left-1/2 top-0 bottom-16 w-[2px] bg-gradient-to-b from-cyan-400 to-purple-600 -translate-x-1/2 origin-top pointer-events-none z-10"
-                        style={{ transform: `scaleY(${osTimelineProgress})`, transformOrigin: 'top' }}
+                        style={{ transform: `scaleY(0)`, transformOrigin: 'top' }}
                       ></div>
 
                       <div className="space-y-10 relative z-10">

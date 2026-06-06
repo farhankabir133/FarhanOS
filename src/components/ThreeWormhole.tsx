@@ -233,47 +233,147 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       rings.push(ring);
     }
 
-    // 6. Interactive particle stars floating in the system
-    const particleCount = 750;
+    // 6. Cosmic Nebula background plane
+    const nebulaMat = new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform float uTime;
+        uniform float uWarpProgress;
+        uniform vec3 uPrimaryColor;
+        uniform vec3 uSecondaryColor;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hash(i + vec3(0.0, 0.0, 0.0).xy), hash(i + vec3(1.0, 0.0, 0.0).xy), u.x),
+                     mix(hash(i + vec3(0.0, 1.0, 0.0).xy), hash(i + vec3(1.0, 1.0, 0.0).xy), u.x), u.y);
+        }
+
+        float fbm(vec2 p) {
+          float v = 0.0;
+          float a = 0.5;
+          vec2 shift = vec2(100.0);
+          mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
+          for (int i = 0; i < 3; ++i) {
+            v += a * noise(p);
+            p = rot * p * 2.0 + shift;
+            a *= 0.5;
+          }
+          return v;
+        }
+
+        void main() {
+          vec2 p = vUv * 3.5;
+          float t = uTime * 0.02;
+          
+          float n1 = fbm(p + vec2(t * 0.4, t * 0.2));
+          float n2 = fbm(p - vec2(t * 0.15, -t * 0.3) + n1 * 0.4);
+          
+          float val = smoothstep(0.18, 0.82, n2);
+          
+          vec3 baseColor = mix(uPrimaryColor * 0.18, uSecondaryColor * 0.35, val);
+          baseColor += vec3(0.06, 0.04, 0.09) * n1 * n1;
+          
+          float nebulaAlpha = val * 0.75;
+          nebulaAlpha = clamp(nebulaAlpha, 0.0, 1.0);
+          
+          vec3 finalColor = mix(baseColor, baseColor * 1.5 + vec3(0.15), uWarpProgress);
+          float finalAlpha = mix(nebulaAlpha, nebulaAlpha * 0.45 + 0.12, uWarpProgress);
+          
+          gl_FragColor = vec4(finalColor, finalAlpha);
+        }
+      `,
+      uniforms: {
+        uTime: { value: 0.0 },
+        uWarpProgress: { value: 0.0 },
+        uPrimaryColor: { value: new THREE.Color(primaryColor) },
+        uSecondaryColor: { value: new THREE.Color(secondaryColor) }
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+
+    const nebulaMesh = new THREE.Mesh(new THREE.PlaneGeometry(280, 280), nebulaMat);
+    nebulaMesh.position.set(0, 0, -85);
+    scene.add(nebulaMesh);
+
+    // 7. Interactive particle stars floating in the system
+    const particleCount = 900;
     const particlePositions = new Float32Array(particleCount * 3);
-    const particleSpeeds: number[] = [];
-    const particleAngles: number[] = [];
-    const particleRadii: number[] = [];
+    const particleColors = new Float32Array(particleCount * 3);
     
-    // Original positions to compute hyperdrive stretch trails
-    const originalPositions = new Float32Array(particleCount * 3);
+    const starSpeeds: number[] = [];
+    const twinkleSpeeds: number[] = [];
+    const twinklePhases: number[] = [];
+    const baseColors: number[][] = [];
+
+    const createStarTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const gradient = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.25)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 16, 16);
+      }
+      return new THREE.CanvasTexture(canvas);
+    };
 
     for (let i = 0; i < particleCount; i++) {
-      const radius = Math.random() * (tunnelRadius - 0.4) + 0.2;
-      const angle = Math.random() * Math.PI * 2;
-      const z = (Math.random() - 0.5) * tunnelLength;
-
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius;
+      const x = (Math.random() - 0.5) * 90;
+      const y = (Math.random() - 0.5) * 90;
+      const z = Math.random() * 100 - 85;
 
       particlePositions[i * 3] = x;
       particlePositions[i * 3 + 1] = y;
       particlePositions[i * 3 + 2] = z;
 
-      originalPositions[i * 3] = x;
-      originalPositions[i * 3 + 1] = y;
-      originalPositions[i * 3 + 2] = z;
+      starSpeeds.push(Math.random() * 0.08 + 0.02);
+      twinkleSpeeds.push(1.0 + Math.random() * 2.5);
+      twinklePhases.push(Math.random() * Math.PI * 2);
 
-      particleSpeeds.push(Math.random() * 0.4 + 0.1);
-      particleAngles.push(angle);
-      particleRadii.push(radius);
+      let r = 1.0, g = 1.0, b = 1.0;
+      const randColor = Math.random();
+      if (randColor < 0.18) {
+        r = 0.82; g = 0.9; b = 1.0;
+      } else if (randColor < 0.32) {
+        r = 1.0; g = 0.94; b = 0.78;
+      }
+      baseColors.push([r, g, b]);
+      particleColors[i * 3] = r;
+      particleColors[i * 3 + 1] = g;
+      particleColors[i * 3 + 2] = b;
     }
 
     const particleGeometry = new THREE.BufferGeometry();
     particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
 
-    // Render particles using PointsMaterial
     const pMaterial = new THREE.PointsMaterial({
-      color: particleColor,
-      size: 0.12,
+      size: 0.38,
+      map: createStarTexture(),
       transparent: true,
-      opacity: 0.85,
       blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      vertexColors: true,
       sizeAttenuation: true,
     });
 
@@ -366,6 +466,10 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       warpShaderMat.uniforms.uWarpProgress.value = warpProgressVal;
       warpShaderMat.uniforms.uTime.value = timeAccumulator;
 
+      // Sync background cosmic nebula shader uniforms
+      nebulaMat.uniforms.uTime.value = timeAccumulator;
+      nebulaMat.uniforms.uWarpProgress.value = warpProgressVal;
+
       // Rotate continuous elements
       innerTunnel.rotation.z += rotationSpeed;
       outerTunnel.rotation.z -= rotationSpeed * 0.7;
@@ -401,35 +505,57 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
 
       // Animate and render particle arrays
       const positions = particleGeometry.attributes.position.array as Float32Array;
+      const colorsAttr = particleGeometry.attributes.color.array as Float32Array;
 
       for (let i = 0; i < particleCount; i++) {
         const idx = i * 3;
         
-        // Swirl particles around tunnel spiral coordinates
-        particleAngles[i] += rotationSpeed * (i % 2 === 0 ? 1 : -1) * 0.7;
-        positions[idx] = Math.cos(particleAngles[i]) * particleRadii[i];
-        positions[idx + 1] = Math.sin(particleAngles[i]) * particleRadii[i];
+        // Z-drift: speed up during warp
+        const currentSpeed = warping 
+          ? starSpeeds[i] * 120.0 + speed * 12.0
+          : starSpeeds[i] + speed * 0.08;
 
-        // Direct scroll along Z axis
-        const particleSpeed = particleSpeeds[i] * (warping ? 14.5 : 1.0) + speed;
-        positions[idx + 2] += particleSpeed;
+        positions[idx + 2] += currentSpeed;
 
-        // Reset particles that fly past camera
+        // Reset stars that pass the camera
         if (positions[idx + 2] > 12) {
-          positions[idx + 2] = -55;
-          positions[idx] = Math.cos(particleAngles[i]) * particleRadii[i];
-          positions[idx + 1] = Math.sin(particleAngles[i]) * particleRadii[i];
+          positions[idx + 2] = -85;
+          positions[idx] = (Math.random() - 0.5) * 90;
+          positions[idx + 1] = (Math.random() - 0.5) * 90;
         }
+
+        // Apply slow orbital rotation to stars when NOT warping
+        if (!warping) {
+          const x = positions[idx];
+          const y = positions[idx + 1];
+          const angle = 0.0004 * (i % 2 === 0 ? 1 : -1);
+          const cosA = Math.cos(angle);
+          const sinA = Math.sin(angle);
+          positions[idx] = x * cosA - y * sinA;
+          positions[idx + 1] = x * sinA + y * cosA;
+        }
+
+        // Twinkling animation (pulse colors/brightness)
+        const base = baseColors[i];
+        let brightness = 1.0;
+        if (!warping) {
+          brightness = 0.35 + 0.65 * Math.sin(timeAccumulator * twinkleSpeeds[i] + twinklePhases[i]);
+        }
+        
+        colorsAttr[idx] = base[0] * brightness;
+        colorsAttr[idx + 1] = base[1] * brightness;
+        colorsAttr[idx + 2] = base[2] * brightness;
       }
 
       // Dynamically override sizeAttenuation when warping to create long trail streaks
       if (warping) {
-        pMaterial.size = Math.min(0.42, pMaterial.size + 0.015);
+        pMaterial.size = Math.min(0.55, pMaterial.size + 0.012);
       } else {
-        pMaterial.size = Math.max(0.12, pMaterial.size - 0.01);
+        pMaterial.size = Math.max(0.38, pMaterial.size - 0.01);
       }
 
       particleGeometry.attributes.position.needsUpdate = true;
+      particleGeometry.attributes.color.needsUpdate = true;
 
       // Render loop
       renderer.render(scene, camera);
@@ -455,13 +581,15 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       pMaterial.dispose();
       glowGeom.dispose();
       glowMat.dispose();
+      nebulaMesh.geometry.dispose();
+      nebulaMat.dispose();
     };
   }, [theme]);
 
   return (
     <div 
       ref={containerRef} 
-      className="absolute inset-0 w-full h-full pointer-events-none -z-10 bg-[#020308] overflow-hidden"
+      className={`fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden ${theme === 'light' ? 'bg-[#f8fafc]' : 'bg-[#020308]'}`}
     >
       <canvas 
         ref={canvasRef} 

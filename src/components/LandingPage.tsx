@@ -168,55 +168,70 @@ export default function LandingPage({
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
-  const [timelineProgress, setTimelineProgress] = useState(0);
   const timelineRef = useRef<HTMLDivElement | null>(null);
+  const progressLineRef = useRef<HTMLDivElement | null>(null);
 
   // Scroll Detection for Back-to-Top Button & Timeline Line Animation
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      if (containerRef.current) {
-        setShowBackToTop(containerRef.current.scrollTop > 500);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollTop = window.scrollY || document.documentElement.scrollTop;
+          setShowBackToTop(scrollTop > 500);
+
+          const timelineElement = timelineRef.current;
+          if (timelineElement) {
+            const rect = timelineElement.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+
+            const elementTop = rect.top;
+            const elementHeight = rect.height;
+
+            const triggerStart = viewportHeight * 0.8;
+            const triggerEnd = viewportHeight * 0.2;
+
+            const totalDist = elementHeight + triggerStart - triggerEnd;
+            const currentScroll = triggerStart - elementTop;
+
+            const progress = Math.min(Math.max(currentScroll / totalDist, 0), 1);
+            
+            if (progressLineRef.current) {
+              progressLineRef.current.style.transform = `scaleY(${progress})`;
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
-
-      const scrollContainer = containerRef.current;
-      const timelineElement = timelineRef.current;
-      if (!scrollContainer || !timelineElement) return;
-
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const rect = timelineElement.getBoundingClientRect();
-
-      const start = containerRect.top;
-      const viewportHeight = containerRect.height;
-
-      const elementTop = rect.top - start;
-      const elementHeight = rect.height;
-
-      const triggerStart = viewportHeight * 0.8;
-      const triggerEnd = viewportHeight * 0.2;
-
-      const totalDist = elementHeight + triggerStart - triggerEnd;
-      const currentScroll = triggerStart - elementTop;
-
-      const progress = Math.min(Math.max(currentScroll / totalDist, 0), 1);
-      setTimelineProgress(progress);
     };
-    const ref = containerRef.current;
-    if (ref) {
-      ref.addEventListener('scroll', handleScroll);
-      // Initialize on load
-      setTimeout(handleScroll, 100);
-    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Initialize on load
+    setTimeout(handleScroll, 100);
+
     return () => {
-      if (ref) {
-        ref.removeEventListener('scroll', handleScroll);
-      }
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
   const scrollToTop = () => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-      triggerSound(1000, 0.05);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    triggerSound(1000, 0.05);
+  };
+
+  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    const targetElement = document.getElementById(targetId);
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const targetTop = rect.top + scrollTop - 64; // offset the h-16 (64px) sticky header
+      window.scrollTo({
+        top: targetTop,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -402,7 +417,7 @@ export default function LandingPage({
   return (
     <div 
       ref={containerRef}
-      className={`absolute inset-0 z-50 overflow-y-auto flex flex-col w-full scroll-smooth select-text ${theme === 'light' ? 'bg-[#f8fafc]' : 'bg-[#020308]'}`}
+      className="relative min-h-screen flex flex-col w-full select-text bg-transparent"
     >
       {/* 3D background starfield simulation */}
       <ThreeWormhole isWarping={isWarping} theme={theme} />
@@ -416,18 +431,18 @@ export default function LandingPage({
           <span className={`w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)]`} />
           <div className="flex flex-col">
             <span className={`text-xs font-black tracking-widest uppercase font-sans ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>FARHAN KABIR</span>
-            <span className="text-[8.5px] font-mono text-zinc-500 uppercase tracking-widest">COGNITIVE SYSTEMS ARCHITECT</span>
+            <span className="text-[8.5px] font-mono text-zinc-550 uppercase tracking-widest">COGNITIVE SYSTEMS ARCHITECT</span>
           </div>
         </div>
 
         <nav className="hidden lg:flex items-center gap-5 text-[10.5px] font-mono tracking-wider font-semibold text-zinc-400">
-          <a href="#about" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">ABOUT</a>
-          <a href="#skills" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">STATIONS</a>
-          <a href="#timeline" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">CHRONOLOGY</a>
-          <a href="#prof-timeline" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">PROF. TIMELINE</a>
-          <a href="#projects" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">INNOVATIONS</a>
-          <a href="#certifications" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">CERTIFICATES</a>
-          <a href="#contact" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">TRANSMIT</a>
+          <a href="#about" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'about'); }} className="hover:text-white transition-colors">ABOUT</a>
+          <a href="#skills" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'skills'); }} className="hover:text-white transition-colors">STATIONS</a>
+          <a href="#timeline" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'timeline'); }} className="hover:text-white transition-colors">CHRONOLOGY</a>
+          <a href="#prof-timeline" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'prof-timeline'); }} className="hover:text-white transition-colors">PROF. TIMELINE</a>
+          <a href="#projects" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'projects'); }} className="hover:text-white transition-colors">INNOVATIONS</a>
+          <a href="#certifications" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'certifications'); }} className="hover:text-white transition-colors">CERTIFICATES</a>
+          <a href="#contact" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'contact'); }} className="hover:text-white transition-colors">TRANSMIT</a>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -762,8 +777,9 @@ export default function LandingPage({
           {/* Timeline center line */}
           <div className="absolute left-[21px] md:left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-indigo-500/80 via-cyan-500/30 to-transparent -translate-x-1/2 pointer-events-none z-0"></div>
           <div 
+            ref={progressLineRef}
             className="absolute left-[21px] md:left-1/2 top-0 bottom-24 w-[2px] bg-gradient-to-b from-cyan-400 to-purple-600 -translate-x-1/2 origin-top pointer-events-none z-10"
-            style={{ transform: `scaleY(${timelineProgress})`, transformOrigin: 'top' }}
+            style={{ transform: `scaleY(0)`, transformOrigin: 'top' }}
           ></div>
 
           {/* Timeline cards */}
@@ -1170,11 +1186,11 @@ export default function LandingPage({
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-5 text-[9.5px] font-mono text-zinc-550 font-bold">
-            <a href="#about" onClick={() => triggerSound(800, 0.02)} className="hover:text-white transition-colors">ABOUT</a>
-            <a href="#skills" onClick={() => triggerSound(800, 0.02)} className="hover:text-white transition-colors">STATIONS</a>
-            <a href="#timeline" onClick={() => triggerSound(800, 0.02)} className="hover:text-white transition-colors">TIMELINE</a>
-            <a href="#projects" onClick={() => triggerSound(800, 0.02)} className="hover:text-white transition-colors">INNOVATIONS</a>
-            <a href="#contact" onClick={() => triggerSound(800, 0.02)} className="hover:text-white transition-colors">TRANSMIT</a>
+            <a href="#about" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'about'); }} className="hover:text-white transition-colors">ABOUT</a>
+            <a href="#skills" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'skills'); }} className="hover:text-white transition-colors">STATIONS</a>
+            <a href="#timeline" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'timeline'); }} className="hover:text-white transition-colors">TIMELINE</a>
+            <a href="#projects" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'projects'); }} className="hover:text-white transition-colors">INNOVATIONS</a>
+            <a href="#contact" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'contact'); }} className="hover:text-white transition-colors">TRANSMIT</a>
           </div>
 
           <div className="flex items-center gap-3">

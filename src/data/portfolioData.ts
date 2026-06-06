@@ -2,7 +2,7 @@ import { PortfolioData } from '../types';
 
 export const portfolioData: PortfolioData = {
   name: 'Farhan Kabir',
-  title: 'AI Engineer & Research Scientist',
+  title: 'AI Engineer | Full-Stack Developer | Specializing in Agentic Workflows & NLP | Mental Health |',
   tagline: 'Designing deep linguistic networks to analyze cognitive states, autism indicators, and mental-health text semantics.',
   about: 'I am an AI Engineer, Researcher, and Full Stack Developer. I build highly robust predictive AI systems, conduct quantitative linguistic analysis, and implement Stripe-polished digital experiences.',
   focus: 'Evaluating Large Language Models for automated cognitive health screenings and zero-shot NLP behavioral diagnostic support.',
