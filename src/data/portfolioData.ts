@@ -2,7 +2,7 @@ import { PortfolioData } from '../types';
 
 export const portfolioData: PortfolioData = {
   name: 'Farhan Kabir',
-  title: 'Lead AI Engineer | Full-Stack Developer | Specializing in Agentic Workflows & NLP | Mental Health |',
+  title: 'AI Engineer & Research Scientist',
   tagline: 'Designing deep linguistic networks to analyze cognitive states, autism indicators, and mental-health text semantics.',
   about: 'I am an AI Engineer, Researcher, and Full Stack Developer. I build highly robust predictive AI systems, conduct quantitative linguistic analysis, and implement Stripe-polished digital experiences.',
   focus: 'Evaluating Large Language Models for automated cognitive health screenings and zero-shot NLP behavioral diagnostic support.',
@@ -175,6 +175,61 @@ export const portfolioData: PortfolioData = {
 
   timeline: [
     {
+      year: 2026,
+      title: 'Architect & AI Researcher',
+      company: 'Cognitive Diagnostics Lab',
+      role: 'Principal systems designer for text analytics and mental wellness semantic mapping NLP assets.',
+      description: 'Leading research on LLMs as clinical screening support tooling, authoring publications on clinical mental state evaluation.',
+      achievements: [
+        'Designed custom zero-shot and classification-optimized clinical prediction systems',
+        'Implemented modern low-latency model evaluation dashboards processing high-volume text queues',
+        'Established rigid testing criteria ensuring patient confidentiality and data safety parameters'
+      ],
+      technologies: ['PyTorch', 'Transformer NLP', 'React/Next.js', 'Go', 'TailwindCSS v4']
+    },
+    {
+      year: 2024,
+      title: 'Senior AI System Dev',
+      company: 'Synthetix Solutions',
+      role: 'Backend AI systems Architect constructing robust SaaS solutions for custom automation.',
+      description: 'Engineered backend pipeline components for TypeRush and SafeSide, connecting client data stores securely with deep learning backends.',
+      achievements: [
+        'Decreased standard inference lag by over 30% through selective quantization and model distillation techniques',
+        'Built real-time telemetry systems capturing user performance states with sub-10ms capture profiles',
+        'Orchestrated automated data extraction workers scaling securely according to traffic profiles'
+      ],
+      technologies: ['Express/Node.js', 'Redis', 'Python', 'Docker', 'Google Cloud Platform']
+    },
+    {
+      year: 2022,
+      title: 'Full Stack Engineer & Researcher',
+      company: 'Mental Health Tech',
+      role: 'Frontend lead and mental wellness text classifier research dev.',
+      description: 'Conducted rigorous fine-tuning experiments on classic BERT structures, designing clinical-grade data visualizers.',
+      achievements: [
+        'Created the first generation interactive mental wellness support system evaluating distress levels',
+        'Co-authored 2 high-impact research publications outlining bimodal emotion evaluation metrics',
+        'Designed completely responsive portfolio workspaces utilizing high-frequency animations'
+      ],
+      technologies: ['React', 'Redux', 'D3.js', 'Hugging Face Transformers', 'Python/Flask']
+    },
+    {
+      year: 2020,
+      title: 'Open Source Contributor & Dev',
+      company: 'Independent / Farhan Lab',
+      role: 'Developing open source utilities and studying linguistic text processing.',
+      description: 'Began building interactive web layouts, contributing heavily to developer workspaces and Markdown tooling libraries.',
+      achievements: [
+        'Built and deployed TypeRush, an open-source terminal typing game',
+        'Developed interactive developer portfolios earning deep community feedback',
+        'Acquired expertise in system design, Docker containers, and React orchestration'
+      ],
+      technologies: ['React', 'Docker', 'Framer Motion', 'Node.js', 'SQLite']
+    }
+  ],
+
+  professionalTimeline: [
+    {
       year: 'April 2024 - Present',
       title: 'Lead Developer',
       company: 'Auto Spark',
@@ -184,7 +239,8 @@ export const portfolioData: PortfolioData = {
         'Developed responsive web applications, ensuring compatibility across various browsers and devices.',
         'Implemented efficient front-end solutions and collaborated on back-end development tasks.'
       ],
-      technologies: ['TypeScript', 'React', 'REST APIs', 'Node.js', 'Tailwind']
+      technologies: ['TypeScript', 'React', 'REST APIs', 'Node.js', 'Tailwind'],
+      badgeColor: 'emerald'
     },
     {
       year: '2022 - 2023',
@@ -196,7 +252,8 @@ export const portfolioData: PortfolioData = {
         'Built responsive web applications using React and modern JavaScript frameworks.',
         'Collaborated with design team on user experience improvements.'
       ],
-      technologies: ['React', 'Next.js', 'PostgreSQL', 'Dexie.js', 'Tailwind']
+      technologies: ['React', 'Next.js', 'PostgreSQL', 'Dexie.js', 'Tailwind'],
+      badgeColor: 'indigo'
     },
     {
       year: '2020 - 2021',
@@ -208,7 +265,8 @@ export const portfolioData: PortfolioData = {
         'Created user-centered designs for web and mobile applications.',
         'Conducted user research and usability testing.'
       ],
-      technologies: ['TypeScript', 'Node.js', 'SQLite', 'Tailwind']
+      technologies: ['TypeScript', 'Node.js', 'SQLite', 'Tailwind'],
+      badgeColor: 'pink'
     },
     {
       year: '2019 - 2020',
@@ -220,7 +278,8 @@ export const portfolioData: PortfolioData = {
         'Developed websites and web applications.',
         'Learned modern development practices and agile methodologies.'
       ],
-      technologies: ['Next.js', 'Webpack', 'CSS Modules', 'Node.js']
+      technologies: ['Next.js', 'Webpack', 'CSS Modules', 'Node.js'],
+      badgeColor: 'amber'
     }
   ],
 

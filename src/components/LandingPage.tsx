@@ -278,10 +278,11 @@ export default function LandingPage({
           </div>
         </div>
 
-        <nav className="hidden lg:flex items-center gap-6 text-[10.5px] font-mono tracking-wider font-semibold text-zinc-400">
+        <nav className="hidden lg:flex items-center gap-5 text-[10.5px] font-mono tracking-wider font-semibold text-zinc-400">
           <a href="#about" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">ABOUT</a>
           <a href="#skills" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">STATIONS</a>
-          <a href="#timeline" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">TIMELINE</a>
+          <a href="#timeline" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">CHRONOLOGY</a>
+          <a href="#prof-timeline" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">PROF. TIMELINE</a>
           <a href="#projects" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">INNOVATIONS</a>
           <a href="#certifications" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">CERTIFICATES</a>
           <a href="#contact" onClick={() => triggerSound(900, 0.02)} className="hover:text-white transition-colors">TRANSMIT</a>
@@ -600,6 +601,100 @@ export default function LandingPage({
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* SECTION 4.5: PROFESSIONAL TIMELINE (SUMIYA STYLE) */}
+      <section id="prof-timeline" className="relative py-24 px-6 md:px-12 max-w-6xl w-full mx-auto space-y-12 z-10 scroll-mt-16">
+        
+        {/* Section title */}
+        <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
+          <span className="w-2.5 h-2.5 rounded bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>03.5 // PROFESSIONAL TIMELINE</h2>
+          <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">VERIFIABLE WORK EXPERIENCES</span>
+        </div>
+
+        {/* Timeline Structure (Sumiya style) */}
+        <div className="relative">
+          
+          {/* Timeline center line */}
+          <div className="absolute left-[21px] md:left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-indigo-500/80 via-cyan-500/30 to-transparent -translate-x-1/2 pointer-events-none z-0"></div>
+          <div className="absolute left-[21px] md:left-1/2 top-0 bottom-24 w-[2px] bg-gradient-to-b from-cyan-400 to-purple-600 -translate-x-1/2 origin-top pointer-events-none z-10"></div>
+
+          {/* Timeline cards */}
+          <div className="space-y-16 relative z-10">
+            {portfolioData.professionalTimeline.map((item, i) => {
+              const isLeft = i % 2 === 0;
+              return (
+                <div 
+                  key={i} 
+                  className={`flex flex-col md:flex-row items-start ${isLeft ? 'md:flex-row-reverse' : ''} relative`}
+                >
+                  {/* Glowing central timeline node */}
+                  <div className="absolute left-[21px] md:left-1/2 -translate-x-1/2 flex items-center justify-center z-20">
+                    <div className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center shadow-lg group hover:border-cyan-400/80 transition-colors">
+                      <span className="w-3 h-3 rounded-full bg-gradient-to-tr from-cyan-400 to-indigo-500 group-hover:scale-125 transition-transform"></span>
+                    </div>
+                  </div>
+
+                  {/* Spacer to push card to one side */}
+                  <div className="hidden md:block w-1/2" />
+
+                  {/* Card Content Container */}
+                  <div className="w-full md:w-[46%] pl-12 md:pl-0">
+                    <div className={`p-6 md:p-8 rounded-2xl border backdrop-blur-md relative group transition-all duration-300 ${
+                      theme === 'light' 
+                        ? 'bg-white/80 border-slate-200 shadow-lg hover:border-indigo-400 hover:shadow-indigo-500/5' 
+                        : 'bg-zinc-950/45 border-zinc-900 shadow-2xl hover:border-zinc-800 hover:shadow-cyan-500/5'
+                    }`}>
+                      {/* Glow Overlay */}
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-500/5 blur-xl pointer-events-none group-hover:bg-cyan-500/10 transition-colors"></div>
+                      
+                      {/* Card Header */}
+                      <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
+                        <div>
+                          <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest font-semibold block mb-1">{item.year}</span>
+                          <h3 className={`text-base md:text-lg font-sans font-bold leading-tight transition-colors group-hover:text-cyan-300 ${
+                            theme === 'light' ? 'text-slate-800' : 'text-white'
+                          }`}>{item.title}</h3>
+                          <span className="text-[10px] font-mono text-zinc-550 block mt-1">{item.company}</span>
+                        </div>
+                        
+                        {/* Company Badge */}
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-mono border font-medium uppercase ${
+                          item.badgeColor === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                          item.badgeColor === 'indigo' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
+                          item.badgeColor === 'pink' ? 'bg-pink-500/10 text-pink-400 border-pink-500/30' :
+                          'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        }`}>
+                          {item.company}
+                        </span>
+                      </div>
+
+                      {/* Achievements Bullets */}
+                      <ul className="space-y-3 mb-6 text-zinc-400">
+                        {item.achievements.map((bullet, idx) => (
+                          <li key={idx} className="flex items-start text-[11px] leading-relaxed font-sans text-zinc-400 select-text">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400/80 mt-1.5 mr-2.5 shrink-0" />
+                            <span>{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Tech Stack Grid */}
+                      <div className="flex flex-wrap gap-1.5 pt-4 border-t border-zinc-900/60 select-none">
+                        {item.technologies.map((t) => (
+                          <span key={t} className="px-2 py-0.5 rounded-md text-[9px] font-mono bg-zinc-950/80 text-zinc-400 border border-zinc-900">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 

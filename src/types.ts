@@ -29,7 +29,7 @@ export interface Paper {
 }
 
 export interface TimelineEvent {
-  year: string;
+  year: number;
   title: string;
   company: string;
   role: string;
@@ -77,6 +77,17 @@ export interface SkillNode {
   weight: number; // 1 to 5, dictates node size
 }
 
+export interface ProfessionalTimelineEvent {
+  year: string;
+  title: string;
+  company: string;
+  role: string;
+  description: string;
+  achievements: string[];
+  technologies: string[];
+  badgeColor: 'emerald' | 'indigo' | 'pink' | 'amber';
+}
+
 export interface PortfolioData {
   name: string;
   title: string;
@@ -89,6 +100,7 @@ export interface PortfolioData {
   projects: Project[];
   papers: Paper[];
   timeline: TimelineEvent[];
+  professionalTimeline: ProfessionalTimelineEvent[];
   articles: Article[];
   buildLogs: BuildLog[];
   skills: SkillNode[];
