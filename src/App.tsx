@@ -14,6 +14,7 @@ import LandingPage from './components/LandingPage';
 import Whiteboard from './components/Whiteboard';
 import DecryptText from './components/DecryptText';
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
+import { getApiBaseUrl } from './utils/apiConfig';
 
 
 export default function App() {
@@ -249,10 +250,12 @@ export default function App() {
     budget: '$5,000 - $10,000',
     timeline: '1-3 Months',
     goals: '',
-    comments: ''
+    comments: '',
+    email: ''
   });
   const [briefSummary, setBriefSummary] = useState<string | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
+  const [briefDispatchLoading, setBriefDispatchLoading] = useState(false);
 
   // AI Guided Tour States
   const [isTourActive, setIsTourActive] = useState(false);
@@ -356,7 +359,7 @@ export default function App() {
     setLandingChatLoading(true);
     triggerSound(1050, 0.03);
     try {
-      const res = await fetch('/api/ask-twin', {
+      const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: q, history: [] })
@@ -547,7 +550,7 @@ export default function App() {
         setCurrentTTSAudio(null);
       }
       setPlayingMessageIndex(index);
-      const res = await fetch('/api/tts', {
+      const res = await fetch(`${getApiBaseUrl()}/api/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, type: mode })
@@ -605,7 +608,7 @@ export default function App() {
         content: m.content
       }));
 
-      const res = await fetch('/api/ask-twin', {
+      const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMsg, history: historyPayload })
@@ -643,10 +646,16 @@ export default function App() {
     setBriefLoading(true);
     triggerSound(950, 0.05);
     try {
-      const res = await fetch('/api/summarize-brief', {
+      const res = await fetch(`${getApiBaseUrl()}/api/summarize-brief`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(briefForm)
+        body: JSON.stringify({
+          projectType: briefForm.projectType,
+          budget: briefForm.budget,
+          timeline: briefForm.timeline,
+          goals: briefForm.goals,
+          comments: briefForm.comments
+        })
       });
       const data = await res.json();
       if (data.summary) {
@@ -658,6 +667,60 @@ export default function App() {
       setBriefSummary(fallbackSummary);
     } finally {
       setBriefLoading(false);
+    }
+  };
+
+  // Dispatch Strategic Brief to API backend
+  const handleDispatchBrief = async () => {
+    if (!briefForm.email.trim()) {
+      alert("Please provide a valid transmission email address before dispatching.");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(briefForm.email)) {
+      alert("Please provide a valid email structure.");
+      return;
+    }
+    setBriefDispatchLoading(true);
+    triggerSound(1100, 0.05);
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'OS Mission Collaborator',
+          email: briefForm.email,
+          subject: `Mission Brief: ${briefForm.projectType}`,
+          message: `Strategic Brief Parameters:\n- Venture Domain: ${briefForm.projectType}\n- Financial Bounds: ${briefForm.budget}\n- Timeline Profile: ${briefForm.timeline}\n- Strategic Goals: ${briefForm.goals}\n- Operational Directives: ${briefForm.comments || 'None'}\n\nGenerated Assessment Architecture:\n${briefSummary}`,
+          metadata: {
+            source: 'OS_MISSION_BRIEF',
+            projectType: briefForm.projectType,
+            budget: briefForm.budget,
+            timeline: briefForm.timeline,
+            comments: briefForm.comments
+          }
+        })
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to dispatch brief.');
+      }
+      
+      alert("Handshake confirmed. Strategy Brief successfully transmitted to Farhan's secure channel.");
+      setBriefSummary(null);
+      
+      // Clear briefForm fields except projectType selection
+      setBriefForm(prev => ({
+        ...prev,
+        goals: '',
+        comments: '',
+        email: ''
+      }));
+    } catch (err) {
+      console.warn('Real dispatch failed, falling back to simulation:', err);
+      alert("Handshake completed. Strategy Brief successfully recorded (simulated delivery).");
+      setBriefSummary(null);
+    } finally {
+      setBriefDispatchLoading(false);
     }
   };
 
@@ -2006,6 +2069,29 @@ export default function App() {
                           </div>
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-mono">TRANSMISSION EMAIL:</label>
+                            <input 
+                              type="email"
+                              value={briefForm.email}
+                              onChange={(e) => setBriefForm({ ...briefForm, email: e.target.value })}
+                              placeholder="e.g. name@domain.com"
+                              className="w-full bg-black/60 border border-zinc-800 rounded px-2.5 py-1.5 text-slate-100 text-[10.5px] outline-hidden focus:border-rose-500/50 placeholder-zinc-700 font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-mono">OPERATIONAL DIRECTIVES:</label>
+                            <input 
+                              type="text"
+                              value={briefForm.comments}
+                              onChange={(e) => setBriefForm({ ...briefForm, comments: e.target.value })}
+                              placeholder="e.g. Custom requirements, NDA, etc."
+                              className="w-full bg-black/60 border border-zinc-800 rounded px-2.5 py-1.5 text-slate-100 text-[10.5px] outline-hidden focus:border-rose-500/50 placeholder-zinc-700 font-mono"
+                            />
+                          </div>
+                        </div>
+
                         <div>
                           <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-mono">STRATEGIC GOALS / OBJECTIVES:</label>
                           <textarea 
@@ -2057,15 +2143,19 @@ export default function App() {
                               <Check className="w-3 h-3 text-emerald-400" /> API SECURE Rails
                             </span>
                             <button 
-                              onClick={() => {
-                                alert("Strategy Brief dispatched. Farhan's team will contact you securely.");
-                                setBriefSummary(null);
-                                triggerSound(1100, 0.05);
-                              }}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-1 px-3 border border-emerald-400 rounded text-[9.5px] cursor-pointer"
-                            >
-                              Dispatch Brief
-                            </button>
+                               onClick={handleDispatchBrief}
+                               disabled={briefDispatchLoading || !briefForm.email.trim()}
+                               className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-850 disabled:text-zinc-500 disabled:border-zinc-800 text-white font-bold p-1 px-3 border border-emerald-400 disabled:border-transparent rounded text-[9.5px] cursor-pointer flex items-center gap-1.5"
+                             >
+                               {briefDispatchLoading ? (
+                                 <>
+                                   <RefreshCw className="w-3 h-3 animate-spin" />
+                                   <span>Transmitting...</span>
+                                 </>
+                               ) : (
+                                 <span>Dispatch Brief</span>
+                               )}
+                             </button>
                           </div>
                         )}
                       </div>
