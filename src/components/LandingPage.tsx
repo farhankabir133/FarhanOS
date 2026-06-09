@@ -638,11 +638,14 @@ export default function LandingPage({
           </a>
         </div>
 
-        {/* Float design indicators */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-pulse">
-          <span className="text-[9px] font-mono text-zinc-600 tracking-widest uppercase">SCROLL FOR DIAGNOSTICS</span>
-          <div className="w-px h-6 bg-zinc-800" />
+        {/* Float design indicators — fully responsive across all screen sizes */}
+        <div className="absolute bottom-5 xs:bottom-6 sm:bottom-8 md:bottom-10 lg:bottom-12 xl:bottom-14 2xl:bottom-16 3xl:bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-pulse z-10">
+          <span className="text-[7.5px] xs:text-[8px] sm:text-[9px] md:text-[9.5px] lg:text-[10px] xl:text-[10px] 2xl:text-[11px] 3xl:text-[12px] font-mono text-zinc-600 tracking-widest uppercase whitespace-nowrap select-none">
+            SCROLL FOR DIAGNOSTICS
+          </span>
+          <div className="w-px h-4 xs:h-4 sm:h-5 md:h-6 lg:h-7 xl:h-7 2xl:h-8 3xl:h-9 bg-zinc-800" />
         </div>
+
       </section>
 
       {/* SECTION 2: ABOUT ME */}
