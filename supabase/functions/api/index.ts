@@ -178,6 +178,90 @@ function buildContactEmailHtml(params: {
 </html>`;
 }
 
+// ─── Medium RSS Feed Parser ─────────────────────────────────────────────────
+async function fetchMediumStories(): Promise<Response> {
+  const rssUrl = 'https://medium.com/feed/@farhankabir133';
+  const response = await fetch(rssUrl, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Medium RSS fetch failed with status: ${response.status}`);
+  }
+
+  const xmlText = await response.text();
+  const items = xmlText.split('<item>');
+  items.shift();
+
+  const parsedStories = items.slice(0, 6).map((item, idx) => {
+    const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || item.match(/<title>([\s\S]*?)<\/title>/);
+    const title = titleMatch ? titleMatch[1].trim() : '';
+
+    const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
+    const link = linkMatch ? linkMatch[1].trim() : '';
+
+    const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+    const rawDate = pubDateMatch ? pubDateMatch[1].trim() : '';
+    let formattedDate = rawDate;
+    try {
+      const d = new Date(rawDate);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    } catch (_e) { /* fallback */ }
+
+    const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) || item.match(/<description>([\s\S]*?)<\/description>/);
+    let snippet = '';
+    let imageUrl = '';
+    let cleanContent = '';
+
+    if (descMatch) {
+      const descHtml = descMatch[1];
+      const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
+      if (imgMatch) imageUrl = imgMatch[1];
+
+      const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
+      if (snippetMatch) snippet = snippetMatch[1].trim();
+
+      cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      if (!snippet) snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
+    }
+
+    const categories: string[] = [];
+    const catRegex = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>/g;
+    let catMatch;
+    while ((catMatch = catRegex.exec(item)) !== null) {
+      categories.push(catMatch[1]);
+    }
+
+    let finalCategory = 'Life';
+    const lc = categories.map(c => c.toLowerCase());
+    if (lc.some(c => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) finalCategory = 'AI';
+    else if (lc.some(c => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('engineering'))) finalCategory = 'Engineering';
+    else if (lc.some(c => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) finalCategory = 'Productivity';
+    else if (lc.some(c => c.includes('research') || c.includes('science') || c.includes('clinic'))) finalCategory = 'Research';
+    else if (lc.some(c => c.includes('design') || c.includes('ux') || c.includes('ui'))) finalCategory = 'Design';
+    else if (lc.some(c => c.includes('startup') || c.includes('business') || c.includes('saas'))) finalCategory = 'Startups';
+    else if (lc.some(c => c.includes('philosoph') || c.includes('think'))) finalCategory = 'Philosophy';
+
+    const wordCount = cleanContent.split(/\s+/).length;
+    const readTimeMins = Math.max(1, Math.ceil(wordCount / 225));
+
+    const guidMatch = item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/);
+    const rawGuid = guidMatch ? guidMatch[1].trim() : '';
+    const guidIdMatch = rawGuid.match(/\/p\/([a-f0-9]+)$/) || link.match(/-([a-f0-9]+)$/) || rawGuid.match(/\/p\/([a-f0-9]+)/);
+    const id = guidIdMatch ? guidIdMatch[1] : `medium-${idx}`;
+
+    return { id, title, category: finalCategory, readTime: `${readTimeMins} min read`, date: formattedDate, excerpt: snippet, content: cleanContent || snippet || title, link, imageUrl };
+  });
+
+  return new Response(JSON.stringify(parsedStories), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 Deno.serve(async (req: Request) => {
   // Handle CORS Preflight Pre-Requests
   if (req.method === 'OPTIONS') {
@@ -186,8 +270,12 @@ Deno.serve(async (req: Request) => {
 
   try {
     const url = new URL(req.url);
-    // Extract subpath (e.g. /ask-twin, /tts, /summarize-brief, /contact)
-    const path = url.pathname.replace(/^\/api/, '').replace(/\/+$/, '');
+    // Strip the Supabase function routing prefix (/functions/v1/api or /api)
+    // and any trailing slashes to extract just the sub-route (e.g. /ask-twin)
+    const path = url.pathname
+      .replace(/^\/functions\/v1\/api/, '')
+      .replace(/^\/api/, '')
+      .replace(/\/+$/, '') || '/';
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     if (!apiKey) {
@@ -195,6 +283,11 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: 'GEMINI_API_KEY environment variable is required but missing.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // --- Endpoint 0: Medium Stories RSS Feed ---
+    if (path === '/medium-stories' && req.method === 'GET') {
+      return await fetchMediumStories();
     }
 
     // --- Endpoint 1: Digital Twin AI Chat ---
@@ -216,7 +309,7 @@ FARHAN KABIR DATASET:
 - Name: Farhan Kabir
 - Occupation: AI Engineer & Research Scientist in NLP and Cognitive Diagnostics.
 - Current Focus: Evaluating Large Language Models for automated cognitive health screenings and behavioral diagnostics.
-- Current Research: Ment-health related text analysis, depression detection, and emotion detection work.
+- Current Research: Mental-health related text analysis, depression detection, and emotion detection work.
 - Key Publications:
   1. "Did the Prompt Break the Model?: Perplexity-Based Detection of Adversarial Attacks on LLMs" (25). In IEEE ICCIT. Framework to flag adversarial prompt injection attacks using perplexity metrics.
   2. "AI-Driven Live Interview System for Real-Time Candidate Evaluation Using NLP and Computer Vision" (25). In IEEE ICCIT. Candidate scoring utilizing NLP and posture computer vision tracking.
@@ -243,7 +336,7 @@ RULES FOR CHATTING:
 - Highlight research metrics (e.g. RoBERTa F1: 0.914, Wav2Vec voice analysis) when relevant!
 - Integrate subtle futuristic terminal references or OS metaphors if requested or appropriate.`;
 
-      const formattedContents = [];
+      const formattedContents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
       if (history && Array.isArray(history)) {
         for (const h of history) {
           formattedContents.push({
@@ -257,7 +350,7 @@ RULES FOR CHATTING:
         parts: [{ text: message }]
       });
 
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const geminiRes = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -297,7 +390,8 @@ RULES FOR CHATTING:
         ? `Speak in an extremely premium, calm, cinematic, and slightly futuristic synthetic voice of an AI operating system guide. Explain clearly: ${text}`
         : `Narrate the following article summary with warm, thoughtful, clinical, and precise speech: ${text}`;
 
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key=${apiKey}`;
+      // Use gemini-2.5-flash-preview-tts for audio synthesis
+      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
       const geminiRes = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -348,7 +442,7 @@ RULES FOR CHATTING:
 
 Please construct a ultra-polished, futuristic, technical "Mission Assessment & Strategy" (3-4 sentences), formatted like an OS diagnostics readout. Detail the technical feasibility, model selection candidates (e.g. BERT variations or custom fine-tuning), and estimated deployment approach. Keep it sharp, professional, and elegant. No markdown headings, just a clean paragraph.`;
 
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const geminiRes = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -405,7 +499,7 @@ Provide a JSON object containing:
 
 Respond ONLY with valid JSON.`;
 
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const geminiRes = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -478,7 +572,7 @@ Respond ONLY with valid JSON.`;
     }
 
     // Wildcard 404 handler
-    return new Response(JSON.stringify({ error: 'Endpoint not found.' }), {
+    return new Response(JSON.stringify({ error: `Endpoint not found: ${path}` }), {
       status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
