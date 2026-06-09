@@ -104,7 +104,7 @@ Provide a JSON object containing:
 
 Respond ONLY with valid JSON.`;
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: promptText,
       config: {
         responseMimeType: "application/json"
@@ -183,7 +183,7 @@ RULES FOR CHATTING:
       parts: [{ text: message }]
     });
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: formattedContents,
       config: {
         systemInstruction: systemPrompt,
@@ -206,7 +206,7 @@ app.post("/api/tts", async (req, res) => {
     const ai = getAiClient();
     const voiceInstruct = type === "tour" ? `Speak in an extremely premium, calm, cinematic, and slightly futuristic synthetic voice of an AI operating system guide. Explain clearly: ${text}` : `Narrate the following article summary with warm, thoughtful, clinical, and precise speech: ${text}`;
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-tts-preview",
+      model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text: voiceInstruct }] }],
       config: {
         responseModalities: ["AUDIO"],
@@ -246,7 +246,7 @@ app.post("/api/summarize-brief", async (req, res) => {
 
 Please construct a ultra-polished, futuristic, technical "Mission Assessment & Strategy" (3-4 sentences), formatted like an OS diagnostics readout. Detail the technical feasibility, model selection candidates (e.g. BERT variations or custom fine-tuning), and estimated deployment approach. Keep it sharp, professional, and elegant. No markdown headings, just a clean paragraph.`;
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash",
       contents: promptText
     });
     res.json({ summary: response.text });
