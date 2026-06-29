@@ -13,11 +13,15 @@ import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode
 import LandingPage from './components/LandingPage';
 import Whiteboard from './components/Whiteboard';
 import DecryptText from './components/DecryptText';
+import FuturisticLoader from './components/FuturisticLoader';
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
 import { getApiBaseUrl } from './utils/apiConfig';
 
 
 export default function App() {
+  // Loading Screen State
+  const [showLoader, setShowLoader] = useState(true);
+
   // Navigation View Modes
   const [viewMode, setViewMode] = useState<'landing' | 'os'>('landing');
   const [isWarping, setIsWarping] = useState(false);
@@ -945,6 +949,9 @@ export default function App() {
 
   return (
     <div className={`w-full ${viewMode === 'os' ? 'h-full overflow-hidden select-none' : 'min-h-screen'} ${styleSet.bg} transition-colors duration-500 flex flex-col relative`}>
+      {showLoader && (
+        <FuturisticLoader onComplete={() => setShowLoader(false)} />
+      )}
       {viewMode === 'landing' ? (
         <LandingPage
           isWarping={isWarping}
