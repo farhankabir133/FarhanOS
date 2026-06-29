@@ -70,6 +70,10 @@ The interface bridges professional NLP researcher credentials with premium front
 * **Mood Theme Engine**: Fast theme switching supporting Dark Slate, Cyberpunk Neon, AI Lavender, Classic Green Terminal, and Clean Light Mode.
 * **GitHub Monitor**: Live mock git activity feeds displaying compiling status, lines added, and active package telemetry.
 
+### 6. Futuristic Loading Sequence
+* **Animated Entry Experience**: Custom motion-powered loading screen with scan lines, particle effects, and rotating orbital rings.
+* **Graceful Exit Transition**: Smooth fade-out with brightness pulse and scale-up animation before entering the main interface.
+
 ---
 
 ## 🛠️ Tech Stack
@@ -87,14 +91,20 @@ The interface bridges professional NLP researcher credentials with premium front
 
 ```bash
 ├── src/                       # Primary React Client application
-│   ├── components/            # UI components (Wormholes, Whiteboards, Decrypt tags)
+│   ├── components/            # UI components (Wormholes, Whiteboards, Decrypt tags, Loaders, Typewriters)
+│   │   ├── FuturisticLoader.tsx     # Animated loading screen with exit transition
+│   │   ├── LoopingTypewriter.tsx    # Infinite looping typewriter effect
+│   │   ├── OneTimeTypewriter.tsx    # Single-run typewriter effect
+│   │   ├── ThreeWormhole.tsx        # WebGL starfield background
+│   │   └── LandingPage.tsx          # Hero section with animated text
 │   ├── data/                  # Static portfolio configurations (portfolioData.ts)
-│   ├── utils/                 # Audio synthesis helper libraries
+│   ├── utils/                 # Audio synthesis helper libraries, API configs
 │   ├── types.ts               # Core model interfaces and TS contracts
 │   ├── index.css              # Main tailwind and CRT scan styles
 │   └── main.tsx               # Client entry node
 │
 ├── dist/                      # Deployed production assets
+├── supabase/                  # Edge functions for serverless API endpoints
 ├── server.ts                  # Express production server & Gemini API proxy routing
 ├── tsconfig.json              # TypeScript compiler parameters
 ├── vite.config.ts             # Vite bundler configurations with dynamic base paths
@@ -182,6 +192,6 @@ Distributed under the MIT License. See [LICENSE](LICENSE) or headers for details
 ## 🛰️ Human Terminal Connection
 
 * **Project Owner**: Farhan Kabir
-* **Contact Email**: [farhankabir236@gmail.com](mailto:farhankabir236@gmail.com)
+* **Contact Email**: [farhankabir133@gmail.com](mailto:farhankabir133@gmail.com)
 * **GitHub Profile**: [farhankabir133](https://github.com/farhankabir133)
-* **LinkedIn**: [Farhan Kabir Profile](https://www.linkedin.com)
+* **LinkedIn**: [Farhan Kabir Profile](https://www.linkedin.com/in/farhankabir133)
