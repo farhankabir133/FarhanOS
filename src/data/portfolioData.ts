@@ -285,31 +285,70 @@ export const portfolioData: PortfolioData = {
 
   articles: [
     {
-      id: 'nlp-advances-2026',
-      title: 'The Shift Towards Fine-Grained Semantic Analysis in Diagnostic AI',
-      category: 'Research',
-      readTime: '6 min read',
-      date: 'May 12, 2026',
-      excerpt: 'Why generic instruction-tuned LLMs cannot compete with ultra-targeted, tiny Transformers when diagnosing specific cognitive markers.',
-      content: 'Large Language Models (LLMs) excel at general reasoning, but clinical settings demand specialized models. A generic LLM trained to answer general queries frequently fails to spot the highly nuanced structural degradation occurring in clinical depression or early cognitive decline. Under closer evaluation, fine-tuning lightweight models (such as RoBERTa or custom BERT variations) on certified mental health datasets yields vastly superior classification accuracies. Furthermore, targeted models are small enough to run serverless, offering massive cost reductions and absolute data privacy compliance by executing locally on self-hosted servers.'
+      id: '212b0eab3843',
+      title: '8 Powerful Ways to Make People Respect You Without Being Rude',
+      category: 'Life',
+      readTime: '4 min read',
+      date: 'Jun 27, 2026',
+      excerpt: 'Respect often begins with the quiet confidence you carry, not the volume of your voice.',
+      content: 'Respect often begins with the quiet confidence you carry, not the volume of your voice.',
+      link: 'https://medium.com/@farhankabir133/8-powerful-ways-to-make-people-respect-you-without-being-rude-212b0eab3843',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*5SgKLORVCCGN0BZi'
     },
     {
-      id: 'saas-architecture-2025',
-      title: 'Designing Zero-Cold-Start SaaS Applications for Hugging Face Models',
-      category: 'Engineering',
-      readTime: '8 min read',
-      date: 'Nov 24, 2025',
-      excerpt: 'An architect\'s blueprint on deploying containerized neural workloads for serverless pricing tiers without degrading user experience.',
-      content: 'Hosting large machine learning models is expensive, and container startup latency remains a significant friction point. By quantizing standard transformer architectures to ONNX and compiling models directly to WebAssembly (WASM), we can shift computational loads directly on the user\'s client device. In cases where server-side classification is mandatory, configuring Docker layers to preload weights during the container build stage reduces cold starts by over 70%. When combined with Redis caching, scale-to-zero serverless environments run smoothly without missing a beat.'
-    },
-    {
-      id: 'ux-design-developers',
-      title: 'The Aesthetic Developer Engine: Why High-Performance Styling is Critical',
-      category: 'Design',
+      id: '407244735fc9',
+      title: 'What Girls Notice First in Boys?',
+      category: 'Life',
       readTime: '5 min read',
-      date: 'Jan 15, 2025',
-      excerpt: 'Crafting UI layouts that mirror real-time operational flows. How premium typography, subtle shadows, and responsive motion reinforce user trust.',
-      content: 'Developers commonly prioritize raw functional code over visual appearance, but human-computer interaction research demonstrates that visual aesthetics dictate user trust. A high-contrast, responsive interface with precise layout alignments communicates professional craftsmanship and reliability. By utilizing modern web styling frameworks, we can create incredibly smooth, beautiful, and accessible environments that enhance the user experience.'
+      date: 'Jun 24, 2026',
+      excerpt: "It's Usually Not What Most Guys Think",
+      content: "It's Usually Not What Most Guys Think",
+      link: 'https://medium.com/@farhankabir133/what-girls-notice-first-in-boys-407244735fc9',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*an4zswb-5Ktwe9ZO'
+    },
+    {
+      id: 'f2e734db4131',
+      title: 'The Side Hustle Truth Nobody Tells You Before You Start',
+      category: 'Startups',
+      readTime: '6 min read',
+      date: 'Jun 21, 2026',
+      excerpt: 'Most side hustles do not fail loudly. They fade quietly while you are still trying☺️',
+      content: 'Most side hustles do not fail loudly. They fade quietly while you are still trying☺️',
+      link: 'https://medium.com/@farhankabir133/the-side-hustle-truth-nobody-tells-you-before-you-start-f2e734db4131',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*OW6a69Uzog-Hr3kt'
+    },
+    {
+      id: 'eb474149179a',
+      title: 'Write Less, Impact More',
+      category: 'Life',
+      readTime: '4 min read',
+      date: 'Jun 19, 2026',
+      excerpt: 'The Quiet Power of Saying Only What Matters😊',
+      content: 'The Quiet Power of Saying Only What Matters😊',
+      link: 'https://medium.com/@farhankabir133/write-less-impact-more-eb474149179a',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*FCfDSbexRQVnq_U7'
+    },
+    {
+      id: '47814cf45e8f',
+      title: 'Trust Actions, Not Words',
+      category: 'Life',
+      readTime: '3 min read',
+      date: 'Jun 16, 2026',
+      excerpt: 'The Lesson Most People Learn Too Late !!',
+      content: 'The Lesson Most People Learn Too Late !!',
+      link: 'https://medium.com/@farhankabir133/trust-actions-not-words-47814cf45e8f',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*uXZuqQKuDm4712V5'
+    },
+    {
+      id: '9824e151914d',
+      title: "Don't Ignore Yourself",
+      category: 'Life',
+      readTime: '5 min read',
+      date: 'Jun 15, 2026',
+      excerpt: 'The Quiet Cost of Abandoning Your Own Needs…',
+      content: 'The Quiet Cost of Abandoning Your Own Needs…',
+      link: 'https://medium.com/@farhankabir133/dont-ignore-yourself-9824e151914d',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*kW-dfeKF0FvOabQ-'
     }
   ],
 

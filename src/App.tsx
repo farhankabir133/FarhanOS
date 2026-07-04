@@ -135,7 +135,7 @@ export default function App() {
   const [selectedArticle, setSelectedArticle] = useState<Article>(portfolioData.articles[0]);
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineEvent>(portfolioData.timeline[0]);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchMediumStories = async () => {
       try {
         const res = await fetch('/api/medium-stories');
@@ -151,83 +151,94 @@ export default function App() {
         console.warn('Backend Medium stories endpoint unavailable, trying client fallback:', err);
       }
 
-      // Client-side fallback using public rss2json converter for static host environments (GitHub Pages)
+      // Client-side fallback - start with static articles immediately
+      setArticles(portfolioData.articles);
+      setSelectedArticle(portfolioData.articles[0]);
+
+      // Then try to fetch live Medium stories
       try {
-        const rssRes = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@farhankabir133');
-        if (rssRes.ok) {
-          const feedData = await rssRes.json();
-          if (feedData.status === 'ok' && Array.isArray(feedData.items)) {
-            const mapped = feedData.items.slice(0, 6).map((item: any, idx: number) => {
+        const proxyUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@farhankabir133';
+        let rssRes = await fetch(proxyUrl).catch(() => 
+          fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://medium.com/feed/@farhankabir133'))
+        );
+        if (!rssRes || !rssRes.ok) return;
+
+        const contentType = rssRes.headers.get('content-type') || '';
+        let mapped: any[] = [];
+        if (contentType.includes('application/json')) {
+          const data = await rssRes.json();
+          if (data.status === 'ok' && Array.isArray(data.items)) {
+            mapped = data.items.slice(0, 6).map((item: any, idx: number) => {
               const descHtml = item.description || '';
               const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
               const imageUrl = imgMatch ? imgMatch[1] : '';
-              
               const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
               let snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').trim() : '';
-              
               const cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-              if (!snippet) {
-                snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
-              }
-
+              if (!snippet) snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
               let category: 'AI' | 'Engineering' | 'Productivity' | 'Research' | 'Life' | 'Startups' | 'Design' | 'Philosophy' = 'Life';
-              const lowercaseCategories = (item.categories || []).map((c: string) => c.toLowerCase());
-              if (lowercaseCategories.some((c: string) => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) {
-                category = 'AI';
-              } else if (lowercaseCategories.some((c: string) => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('architecture') || c.includes('engineering'))) {
-                category = 'Engineering';
-              } else if (lowercaseCategories.some((c: string) => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) {
-                category = 'Productivity';
-              } else if (lowercaseCategories.some((c: string) => c.includes('research') || c.includes('science') || c.includes('clinic'))) {
-                category = 'Research';
-              } else if (lowercaseCategories.some((c: string) => c.includes('design') || c.includes('ux') || c.includes('ui'))) {
-                category = 'Design';
-              } else if (lowercaseCategories.some((c: string) => c.includes('startup') || c.includes('business') || c.includes('saas'))) {
-                category = 'Startups';
-              } else if (lowercaseCategories.some((c: string) => c.includes('philosoph') || c.includes('think'))) {
-                category = 'Philosophy';
-              }
-
+              const lc = (item.categories || []).map((c: string) => c.toLowerCase());
+              if (lc.some((c: string) => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) category = 'AI';
+              else if (lc.some((c: string) => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('architecture'))) category = 'Engineering';
+              else if (lc.some((c: string) => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) category = 'Productivity';
+              else if (lc.some((c: string) => c.includes('research') || c.includes('science') || c.includes('clinic'))) category = 'Research';
+              else if (lc.some((c: string) => c.includes('design') || c.includes('ux') || c.includes('ui'))) category = 'Design';
+              else if (lc.some((c: string) => c.includes('startup') || c.includes('business') || c.includes('saas'))) category = 'Startups';
+              else if (lc.some((c: string) => c.includes('philosoph'))) category = 'Philosophy';
               let formattedDate = item.pubDate;
-              try {
-                const d = new Date(item.pubDate);
-                if (!isNaN(d.getTime())) {
-                  formattedDate = d.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  });
-                }
-              } catch (e) {}
-
-              const wordCount = cleanContent.split(/\s+/).length;
-              const readTimeMins = Math.max(1, Math.ceil(wordCount / 225));
-              const readTime = `${readTimeMins} min read`;
-
+              try { const d = new Date(item.pubDate); if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch {}
               const guidIdMatch = (item.guid || '').match(/\/p\/([a-f0-9]+)$/) || (item.link || '').match(/-([a-f0-9]+)$/);
-              const id = guidIdMatch ? guidIdMatch[1] : `medium-${idx}`;
-
-              return {
-                id,
-                title: item.title,
-                category,
-                readTime,
-                date: formattedDate,
-                excerpt: snippet,
-                content: cleanContent || snippet || item.title,
-                link: item.link,
-                imageUrl
-              };
+              return { id: guidIdMatch ? guidIdMatch[1] : `medium-${idx}`, title: item.title, category, readTime: `${Math.max(1, Math.ceil(cleanContent.split(/\s+/).length / 225))} min read`, date: formattedDate, excerpt: snippet, content: cleanContent || snippet || item.title, link: item.link, imageUrl };
             });
-
-            if (mapped.length > 0) {
-              setArticles(mapped);
-              setSelectedArticle(mapped[0]);
-            }
           }
+        } else {
+          const xmlText = await rssRes.text();
+          const items = xmlText.split('<item>');
+          items.shift();
+          mapped = items.slice(0, 6).map((item: string, idx: number) => {
+            const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || item.match(/<title>([\s\S]*?)<\/title>/);
+            const title = titleMatch ? titleMatch[1].trim() : '';
+            const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
+            const link = linkMatch ? linkMatch[1].trim() : '';
+            const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+            let formattedDate = pubDateMatch ? pubDateMatch[1].trim() : '';
+            try { const d = new Date(formattedDate); if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch {}
+            const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/);
+            let snippet = '', imageUrl = '', cleanContent = '';
+            if (descMatch) {
+              const descHtml = descMatch[1];
+              const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
+              if (imgMatch) imageUrl = imgMatch[1];
+              const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
+              if (snippetMatch) snippet = snippetMatch[1].trim();
+              cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+              if (!snippet) snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
+            }
+            const categories: string[] = [];
+            const catRegex = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>/g;
+            let catMatch;
+            while ((catMatch = catRegex.exec(item)) !== null) categories.push(catMatch[1]);
+            let category: 'AI' | 'Engineering' | 'Productivity' | 'Research' | 'Life' | 'Startups' | 'Design' | 'Philosophy' = 'Life';
+            const lc = categories.map(c => c.toLowerCase());
+            if (lc.some(c => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) category = 'AI';
+            else if (lc.some(c => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('architecture'))) category = 'Engineering';
+            else if (lc.some(c => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) category = 'Productivity';
+            else if (lc.some(c => c.includes('research') || c.includes('science') || c.includes('clinic'))) category = 'Research';
+            else if (lc.some(c => c.includes('design') || c.includes('ux') || c.includes('ui'))) category = 'Design';
+            else if (lc.some(c => c.includes('startup') || c.includes('business') || c.includes('saas'))) category = 'Startups';
+            else if (lc.some(c => c.includes('philosoph'))) category = 'Philosophy';
+            const guidMatch = item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/);
+            const rawGuid = guidMatch ? guidMatch[1].trim() : '';
+            const guidIdMatch = rawGuid.match(/\/p\/([a-f0-9]+)$/) || link.match(/-([a-f0-9]+)$/) || rawGuid.match(/\/p\/([a-f0-9]+)/);
+            return { id: guidIdMatch ? guidIdMatch[1] : `medium-${idx}`, title, category, readTime: `${Math.max(1, Math.ceil(cleanContent.split(/\s+/).length / 225))} min read`, date: formattedDate, excerpt: snippet, content: cleanContent || snippet || title, link, imageUrl };
+          });
+}
+        if (mapped.length > 0) {
+          setArticles(mapped);
+          setSelectedArticle(mapped[0]);
         }
       } catch (clientErr) {
-        console.warn('Client-side rss2json fallback failed:', clientErr);
+        console.warn('Client-side RSS fallback failed:', clientErr);
       }
     };
     fetchMediumStories();
@@ -1757,13 +1768,22 @@ export default function App() {
                         <h3 className="text-sm font-extrabold text-white mt-1">Interactively Tailored Professional Profile</h3>
                       </div>
                       
-                      <button 
-                        onClick={() => { window.print(); triggerSound(1100, 0.05); }}
-                        className="bg-zinc-950 text-zinc-300 border border-zinc-800 hover:text-white px-2.5 py-1 rounded text-[10px] flex items-center gap-1 cursor-pointer font-bold mt-2 sm:mt-0"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Print Resume Draft</span>
-                      </button>
+                       <button 
+                         onClick={() => { window.print(); triggerSound(1100, 0.05); }}
+                         className="bg-zinc-950 text-zinc-300 border border-zinc-800 hover:text-white px-2.5 py-1 rounded text-[10px] flex items-center gap-1 cursor-pointer font-bold mt-2 sm:mt-0"
+                       >
+                         <Download className="w-3.5 h-3.5" />
+                         <span>Print Resume Draft</span>
+                       </button>
+                       <a
+                          href="/resume/Full-Stack-Agentic-AI/updated/Resume.pdf"
+                         download
+                         onClick={() => triggerSound(1100, 0.05)}
+                         className="bg-pink-500/10 text-pink-300 border border-pink-500/30 hover:text-white px-2.5 py-1 rounded text-[10px] flex items-center gap-1 cursor-pointer font-bold mt-2 sm:mt-0"
+                       >
+                         <Download className="w-3.5 h-3.5" />
+                         <span>Download Resume PDF</span>
+                       </a>
                     </div>
 
                     {/* Selector of Target Audience */}

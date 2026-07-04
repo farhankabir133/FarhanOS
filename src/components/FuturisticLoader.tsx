@@ -24,6 +24,12 @@ export default function FuturisticLoader({ onComplete }: { onComplete: () => voi
     let raf = 0;
     let step = 0;
 
+    // Safety timeout to ensure loader always completes
+    const safetyTimeout = setTimeout(() => {
+      setExitPhase(true);
+      setTimeout(() => onCompleteRef.current(), 1200);
+    }, 5000);
+
     const tick = (now: number) => {
       const t = Math.min((now - start) / duration, 1);
       const noise = (Math.random() - 0.5) * 3;
@@ -41,6 +47,7 @@ export default function FuturisticLoader({ onComplete }: { onComplete: () => voi
       }
 
       if (t >= 1) {
+        clearTimeout(safetyTimeout);
         setPhase('done');
         playSynthTick(1200, 0.1);
         setTimeout(() => playSynthTick(1600, 0.1), 110);
@@ -56,7 +63,10 @@ export default function FuturisticLoader({ onComplete }: { onComplete: () => voi
     };
 
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(safetyTimeout);
+    };
   }, [mounted]);
 
   if (!mounted) return null;

@@ -1283,9 +1283,11 @@ export default function LandingPage({
                         whileHover={{ scale: 1.02 }}
                         className="w-full h-36 rounded-2xl overflow-hidden border border-zinc-900 bg-zinc-950 relative"
                       >
-                        <motion.img 
+<motion.img 
                           src={article.imageUrl} 
                           alt={article.title} 
+                          loading="lazy"
+                          decoding="async"
                           whileHover={{ scale: 1.1 }}
                           transition={{ duration: 0.5 }}
                           className="w-full h-full object-cover opacity-80 group-hover:opacity-100"
