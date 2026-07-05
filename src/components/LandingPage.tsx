@@ -6,7 +6,7 @@ import {
   ArrowRight, Check, Send, Sparkle, RefreshCw, Instagram, User, Clock
 } from 'lucide-react';
 import { portfolioData } from '../data/portfolioData';
-import { Article } from '../types';
+import { Article, GitHubRepo } from '../types';
 import DecryptText from './DecryptText';
 import ThreeWormhole from './ThreeWormhole';
 import avatarImg from '../../assets/avatar.png';
@@ -248,6 +248,37 @@ export default function LandingPage({
     return () => clearInterval(timer);
   }, []);
 
+  // GitHub Repositories
+  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
+  const [githubLoading, setGithubLoading] = useState(true);
+  const [githubError, setGithubError] = useState(false);
+
+  useEffect(() => {
+    const fetchGithubRepos = async () => {
+      try {
+        const res = await fetch('/api/github-repos');
+        if (!res.ok) {
+          throw new Error(`GitHub API responded with status: ${res.status}`);
+        }
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setGithubRepos(data);
+        } else {
+          setGithubError(true);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch GitHub repos:', err);
+        setGithubError(true);
+      } finally {
+        setGithubLoading(false);
+      }
+    };
+    fetchGithubRepos();
+
+    const interval = setInterval(fetchGithubRepos, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Theme Config mapper
   const getThemeStyles = () => {
     switch (theme) {
@@ -445,7 +476,8 @@ export default function LandingPage({
           <a href="#skills" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'skills'); }} className="hover:text-white transition-colors">STATIONS</a>
           <a href="#timeline" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'timeline'); }} className="hover:text-white transition-colors">CHRONOLOGY</a>
           <a href="#prof-timeline" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'prof-timeline'); }} className="hover:text-white transition-colors">PROF. TIMELINE</a>
-          <a href="#projects" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'projects'); }} className="hover:text-white transition-colors">INNOVATIONS</a>
+          <a href="#projects" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'projects'); }} className="hover:text-white transition-colors">PROJECTS</a>
+          <a href="#research" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'research'); }} className="hover:text-white transition-colors">RESEARCH</a>
           <a href="#certifications" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'certifications'); }} className="hover:text-white transition-colors">CERTIFICATES</a>
           <a href="#contact" onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, 'contact'); }} className="hover:text-white transition-colors">TRANSMIT</a>
         </nav>
@@ -489,7 +521,6 @@ export default function LandingPage({
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-none uppercase select-text">
-            <span className={theme === 'light' ? 'text-slate-800' : 'text-white'}>I am </span>
             <span className={`bg-clip-text text-transparent bg-gradient-to-r ${theme === 'light' ? 'from-indigo-650 to-sky-655' : 'from-indigo-400 via-sky-400 to-[#00ffcc]'}`}>
               {portfolioData.name}
             </span>
@@ -796,77 +827,240 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* SECTION 5: FEATURED INNOVATIONS (PROJECTS) */}
+      {/* SECTION 5: GITHUB PROJECTS */}
       <section id="projects" className="relative px-6 md:px-12 py-24 max-w-6xl w-full mx-auto space-y-12 z-10">
         
         {/* Section title */}
         <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
           <span className="w-2.5 h-2.5 rounded bg-purple-500 shadow-[0_0_8px_#a855f7]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04 // PORTFOLIO INNOVATIONS</h2>
-          <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">SANDBOX RUNTIMES SYNCHRONIZED</span>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04 // GITHUB PROJECTS</h2>
+          <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">REAL-TIME TELEMETRY ACTIVE</span>
+          <button 
+            onClick={() => {
+              setGithubLoading(true);
+              setGithubError(false);
+              fetch('/api/github-repos')
+                .then(res => res.ok ? res.json() : Promise.reject())
+                .then(data => {
+                  if (Array.isArray(data) && data.length > 0) {
+                    setGithubRepos(data);
+                  }
+                })
+                .catch(() => setGithubError(true))
+                .finally(() => setGithubLoading(false));
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-zinc-800 bg-zinc-950/70 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer text-[9px] font-mono font-bold uppercase tracking-wider"
+          >
+            <RefreshCw className={`w-3 h-3 ${githubLoading ? 'animate-spin' : ''}`} />
+            Sync Repos
+          </button>
         </div>
 
-        {/* Project grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {portfolioData.projects.map((project) => (
-            <div 
-              key={project.id}
-              className="bg-[#0b0c14]/55 border border-zinc-900/80 p-6 rounded-3xl flex flex-col justify-between hover:border-indigo-500/30 hover:shadow-[0_10px_35px_rgba(99,102,241,0.05)] transition-all duration-300 group select-text"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-4 font-mono">
-                  <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${styleSet.badgeStyle}`}>
-                    {project.category}
-                  </span>
-                  <span className="text-[9px] text-zinc-550 font-semibold">{project.timeline}</span>
+        {/* GitHub Projects Grid */}
+        {githubLoading ? (
+          <div className="text-center py-10 bg-zinc-950/20 border border-zinc-900/80 rounded-3xl p-6 font-mono text-zinc-550 text-xs">
+            ⏳ Synchronizing repository telemetry vectors...
+          </div>
+        ) : githubError || githubRepos.length === 0 ? (
+          <div className="text-center py-10 bg-zinc-950/20 border border-zinc-900/80 rounded-3xl p-6 font-mono text-zinc-550 text-xs">
+            ⚠ Repository sync unavailable. <button onClick={() => window.open('https://github.com/farhankabir133', '_blank')} className="text-indigo-400 hover:underline">View on GitHub</button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {githubRepos.map((repo) => (
+              <div 
+                key={repo.id}
+                className="bg-[#0b0c14]/55 border border-zinc-900/80 p-6 rounded-3xl flex flex-col justify-between hover:border-indigo-500/30 hover:shadow-[0_10px_35px_rgba(99,102,241,0.05)] transition-all duration-300 group select-text"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4 font-mono">
+                    <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${styleSet.badgeStyle}`}>
+                      {repo.language || 'CODE'}
+                    </span>
+                    <div className="flex items-center gap-2 text-[9px] text-zinc-550">
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3 h-3 text-amber-400" />
+                        {repo.stargazers_count}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <GitBranch className="w-3 h-3 text-emerald-400" />
+                        {repo.forks_count}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className={`text-sm md:text-base font-extrabold group-hover:text-indigo-400 transition-colors leading-tight ${theme === 'light' ? 'text-slate-800' : 'text-white'}`}>
+                    <a 
+                      href={repo.html_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={() => triggerSound(900, 0.02)}
+                      className="hover:underline underline-offset-4 decoration-indigo-500/50"
+                    >
+                      {repo.name}
+                    </a>
+                  </h3>
+
+                  <p className="text-[11px] sm:text-xs text-zinc-400 font-sans mt-3.5 leading-relaxed line-clamp-3">
+                    {repo.description || 'No description provided.'}
+                  </p>
+
+                  {/* Topics */}
+                  {repo.topics && repo.topics.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-4 pt-3 border-t border-zinc-900/60">
+                      {repo.topics.slice(0, 5).map((topic: string) => (
+                        <span key={topic} className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-900/40 text-zinc-500">
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <h3 className={`text-sm md:text-base font-extrabold group-hover:text-indigo-400 transition-colors leading-tight ${theme === 'light' ? 'text-slate-800' : 'text-white'}`}>
-                  {project.title}
-                </h3>
+                <div className="space-y-4 pt-4 border-t border-zinc-900/60 select-none">
+                  <div className="flex items-center justify-between text-[9px] font-mono text-zinc-550">
+                    <span className="flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3" />
+                      Updated {new Date(repo.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                    {repo.homepage && (
+                      <a 
+                        href={repo.homepage} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        onClick={() => triggerSound(900, 0.02)}
+                        className="text-indigo-400 hover:text-indigo-300"
+                      >
+                        Live Demo →
+                      </a>
+                    )}
+                  </div>
 
-                <p className="text-[11px] sm:text-xs text-zinc-400 font-sans mt-3.5 leading-relaxed">
-                  {project.description}
-                </p>
-
-                {/* Dashboard style metrics */}
-                <div className="grid grid-cols-3 gap-2 my-4 bg-black/40 border border-zinc-900/80 p-2.5 rounded-xl text-center font-mono">
-                  {project.metrics.map((m) => (
-                    <div key={m.label} className="p-1">
-                      <span className={`text-[9.5px] font-bold block ${theme === 'light' ? 'text-indigo-650' : 'text-[#00ffcc]'}`}>{m.value}</span>
-                      <span className="text-[7.2px] text-zinc-500 block uppercase tracking-tight mt-0.5 line-clamp-1">{m.label}</span>
-                    </div>
-                  ))}
+                  <div className="flex items-center gap-2">
+                    <a 
+                      href={repo.html_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={() => triggerSound(900, 0.02)}
+                      className="flex-1 text-center py-2.5 rounded-xl border border-zinc-800/80 bg-zinc-950 text-[10px] font-mono text-zinc-350 hover:text-white hover:border-zinc-750 transition-all cursor-pointer font-bold active:scale-98 flex items-center justify-center gap-2"
+                    >
+                      <Github className="w-3.5 h-3.5" />
+                      VIEW REPOSITORY
+                    </a>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-              <div className="space-y-4 pt-4 border-t border-zinc-900/60 select-none">
-                <div className="flex flex-wrap gap-1">
-                  {project.techStack.map((tech) => (
-                    <span key={tech} className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-900/40 text-zinc-500">
-                      {tech}
+      {/* SECTION 4.5: RESEARCH PAPERS */}
+      <section id="research" className="relative px-6 md:px-12 py-24 max-w-6xl w-full mx-auto space-y-12 z-10">
+        
+        {/* Section title */}
+        <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
+          <span className="w-2.5 h-2.5 rounded bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04.5 // NEURAL RESEARCH INDEX</h2>
+          <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">PEER-REVIEWED PUBLICATIONS</span>
+        </div>
+
+        {/* Papers Grid */}
+        <div className="grid grid-cols-1 gap-8">
+          {[
+            {
+              title: "AI-Driven Live Interview System for Real-Time Candidate Evaluation Using NLP and Computer Vision",
+              authors: "Farhan Kabir, M Arman Reza Shah, Razat Biswas",
+              conference: "2025 28th International Conference on Computer and Information Technology (ICCIT)",
+              year: 2025,
+              publisher: "IEEE",
+              abstract: "This paper presents an AI-driven live interview system designed for real-time evaluation of candidates by integrating Natural Language Processing (NLP) and Computer Vision techniques. The system utilizes OpenAI's Whisper model for high-fidelity speech-to-text transcription, ensuring precise capture of verbal responses. Semantic analysis is performed using BERT embeddings to evaluate the contextual relevance, coherence, and intent of candidate answers. Concurrently, a Convolutional Neural Network (CNN) trained on the RAF-DB dataset is employed for real-time facial emotion recognition, identifying emotions such as happiness, sadness, anger, fear, surprise, disgust, and neutrality. A simulated study involving 50 candidates was conducted to assess system performance in terms of response accuracy, processing latency, semantic coherence, and emotion recognition reliability. Experimental results demonstrate that the system achieves an average accuracy of 93.51%, with a mean response latency of 1.5 seconds, and reliably captures emotional engagement. By combining multimodal data including speech, text, and visual cues, the proposed framework offers a comprehensive, objective, and scalable approach to candidate assessment.",
+              link: "https://ieeexplore.ieee.org/document/10870611",
+              image: "/research-images/interview-system.svg",
+              color: "from-indigo-600 to-cyan-600"
+            },
+            {
+              title: "Emotion Detection From Textual Data Using Natural Language Processing and Machine Learning Techniques",
+              authors: "Farhan Kabir, M. K. Habib Khan, Fazle Rabby",
+              conference: "2025 International Conference on Electrical, Computer and Communication Engineering (ECCE)",
+              year: 2025,
+              publisher: "IEEE",
+              abstract: "Emotion detection is the process of identifying and interpreting emotional cues in data to understand a user's mood or sentiment. In textual data, emotion detection has wide-ranging applications, such as analyzing sentiments on social media, evaluating customer feedback, and enhancing user experiences on digital platforms. This paper presents a machine learning-based approach for classifying emotions in text using natural language processing (NLP) techniques. The study utilizes a publicly available dataset from Kaggle, which includes labeled samples representing various emotional expressions. To achieve accurate classification, the methodology begins with text preprocessing, such as removing stopwords, punctuation, and special characters, ensuring cleaner data for analysis. Feature extraction techniques, including CountVectorizer and Term Frequency-Inverse Document Frequency (TF-IDF), are then employed to transform the raw text into meaningful numerical features. These techniques highlight patterns and associations in the text, effectively capturing the nuances of different emotional expressions. Several machine learning models were trained and evaluated using key performance metrics, such as accuracy and precision, to determine the most effective classifier for emotion detection. The results demonstrate the robustness of our approach in recognizing subtle emotional variations, providing reliable insights into textual data.",
+              link: "https://ieeexplore.ieee.org/document/10864920",
+              image: "/research-images/emotion-detection.svg",
+              color: "from-purple-600 to-pink-600"
+            },
+            {
+              title: "Depression Detection From Social Media Textual Data Using Natural Language Processing and Machine Learning Techniques",
+              authors: "Farhan Kabir, Md. Ali Hossain, A. F. M. Minhazur Rahman, Sadia Zaman Mishu",
+              conference: "2023 26th International Conference on Computer and Information Technology (ICCIT)",
+              year: 2023,
+              publisher: "IEEE",
+              abstract: "Depression, a widespread mental health condition with substantial personal and societal impacts, necessitates early detection for effective intervention. The focus of this thesis is crafting a dependable and precise system to identify depression from social media text, employing natural language processing (NLP) and machine learning (ML). Drawing from diverse social media posts, both from individuals with and without depression, the primary aim is to preprocess this textual data effectively. NLP techniques, including tokenization, stemming, N-gram, Countvectorizer analysis, and TF-IDF, convert raw content into meaningful representations capturing linguistic and emotional facets of depression. Utilizing the preprocessed data, machine learning algorithms acquire discriminating patterns through feature extraction. Diverse ML techniques—Stochastic Gradient Descent (SGD), Naive Bayes (NB), Decision Tree (DT), Random Forest (RF), Support Vector Machines (SVM), KNearest Neighbor (KNN), Multi-Layer Perceptron (MLP), etc.—are employed. Trained on annotated data and extracted attributes, these algorithms discern depressive from nondepressive social media posts. Model performance assessment incorporates metrics like accuracy, precision, recall, and F1-score. Results underscore the efficacy of this approach in detecting depression from social media text.",
+              link: "https://ieeexplore.ieee.org/document/10415619",
+              image: "/research-images/depression-detection.svg",
+              color: "from-emerald-600 to-teal-600"
+            }
+          ].map((paper, idx) => (
+            <div 
+              key={idx}
+              className="bg-[#0b0c14]/55 border border-zinc-900/80 rounded-3xl overflow-hidden hover:border-emerald-500/30 hover:shadow-[0_10px_35px_rgba(16,185,129,0.05)] transition-all duration-300 group select-text"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
+                {/* Paper Image */}
+                <div className="md:col-span-4 relative h-48 md:h-auto">
+                  <img 
+                    src={paper.image} 
+                    alt={paper.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                  <div className="absolute bottom-3 left-3">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm text-white/90">
+                      {paper.year} IEEE
                     </span>
-                  ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => { onOpenWindowDirectly('projects'); }}
-                    className="flex-1 text-center py-2.5 rounded-xl border border-zinc-800/80 bg-zinc-950 text-[10px] font-mono text-zinc-350 hover:text-white hover:border-zinc-750 transition-all cursor-pointer font-bold active:scale-98"
-                  >
-                    DEPLOY SIMULATOR SCREEN →
-                  </button>
-                  
-                  <a 
-                    href="https://github.com/farhankabir133" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => triggerSound(900, 0.02)}
-                    className="p-2.5 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-950/60 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
-                    title="View Source on GitHub"
-                  >
-                    <Github className="w-3.5 h-3.5" />
-                  </a>
+                {/* Paper Content */}
+                <div className="md:col-span-8 p-6 md:p-8 flex flex-col">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${styleSet.badgeStyle}`}>
+                        {paper.publisher}
+                      </span>
+                      <span className="text-[9px] text-zinc-550 font-semibold">{paper.year}</span>
+                    </div>
+                  </div>
+
+                  <h3 className={`text-sm md:text-base font-extrabold group-hover:text-emerald-400 transition-colors leading-tight mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-white'}`}>
+                    {paper.title}
+                  </h3>
+
+                  <p className="text-[10px] font-mono text-indigo-400 mb-3 select-text">
+                    {paper.authors}
+                  </p>
+
+                  <p className="text-[10px] text-zinc-500 font-sans mb-4 italic select-text">
+                    {paper.conference}
+                  </p>
+
+                  <p className="text-[11px] sm:text-xs text-zinc-400 font-sans leading-relaxed line-clamp-4 select-text flex-1">
+                    {paper.abstract}
+                  </p>
+
+                  <div className="mt-6 pt-4 border-t border-zinc-900/60 select-none">
+                    <a 
+                      href={paper.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={() => triggerSound(900, 0.02)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-800/80 bg-zinc-950 text-[10px] font-mono text-zinc-350 hover:text-white hover:border-zinc-750 transition-all cursor-pointer font-bold active:scale-98"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      VIEW PAPER ON IEEE XPLORE
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -874,13 +1068,13 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* SECTION 4.5: LATEST STORIES (MEDIUM FEED) */}
+      {/* SECTION 5: LATEST STORIES (MEDIUM FEED) */}
       <section id="writings" className="relative px-6 md:px-12 py-24 max-w-6xl w-full mx-auto space-y-12 z-10">
         
         {/* Section title */}
         <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
           <span className="w-2.5 h-2.5 rounded bg-amber-500 shadow-[0_0_8px_#f59e0b]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04.5 // MEDIUM WRITING SYNDICATE</h2>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>05 // MEDIUM WRITING SYNDICATE</h2>
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">DYNAMIC RSS CHANNELS ACTIVE</span>
         </div>
 
@@ -983,7 +1177,7 @@ export default function LandingPage({
         {/* Section title */}
         <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
           <span className="w-2.5 h-2.5 rounded bg-amber-500 shadow-[0_0_8px_#f59e0b]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>05 // CREDENTIAL VERIFICATION</h2>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>06 // CREDENTIAL VERIFICATION</h2>
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">ALL BADGES CRYPTOGRAPHICALLY SECURED</span>
         </div>
 
@@ -1024,7 +1218,7 @@ export default function LandingPage({
         {/* Section title */}
         <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
           <span className="w-2.5 h-2.5 rounded bg-rose-500 shadow-[0_0_8px_#f43f5e]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>06 // CLINICAL RECOMMENDATIONS</h2>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>07 // CLINICAL RECOMMENDATIONS</h2>
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">VERIFIABLE REFERRALS ACTIVE</span>
         </div>
 
@@ -1081,7 +1275,7 @@ export default function LandingPage({
         {/* Section title */}
         <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono select-none">
           <span className="w-2.5 h-2.5 rounded bg-indigo-500 shadow-[0_0_8px_#6366f1]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>07 // SECURE COMMUNICATION CHANNEL</h2>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>08 // SECURE COMMUNICATION CHANNEL</h2>
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">SSL LINK ENCRYPTED</span>
         </div>
 
@@ -1297,7 +1491,8 @@ export default function LandingPage({
             <a href="#about" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'about'); }} className="hover:text-white transition-colors">ABOUT</a>
             <a href="#skills" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'skills'); }} className="hover:text-white transition-colors">STATIONS</a>
             <a href="#timeline" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'timeline'); }} className="hover:text-white transition-colors">TIMELINE</a>
-            <a href="#projects" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'projects'); }} className="hover:text-white transition-colors">INNOVATIONS</a>
+            <a href="#projects" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'projects'); }} className="hover:text-white transition-colors">PROJECTS</a>
+            <a href="#research" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'research'); }} className="hover:text-white transition-colors">RESEARCH</a>
             <a href="#contact" onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, 'contact'); }} className="hover:text-white transition-colors">TRANSMIT</a>
           </div>
 
