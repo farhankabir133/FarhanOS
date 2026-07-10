@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e1b4b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow1">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bg1)"/>
+  
+  <!-- Grid pattern -->
+  <pattern id="grid1" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#6366f1" stroke-width="0.3" opacity="0.2"/>
+  </pattern>
+  <rect width="800" height="600" fill="url(#grid1)"/>
+  
+  <!-- Neural network visualization -->
+  <g opacity="0.6">
+    <!-- Input nodes -->
+    <circle cx="150" cy="150" r="12" fill="none" stroke="#06b6d4" stroke-width="2" filter="url(#glow1)"/>
+    <circle cx="150" cy="250" r="12" fill="none" stroke="#06b6d4" stroke-width="2" filter="url(#glow1)"/>
+    <circle cx="150" cy="350" r="12" fill="none" stroke="#06b6d4" stroke-width="2" filter="url(#glow1)"/>
+    
+    <!-- Hidden layer -->
+    <circle cx="400" cy="200" r="15" fill="none" stroke="#6366f1" stroke-width="2.5" filter="url(#glow1)"/>
+    <circle cx="400" cy="300" r="15" fill="none" stroke="#6366f1" stroke-width="2.5" filter="url(#glow1)"/>
+    
+    <!-- Output nodes -->
+    <circle cx="650" cy="180" r="10" fill="none" stroke="#10b981" stroke-width="2" filter="url(#glow1)"/>
+    <circle cx="650" cy="220" r="10" fill="none" stroke="#f59e0b" stroke-width="2" filter="url(#glow1)"/>
+    <circle cx="650" cy="260" r="10" fill="none" stroke="#ef4444" stroke-width="2" filter="url(#glow1)"/>
+    <circle cx="650" cy="300" r="10" fill="none" stroke="#8b5cf6" stroke-width="2" filter="url(#glow1)"/>
+    
+    <!-- Connections -->
+    <line x1="162" y1="150" x2="385" y2="200" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+    <line x1="162" y1="250" x2="385" y2="200" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+    <line x1="162" y1="350" x2="385" y2="200" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+    <line x1="162" y1="150" x2="385" y2="300" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+    <line x1="162" y1="250" x2="385" y2="300" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+    <line x1="162" y1="350" x2="385" y2="300" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+    
+    <line x1="415" y1="200" x2="640" y2="180" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+    <line x1="415" y1="200" x2="640" y2="220" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+    <line x1="415" y1="200" x2="640" y2="260" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+    <line x1="415" y1="200" x2="640" y2="300" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+    <line x1="415" y1="300" x2="640" y2="180" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+    <line x1="415" y1="300" x2="640" y2="220" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+    <line x1="415" y1="300" x2="640" y2="260" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+    <line x1="415" y1="300" x2="640" y2="300" stroke="#6366f1" stroke-width="1.5" opacity="0.5"/>
+  </g>
+  
+  <!-- Interview frame metaphor -->
+  <rect x="300" y="420" width="200" height="120" rx="15" fill="none" stroke="url(#accent1)" stroke-width="2" opacity="0.7"/>
+  <circle cx="400" cy="470" r="25" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.8"/>
+  <path d="M 385 460 L 385 480 M 415 460 L 415 480 M 385 470 Q 400 480 415 470" stroke="#06b6d4" stroke-width="2" fill="none" opacity="0.8"/>
+  
+  <!-- Floating data points -->
+  <circle cx="250" cy="100" r="4" fill="#6366f1" opacity="0.8">
+    <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="550" cy="120" r="3" fill="#06b6d4" opacity="0.8">
+    <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="700" cy="400" r="5" fill="#10b981" opacity="0.8">
+    <animate attributeName="opacity" values="0.4;1;0.4" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Bottom accent line -->
+  <line x1="0" y1="550" x2="800" y2="550" stroke="url(#accent1)" stroke-width="3" opacity="0.5"/>
+  
+  <!-- Title overlay -->
+  <text x="400" y="560" text-anchor="middle" font-family="monospace" font-size="14" fill="#94a3b8" opacity="0.8">
+    WHISPER + BERT + CNN // REAL-TIME CANDIDATE EVALUATION
+  </text>
+</svg>

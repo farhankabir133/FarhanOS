@@ -403,6 +403,48 @@ app.get('/api/medium-stories', async (req, res) => {
   }
 });
 
+// 5. GitHub Repositories Fetch Endpoint
+app.get('/api/github-repos', async (req, res) => {
+  try {
+    const username = 'farhankabir133';
+    const response = await fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=100`, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'FarhanOS-Portfolio/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API failed with status: ${response.status}`);
+    }
+
+    const repos = await response.json();
+
+    // Sort by stars descending and take top 10
+    const topRepos = repos
+      .sort((a: any, b: any) => b.stargazers_count - a.stargazers_count)
+      .slice(0, 10)
+      .map((repo: any) => ({
+        id: repo.id,
+        name: repo.name,
+        full_name: repo.full_name,
+        description: repo.description,
+        html_url: repo.html_url,
+        language: repo.language,
+        stargazers_count: repo.stargazers_count,
+        forks_count: repo.forks_count,
+        updated_at: repo.updated_at,
+        topics: repo.topics || [],
+        homepage: repo.homepage
+      }));
+
+    res.json(topRepos);
+  } catch (err: any) {
+    console.error('Error fetching GitHub repos:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch GitHub repositories' });
+  }
+});
+
 // Main Server Boot & Vite Integration
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
