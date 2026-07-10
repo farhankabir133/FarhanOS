@@ -4,7 +4,7 @@ export const portfolioData: PortfolioData = {
   name: 'Farhan Kabir',
   title: 'AI Engineer | Full-Stack Developer | Specializing in Agentic Workflows & NLP | Mental Health |',
   tagline: 'Designing deep linguistic networks to analyze cognitive states, autism indicators, and mental-health text semantics.',
-  about: 'I am an AI Engineer, Researcher, and Full Stack Developer. I build highly robust predictive AI systems, conduct quantitative linguistic analysis, and implement Stripe-polished digital experiences.',
+  about: 'AI-focused Full Stack Engineer with 4+ years of experience building scalable web architectures and robust LLM-driven applications. Specialized in multi-agent workflows, API integrations, and cloud infrastructure using React, Node.js, and generative AI frameworks. Proven track record of accelerating development cycles, implementing automated testing pipelines, and improving application performance by up to 40\% through optimized deployment strategies and system design.',
   focus: 'Evaluating Large Language Models for automated cognitive health screenings and zero-shot NLP behavioral diagnostic support.',
   readingNow: '“Linguistic Archetypes in Clinical Psychiatry” and the “Attention Is All You Need” retrospective papers.',
   learningNow: 'Advanced neural text-to-speech architectures (TTS) using flow matching techniques and quantized inference.',

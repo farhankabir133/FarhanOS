@@ -9,29 +9,6 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
-// CORS Middleware to enable communication with static frontend on custom domain
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    'https://farhankabir.me',
-    'https://farhankabir133.github.io',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:5173'
-  ];
-  const origin = req.headers.origin;
-  if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.github.io'))) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-    return;
-  }
-  next();
-});
-
 app.use(express.json({ limit: '10mb' }));
 
 // Lazy initializer for Google GenAI Client
@@ -54,67 +31,6 @@ function getAiClient(): GoogleGenAI {
   }
   return aiClient;
 }
-
-// 0. Message Transmission (Contact & Brief Dispatch) Endpoint
-app.post('/api/contact', async (req, res) => {
-  try {
-    const { name, email, subject, message, metadata } = req.body;
-    if (!email || !message) {
-      res.status(400).json({ error: 'Email and message are required fields.' });
-      return;
-    }
-
-    console.log(`\n--- [MESSAGE TRANSMISSION RECEIVED] ---`);
-    console.log(`Timestamp: ${new Date().toISOString()}`);
-    console.log(`Sender: ${name || 'Anonymous'} <${email}>`);
-    console.log(`Subject: ${subject || 'No Subject'}`);
-    console.log(`Message Payload:\n${message}`);
-    if (metadata) {
-      console.log(`Metadata Parameters:`, JSON.stringify(metadata, null, 2));
-    }
-    console.log(`-------------------------------------\n`);
-
-    const ai = getAiClient();
-    const promptText = `Analyze the following contact inquiry or strategic mission brief sent to Farhan Kabir:
-Sender Name: ${name || 'Anonymous'}
-Sender Email: ${email}
-Subject: ${subject || 'No Subject'}
-Message: ${message}
-${metadata ? `Metadata: ${JSON.stringify(metadata)}` : ''}
-
-Provide a JSON object containing:
-1. "urgency": "High" | "Medium" | "Low"
-2. "inquiryType": "General Inquiry" | "Job Collaboration" | "Research Inquiry" | "Strategic Project Brief"
-3. "summaryText": "A 1-sentence diagnostic summary of the message."
-4. "suggestedAutoReply": "A professional, personalized 3-sentence email response draft acknowledging their inquiry as Farhan's AI Assistant."
-
-Respond ONLY with valid JSON.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: promptText,
-      config: {
-        responseMimeType: 'application/json',
-      }
-    });
-
-    let analysis = {};
-    try {
-      analysis = JSON.parse(response.text || '{}');
-    } catch (e) {
-      console.error('Failed to parse Gemini analysis as JSON:', e);
-    }
-
-    res.json({
-      success: true,
-      message: 'Transmission successfully established and analyzed.',
-      analysis
-    });
-  } catch (err: any) {
-    console.error('Error in contact transmission route:', err);
-    res.status(500).json({ error: err.message || 'Failed to authorize transmission.' });
-  }
-});
 
 // 1. Digital Twin AI Chat Endpoint
 app.post('/api/ask-twin', async (req, res) => {
@@ -179,7 +95,7 @@ RULES FOR CHATTING:
     });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       contents: formattedContents,
       config: {
         systemInstruction: systemPrompt,
@@ -211,7 +127,7 @@ app.post('/api/tts', async (req, res) => {
       : `Narrate the following article summary with warm, thoughtful, clinical, and precise speech: ${text}`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-tts',
+      model: 'gemini-3.1-flash-tts-preview',
       contents: [{ parts: [{ text: voiceInstruct }] }],
       config: {
         responseModalities: ['AUDIO'],
@@ -256,7 +172,7 @@ app.post('/api/summarize-brief', async (req, res) => {
 Please construct a ultra-polished, futuristic, technical "Mission Assessment & Strategy" (3-4 sentences), formatted like an OS diagnostics readout. Detail the technical feasibility, model selection candidates (e.g. BERT variations or custom fine-tuning), and estimated deployment approach. Keep it sharp, professional, and elegant. No markdown headings, just a clean paragraph.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       contents: promptText,
     });
 

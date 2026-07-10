@@ -92,7 +92,7 @@ The interface bridges professional NLP researcher credentials with premium front
 ```bash
 ├── src/                       # Primary React Client application
 │   ├── components/            # UI components (Wormholes, Whiteboards, Decrypt tags, Loaders, Typewriters)
-│   │   ├── FuturisticLoader.tsx     # Animated loading screen with exit transition
+│   │   ├── TerminalBootLoader/      # Premium terminal boot loader (opening experience)
 │   │   ├── LoopingTypewriter.tsx    # Infinite looping typewriter effect
 │   │   ├── OneTimeTypewriter.tsx    # Single-run typewriter effect
 │   │   ├── ThreeWormhole.tsx        # WebGL starfield background

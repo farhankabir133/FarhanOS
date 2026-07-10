@@ -81,9 +81,7 @@ body {
   --animate-bounce-short: bounce-short 1.2s ease-out;
   --animate-window-open: window-open 0.35s cubic-bezier(0.25, 1.1, 0.5, 1.1) forwards;
   --animate-fade-in: fade-in 0.4s ease-out forwards;
-  --animate-scan-line: scan-line 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   --animate-float-particle: float-particle 4s ease-in-out infinite;
-  --animate-shimmer: shimmer 1.5s infinite linear;
   --animate-glitch: glitch 2.5s infinite linear alternate-reverse;
 
   @keyframes spin-reverse {
@@ -146,23 +144,6 @@ body {
     }
   }
 
-  @keyframes scan-line {
-    0% {
-      top: -10%;
-      opacity: 0;
-    }
-    10% {
-      opacity: 0.6;
-    }
-    90% {
-      opacity: 0.6;
-    }
-    100% {
-      top: 110%;
-      opacity: 0;
-    }
-  }
-
   @keyframes float-particle {
     0%, 100% {
       transform: translateY(0) translateX(0);
@@ -179,15 +160,6 @@ body {
     75% {
       transform: translateY(-25px) translateX(5px);
       opacity: 0.5;
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
     }
   }
 
@@ -229,4 +201,21 @@ body {
   display: inline-block;
   animation: wave 2.5s ease-in-out infinite;
   transform-origin: 70% 70%;
+}
+
+/* Terminal boot loader caret */
+@keyframes terminal-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-caret {
+  animation: terminal-caret 1.05s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-caret {
+    animation: none;
+    opacity: 0;
+  }
 }
