@@ -1212,6 +1212,119 @@ export default function LandingPage({
         </motion.div>
       </section>
 
+{/* SECTION 4.5: RESEARCH PAPERS */}
+      <section id="research" className="relative px-6 md:px-12 py-24 max-w-6xl w-full mx-auto space-y-12 z-10">
+        
+        {/* Section title */}
+        <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
+          <span className="w-2.5 h-2.5 rounded bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04.5 // NEURAL RESEARCH INDEX</h2>
+          <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">PEER-REVIEWED PUBLICATIONS</span>
+        </div>
+
+        {/* Papers Grid */}
+        <div className="grid grid-cols-1 gap-8">
+          {[
+            {
+              title: "AI-Driven Live Interview System for Real-Time Candidate Evaluation Using NLP and Computer Vision",
+              authors: "Farhan Kabir, M Arman Reza Shah, Razat Biswas",
+              conference: "2025 28th International Conference on Computer and Information Technology (ICCIT)",
+              year: 2025,
+              publisher: "IEEE",
+              abstract: "This paper presents an AI-driven live interview system designed for real-time evaluation of candidates by integrating Natural Language Processing (NLP) and Computer Vision techniques. The system utilizes OpenAI's Whisper model for high-fidelity speech-to-text transcription, ensuring precise capture of verbal responses. Semantic analysis is performed using BERT embeddings to evaluate the contextual relevance, coherence, and intent of candidate answers. Concurrently, a Convolutional Neural Network (CNN) trained on the RAF-DB dataset is employed for real-time facial emotion recognition, identifying emotions such as happiness, sadness, anger, fear, surprise, disgust, and neutrality. A simulated study involving 50 candidates was conducted to assess system performance in terms of response accuracy, processing latency, semantic coherence, and emotion recognition reliability. Experimental results demonstrate that the system achieves an average accuracy of 93.51%, with a mean response latency of 1.5 seconds, and reliably captures emotional engagement. By combining multimodal data including speech, text, and visual cues, the proposed framework offers a comprehensive, objective, and scalable approach to candidate assessment.",
+              link: "https://ieeexplore.ieee.org/document/10870611",
+              image: "/research-images/interview-system.svg",
+              color: "from-indigo-600 to-cyan-600"
+            },
+            {
+              title: "Emotion Detection From Textual Data Using Natural Language Processing and Machine Learning Techniques",
+              authors: "Farhan Kabir, M. K. Habib Khan, Fazle Rabby",
+              conference: "2025 International Conference on Electrical, Computer and Communication Engineering (ECCE)",
+              year: 2025,
+              publisher: "IEEE",
+              abstract: "Emotion detection is the process of identifying and interpreting emotional cues in data to understand a user's mood or sentiment. In textual data, emotion detection has wide-ranging applications, such as analyzing sentiments on social media, evaluating customer feedback, and enhancing user experiences on digital platforms. This paper presents a machine learning-based approach for classifying emotions in text using natural language processing (NLP) techniques. The study utilizes a publicly available dataset from Kaggle, which includes labeled samples representing various emotional expressions. To achieve accurate classification, the methodology begins with text preprocessing, such as removing stopwords, punctuation, and special characters, ensuring cleaner data for analysis. Feature extraction techniques, including CountVectorizer and Term Frequency-Inverse Document Frequency (TF-IDF), are then employed to transform the raw text into meaningful numerical features. These techniques highlight patterns and associations in the text, effectively capturing the nuances of different emotional expressions. Several machine learning models were trained and evaluated using key performance metrics, such as accuracy and precision, to determine the most effective classifier for emotion detection. The results demonstrate the robustness of our approach in recognizing subtle emotional variations, providing reliable insights into textual data.",
+              link: "https://ieeexplore.ieee.org/document/10864920",
+              image: "/research-images/emotion-detection.svg",
+              color: "from-purple-600 to-pink-600"
+            },
+            {
+              title: "Depression Detection From Social Media Textual Data Using Natural Language Processing and Machine Learning Techniques",
+              authors: "Farhan Kabir, Md. Ali Hossain, A. F. M. Minhazur Rahman, Sadia Zaman Mishu",
+              conference: "2023 26th International Conference on Computer and Information Technology (ICCIT)",
+              year: 2023,
+              publisher: "IEEE",
+              abstract: "Depression, a widespread mental health condition with substantial personal and societal impacts, necessitates early detection for effective intervention. The focus of this thesis is crafting a dependable and precise system to identify depression from social media text, employing natural language processing (NLP) and machine learning (ML). Drawing from diverse social media posts, both from individuals with and without depression, the primary aim is to preprocess this textual data effectively. NLP techniques, including tokenization, stemming, N-gram, Countvectorizer analysis, and TF-IDF, convert raw content into meaningful representations capturing linguistic and emotional facets of depression. Utilizing the preprocessed data, machine learning algorithms acquire discriminating patterns through feature extraction. Diverse ML techniques—Stochastic Gradient Descent (SGD), Naive Bayes (NB), Decision Tree (DT), Random Forest (RF), Support Vector Machines (SVM), KNearest Neighbor (KNN), Multi-Layer Perceptron (MLP), etc.—are employed. Trained on annotated data and extracted attributes, these algorithms discern depressive from nondepressive social media posts. Model performance assessment incorporates metrics like accuracy, precision, recall, and F1-score. Results underscore the efficacy of this approach in detecting depression from social media text.",
+              link: "https://ieeexplore.ieee.org/document/10415619",
+              image: "/research-images/depression-detection.svg",
+              color: "from-emerald-600 to-teal-600"
+            }
+          ].map((paper, idx) => (
+            <div 
+              key={idx}
+              className="bg-[#0b0c14]/55 border border-zinc-900/80 rounded-3xl overflow-hidden hover:border-emerald-500/30 hover:shadow-[0_10px_35px_rgba(16,185,129,0.05)] transition-all duration-300 group select-text"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
+                {/* Paper Image */}
+                <div className="md:col-span-4 relative h-48 md:h-auto">
+                  <img 
+                    src={paper.image} 
+                    alt={paper.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                  <div className="absolute bottom-3 left-3">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-sm text-white/90">
+                      {paper.year} IEEE
+                    </span>
+                  </div>
+                </div>
+
+                {/* Paper Content */}
+                <div className="md:col-span-8 p-6 md:p-8 flex flex-col">
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${styleSet.badgeStyle}`}>
+                        {paper.publisher}
+                      </span>
+                      <span className="text-[9px] text-zinc-550 font-semibold">{paper.year}</span>
+                    </div>
+                  </div>
+
+                  <h3 className={`text-sm md:text-base font-extrabold group-hover:text-emerald-400 transition-colors leading-tight mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-white'}`}>
+                    {paper.title}
+                  </h3>
+
+                  <p className="text-[10px] font-mono text-indigo-400 mb-3 select-text">
+                    {paper.authors}
+                  </p>
+
+                  <p className="text-[10px] text-zinc-500 font-sans mb-4 italic select-text">
+                    {paper.conference}
+                  </p>
+
+                  <p className="text-[11px] sm:text-xs text-zinc-400 font-sans leading-relaxed line-clamp-4 select-text flex-1">
+                    {paper.abstract}
+                  </p>
+
+                  <div className="mt-6 pt-4 border-t border-zinc-900/60 select-none">
+                    <a 
+                      href={paper.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={() => triggerSound(900, 0.02)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-800/80 bg-zinc-950 text-[10px] font-mono text-zinc-350 hover:text-white hover:border-zinc-750 transition-all cursor-pointer font-bold active:scale-98"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      VIEW PAPER ON IEEE XPLORE
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* SECTION 4.5: LATEST STORIES (MEDIUM FEED) */}
       <section id="writings" className="relative px-6 md:px-12 py-24 max-w-6xl w-full mx-auto space-y-12 z-10">
         
@@ -1876,6 +1989,8 @@ export default function LandingPage({
               { href: "#skills", label: "STATIONS", target: "skills" },
               { href: "#timeline", label: "TIMELINE", target: "timeline" },
               { href: "#projects", label: "INNOVATIONS", target: "projects" },
+              { href: "#research", label: "RESEARCH", target: "research" },
+              { href: "#certifications", label: "CERTIFICATES", target: "certifications" },
               { href: "#contact", label: "TRANSMIT", target: "contact" }
             ].map((link) => (
               <motion.a
