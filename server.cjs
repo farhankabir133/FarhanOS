@@ -30,26 +30,6 @@ var import_genai = require("@google/genai");
 import_dotenv.default.config();
 var app = (0, import_express.default)();
 var PORT = Number(process.env.PORT) || 3001;
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    "https://farhankabir.me",
-    "https://farhankabir133.github.io",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:5173"
-  ];
-  const origin = req.headers.origin;
-  if (origin && (allowedOrigins.includes(origin) || origin.endsWith(".github.io"))) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-    return;
-  }
-  next();
-});
 app.use(import_express.default.json({ limit: "10mb" }));
 var aiClient = null;
 function getAiClient() {
@@ -69,63 +49,6 @@ function getAiClient() {
   }
   return aiClient;
 }
-app.post("/api/contact", async (req, res) => {
-  try {
-    const { name, email, subject, message, metadata } = req.body;
-    if (!email || !message) {
-      res.status(400).json({ error: "Email and message are required fields." });
-      return;
-    }
-    console.log(`
---- [MESSAGE TRANSMISSION RECEIVED] ---`);
-    console.log(`Timestamp: ${(/* @__PURE__ */ new Date()).toISOString()}`);
-    console.log(`Sender: ${name || "Anonymous"} <${email}>`);
-    console.log(`Subject: ${subject || "No Subject"}`);
-    console.log(`Message Payload:
-${message}`);
-    if (metadata) {
-      console.log(`Metadata Parameters:`, JSON.stringify(metadata, null, 2));
-    }
-    console.log(`-------------------------------------
-`);
-    const ai = getAiClient();
-    const promptText = `Analyze the following contact inquiry or strategic mission brief sent to Farhan Kabir:
-Sender Name: ${name || "Anonymous"}
-Sender Email: ${email}
-Subject: ${subject || "No Subject"}
-Message: ${message}
-${metadata ? `Metadata: ${JSON.stringify(metadata)}` : ""}
-
-Provide a JSON object containing:
-1. "urgency": "High" | "Medium" | "Low"
-2. "inquiryType": "General Inquiry" | "Job Collaboration" | "Research Inquiry" | "Strategic Project Brief"
-3. "summaryText": "A 1-sentence diagnostic summary of the message."
-4. "suggestedAutoReply": "A professional, personalized 3-sentence email response draft acknowledging their inquiry as Farhan's AI Assistant."
-
-Respond ONLY with valid JSON.`;
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: promptText,
-      config: {
-        responseMimeType: "application/json"
-      }
-    });
-    let analysis = {};
-    try {
-      analysis = JSON.parse(response.text || "{}");
-    } catch (e) {
-      console.error("Failed to parse Gemini analysis as JSON:", e);
-    }
-    res.json({
-      success: true,
-      message: "Transmission successfully established and analyzed.",
-      analysis
-    });
-  } catch (err) {
-    console.error("Error in contact transmission route:", err);
-    res.status(500).json({ error: err.message || "Failed to authorize transmission." });
-  }
-});
 app.post("/api/ask-twin", async (req, res) => {
   try {
     const { message, history } = req.body;
@@ -183,7 +106,7 @@ RULES FOR CHATTING:
       parts: [{ text: message }]
     });
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: formattedContents,
       config: {
         systemInstruction: systemPrompt,
@@ -206,7 +129,7 @@ app.post("/api/tts", async (req, res) => {
     const ai = getAiClient();
     const voiceInstruct = type === "tour" ? `Speak in an extremely premium, calm, cinematic, and slightly futuristic synthetic voice of an AI operating system guide. Explain clearly: ${text}` : `Narrate the following article summary with warm, thoughtful, clinical, and precise speech: ${text}`;
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
+      model: "gemini-3.1-flash-tts-preview",
       contents: [{ parts: [{ text: voiceInstruct }] }],
       config: {
         responseModalities: ["AUDIO"],
@@ -246,7 +169,7 @@ app.post("/api/summarize-brief", async (req, res) => {
 
 Please construct a ultra-polished, futuristic, technical "Mission Assessment & Strategy" (3-4 sentences), formatted like an OS diagnostics readout. Detail the technical feasibility, model selection candidates (e.g. BERT variations or custom fine-tuning), and estimated deployment approach. Keep it sharp, professional, and elegant. No markdown headings, just a clean paragraph.`;
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
       contents: promptText
     });
     res.json({ summary: response.text });
@@ -353,6 +276,38 @@ app.get("/api/medium-stories", async (req, res) => {
   } catch (err) {
     console.error("Error fetching Medium RSS:", err);
     res.status(500).json({ error: err.message || "Failed to fetch Medium stories" });
+  }
+});
+app.get("/api/github-repos", async (req, res) => {
+  try {
+    const username = "farhankabir133";
+    const response = await fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=100`, {
+      headers: {
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "FarhanOS-Portfolio/1.0"
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`GitHub API failed with status: ${response.status}`);
+    }
+    const repos = await response.json();
+    const topRepos = repos.sort((a, b) => b.stargazers_count - a.stargazers_count).slice(0, 10).map((repo) => ({
+      id: repo.id,
+      name: repo.name,
+      full_name: repo.full_name,
+      description: repo.description,
+      html_url: repo.html_url,
+      language: repo.language,
+      stargazers_count: repo.stargazers_count,
+      forks_count: repo.forks_count,
+      updated_at: repo.updated_at,
+      topics: repo.topics || [],
+      homepage: repo.homepage
+    }));
+    res.json(topRepos);
+  } catch (err) {
+    console.error("Error fetching GitHub repos:", err);
+    res.status(500).json({ error: err.message || "Failed to fetch GitHub repositories" });
   }
 });
 async function startServer() {

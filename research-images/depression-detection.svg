@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3a5f;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow3">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bg3)"/>
+  
+  <!-- Brain silhouette with analysis overlay -->
+  <g transform="translate(400, 220)" opacity="0.9">
+    <!-- Brain outline -->
+    <ellipse cx="0" cy="0" rx="90" ry="70" fill="none" stroke="#10b981" stroke-width="2.5" filter="url(#glow3)"/>
+    
+    <!-- Brain hemispheres -->
+    <path d="M -20 -60 Q -40 -30 -30 0 Q -50 30 -20 60" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.7"/>
+    <path d="M 20 -60 Q 40 -30 30 0 Q 50 30 20 60" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.7"/>
+    
+    <!-- Neural connections inside brain -->
+    <g opacity="0.5">
+      <line x1="-40" y1="-20" x2="40" y2="-20" stroke="#06b6d4" stroke-width="1"/>
+      <line x1="-50" y1="10" x2="50" y2="10" stroke="#06b6d4" stroke-width="1"/>
+      <line x1="-30" y1="40" x2="30" y2="40" stroke="#06b6d4" stroke-width="1"/>
+      <line x1="0" y1="-50" x2="0" y2="50" stroke="#06b6d4" stroke-width="1"/>
+    </g>
+    
+    <!-- Scanning effect -->
+    <rect x="-100" y="-10" width="200" height="20" fill="rgba(6,182,212,0.15)" stroke="#06b6d4" stroke-width="1">
+      <animate attributeName="y" values="-80;80;-80" dur="3s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  
+  <!-- Social media text streams -->
+  <g transform="translate(150, 380)" opacity="0.7">
+    <rect x="0" y="0" width="180" height="60" rx="8" fill="rgba(16,185,129,0.1)" stroke="#10b981" stroke-width="1"/>
+    <text x="90" y="25" text-anchor="middle" font-family="monospace" font-size="9" fill="#6ee7b7">"feeling overwhelmed"</text>
+    <text x="90" y="45" text-anchor="middle" font-family="monospace" font-size="9" fill="#6ee7b7">"can't sleep..."</text>
+  </g>
+  
+  <g transform="translate(470, 380)" opacity="0.7">
+    <rect x="0" y="0" width="180" height="60" rx="8" fill="rgba(6,182,212,0.1)" stroke="#06b6d4" stroke-width="1"/>
+    <text x="90" y="25" text-anchor="middle" font-family="monospace" font-size="9" fill="#67e8f9">"excited for today!"</text>
+    <text x="90" y="45" text-anchor="middle" font-family="monospace" font-size="9" fill="#67e8f9">"grateful for..."</text>
+  </g>
+  
+  <!-- Analysis pipeline -->
+  <g transform="translate(400, 480)">
+    <line x1="-250" y1="0" x2="250" y2="0" stroke="#10b981" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>
+    <circle cx="-250" cy="0" r="10" fill="none" stroke="#10b981" stroke-width="2"/>
+    <circle cx="-125" cy="0" r="10" fill="none" stroke="#06b6d4" stroke-width="2"/>
+    <circle cx="0" cy="0" r="12" fill="#10b981" filter="url(#glow3)"/>
+    <circle cx="125" cy="0" r="10" fill="none" stroke="#06b6d4" stroke-width="2"/>
+    <circle cx="250" cy="0" r="10" fill="none" stroke="#10b981" stroke-width="2"/>
+    
+    <text x="-250" y="-18" text-anchor="middle" font-family="monospace" font-size="9" fill="#6ee7b7">POSTS</text>
+    <text x="-125" y="-18" text-anchor="middle" font-family="monospace" font-size="9" fill="#67e8f9">TOKENIZE</text>
+    <text x="0" y="-18" text-anchor="middle" font-family="monospace" font-size="9" fill="#a7f3d0">ROBERTA</text>
+    <text x="125" y="-18" text-anchor="middle" font-family="monospace" font-size="9" fill="#67e8f9">FEATURES</text>
+    <text x="250" y="-18" text-anchor="middle" font-family="monospace" font-size="9" fill="#6ee7b7">SCREEN</text>
+  </g>
+  
+  <!-- Risk indicators -->
+  <g transform="translate(400, 140)" opacity="0.8">
+    <circle cx="-60" cy="0" r="6" fill="#ef4444">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="-30" cy="0" r="4" fill="#f59e0b">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="0" cy="0" r="5" fill="#10b981">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="30" cy="0" r="4" fill="#10b981">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="3.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="60" cy="0" r="6" fill="#10b981">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="2.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Bottom accent -->
+  <line x1="0" y1="550" x2="800" y2="550" stroke="url(#accent3)" stroke-width="3" opacity="0.5"/>
+  
+  <!-- Title -->
+  <text x="400" y="570" text-anchor="middle" font-family="monospace" font-size="12" fill="#94a3b8" opacity="0.8">
+    SOCIAL MEDIA ANALYSIS // DEPRESSION DETECTION // ROBERTA + NLP
+  </text>
+</svg>
