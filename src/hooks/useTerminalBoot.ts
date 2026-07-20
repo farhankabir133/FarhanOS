@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BOOT_TIMING, type BootLine } from '../config/terminalCommands';
 import { TypingEngine } from '../components/TerminalBootLoader/TypingEngine';
 import { delay, prefersReducedMotion } from '../utils/delay';
+import { bootAudio } from '../utils/bootAudio';
 
 export type BootPhase = 'booting' | 'awaiting' | 'revealing' | 'done';
 
@@ -92,6 +93,10 @@ export function useTerminalBoot({
     startedAtRef.current = performance.now();
     const engine = new TypingEngine();
     engineRef.current = engine;
+
+    if (!reducedMotion) {
+      engine.setOnType(() => bootAudio.tick(1800, 0.008));
+    }
 
     const run = async () => {
       const finish = async () => {

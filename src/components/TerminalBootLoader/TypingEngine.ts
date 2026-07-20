@@ -9,6 +9,11 @@
 export class TypingEngine {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private cancelled = false;
+  private onType?: () => void;
+
+  setOnType(callback: () => void): void {
+    this.onType = callback;
+  }
 
   cancel(): void {
     this.cancelled = true;
@@ -40,6 +45,7 @@ export class TypingEngine {
     for (let i = 1; i <= text.length; i++) {
       if (this.cancelled) return;
       el.textContent = text.slice(0, i);
+      this.onType?.();
       await this.wait(perChar);
     }
   }

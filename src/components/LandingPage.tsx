@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion } from 'motion/react';
 import { 
   Rocket, Compass, PhoneCall, Download, GitBranch, Sparkles, BookOpen, 
@@ -9,10 +9,14 @@ import {
 import { portfolioData } from '../data/portfolioData';
 import { Article } from '../types';
 import DecryptText from './DecryptText';
-import ThreeWormhole from './ThreeWormhole';
+const ThreeWormhole = lazy(() => import('./ThreeWormhole'));
 import LoopingTypewriter from './LoopingTypewriter';
 import OneTimeTypewriter from './OneTimeTypewriter';
 import avatarImg from '../../assets/avatar.png';
+import avatar112 from '../../assets/avatar-112.png';
+import avatar144 from '../../assets/avatar-144.png';
+import avatar224 from '../../assets/avatar-224.png';
+import avatar288 from '../../assets/avatar-288.png';
 import { getApiBaseUrl } from '../utils/apiConfig';
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -32,9 +36,10 @@ interface TimelineCardProps {
   item: any;
   idx: number;
   theme: 'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light';
+  prefersReducedMotion: boolean;
 }
 
-function TimelineCard({ item, idx, theme }: TimelineCardProps) {
+function TimelineCard({ item, idx, theme, prefersReducedMotion }: TimelineCardProps) {
   const isLeft = idx % 2 === 0;
 
   return (
@@ -55,7 +60,7 @@ function TimelineCard({ item, idx, theme }: TimelineCardProps) {
       >
         <div className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center shadow-lg border-cyan-400/80 scale-100">
           <motion.span 
-            animate={{ rotate: 360 }}
+            animate={prefersReducedMotion ? {} : { rotate: 360 }}
             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
             className="w-3 h-3 rounded-full bg-gradient-to-tr from-cyan-400 to-indigo-500 scale-100"
           />
@@ -68,7 +73,7 @@ function TimelineCard({ item, idx, theme }: TimelineCardProps) {
       {/* Card Content Container */}
       <div className="w-full md:w-[46%] pl-12 md:pl-0">
         <motion.div 
-          whileHover={{ y: -4, boxShadow: theme === 'light' ? '0 20px 40px rgba(99,102,241,0.1)' : '0 20px 40px rgba(0,255,204,0.08)' }}
+          whileHover={{ y: -4, opacity: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           className={`p-6 md:p-8 rounded-2xl border backdrop-blur-md relative group ${theme === 'light' 
             ? 'bg-white/80 border-slate-200 shadow-lg hover:border-indigo-400 hover:shadow-indigo-500/5' 
@@ -165,6 +170,15 @@ export default function LandingPage({
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [activeTab, setActiveTab] = useState<'All' | 'AI/ML' | 'Frontend' | 'Backend' | 'Database' | 'DevOps'>('All');
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -465,7 +479,9 @@ export default function LandingPage({
       className="relative min-h-screen flex flex-col w-full select-text bg-transparent"
     >
       {/* 3D background starfield simulation */}
-      <ThreeWormhole isWarping={isWarping} theme={theme} />
+      <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
+        <ThreeWormhole isWarping={isWarping} theme={theme} />
+      </Suspense>
 
       {/* Background glow meshes */}
       <div className={`pointer-events-none fixed inset-0 z-0 bg-gradient-to-br ${styleSet.gradientBg} opacity-80`} />
@@ -479,7 +495,7 @@ export default function LandingPage({
       >
         <div className="flex items-center gap-3">
           <motion.span 
-            animate={{ scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
+            animate={prefersReducedMotion ? {} : { scale: [1, 1.2, 1], opacity: [0.8, 1, 0.8] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             className={`w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]`}
           />
@@ -519,7 +535,7 @@ export default function LandingPage({
 
         <div className="flex items-center gap-3">
           <motion.button 
-            whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}
+            whileHover={{ scale: 1.05, opacity: 0.95 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             onClick={onLaunchOS}
@@ -553,7 +569,9 @@ export default function LandingPage({
             className="relative w-28 h-28 md:w-36 md:h-36 rounded-full bg-zinc-950/80 border-2 border-indigo-500/35 overflow-hidden group shadow-2xl transition-all duration-300 hover:border-[#00ffcc]"
           >
             <img 
-              src={avatarImg} 
+              src={avatarImg}
+              srcSet={`${avatar112} 112w, ${avatar144} 144w, ${avatar224} 224w, ${avatar288} 288w, ${avatarImg} 329w`}
+              sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, (max-width: 1536px) 224px, 288px"
               alt="Farhan Kabir portrait" 
               className="w-full h-full object-cover grayscale-30 group-hover:grayscale-0 transition-all duration-500"
             />
@@ -614,7 +632,7 @@ export default function LandingPage({
             >
               <span className="block text-6xl sm:text-7xl md:text-8xl font-black tracking-tight leading-tight select-text mb-2">
                 <motion.span 
-                  animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
+                  animate={prefersReducedMotion ? {} : { rotate: [0, 14, -8, 14, -4, 10, 0] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
                   className="inline-block"
                   style={{ transformOrigin: '70% 70%' }}
@@ -657,7 +675,7 @@ export default function LandingPage({
           className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-10 w-full max-w-md"
         >
           <motion.button 
-            whileHover={{ scale: 1.03, boxShadow: '0 0 25px rgba(99,102,241,0.4), 0 0 50px rgba(99,102,241,0.2)' }}
+            whileHover={{ scale: 1.03, opacity: 0.95 }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             animate={{ boxShadow: ['0 0 15px rgba(99,102,241,0.2)', '0 0 25px rgba(99,102,241,0.35)', '0 0 15px rgba(99,102,241,0.2)'] }}
@@ -668,7 +686,7 @@ export default function LandingPage({
           </motion.button>
           
           <motion.button 
-            whileHover={{ scale: 1.03, boxShadow: '0 0 20px rgba(99,102,241,0.3)' }}
+            whileHover={{ scale: 1.03, opacity: 0.95 }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             onClick={() => onOpenWindowDirectly('resume')}
@@ -738,7 +756,7 @@ export default function LandingPage({
             SCROLL FOR DIAGNOSTICS
           </span>
           <motion.div 
-            animate={{ height: [12, 20, 12] }}
+            animate={prefersReducedMotion ? {} : { height: [12, 20, 12] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
             className="w-px xs:h-4 sm:h-5 md:h-6 lg:h-7 xl:h-7 2xl:h-8 3xl:h-9 bg-zinc-800"
           />
@@ -805,7 +823,7 @@ export default function LandingPage({
             ].map((stat, i) => (
               <motion.div
                 key={i}
-                whileHover={{ y: -4, boxShadow: theme === 'light' ? '0 10px 25px rgba(99,102,241,0.1)' : '0 10px 25px rgba(99,102,241,0.15)' }}
+                whileHover={{ y: -4, opacity: 0.95 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 onClick={() => triggerSound(900, 0.02)}
                 className={`bg-zinc-950/45 border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between transition-all duration-300 cursor-pointer backdrop-blur-md ${styleSet.statCardGlow}`}
@@ -872,7 +890,7 @@ export default function LandingPage({
           {filteredSkills.map((skill) => (
             <motion.div
               key={skill.name}
-              whileHover={{ y: -4, boxShadow: theme === 'light' ? '0 10px 25px rgba(99,102,241,0.1)' : '0 10px 25px rgba(99,102,241,0.15)' }}
+              whileHover={{ y: -4, opacity: 0.95 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className={`bg-zinc-950/45 border border-zinc-900/80 p-4.5 rounded-2xl hover:border-zinc-800 transition-all font-mono`}
             >
@@ -929,7 +947,7 @@ export default function LandingPage({
                   whileInView={{ scale: 1, opacity: 1 }}
                   viewport={{ once: true, margin: "-80px" }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  whileHover={{ scale: 1.2, boxShadow: '0 0 12px rgba(0,255,204,0.8)' }}
+                  whileHover={{ scale: 1.2, opacity: 0.95 }}
                   className="absolute left-[-5.5px] top-1.5 w-2.5 h-2.5 rounded-full bg-zinc-950 border-2 border-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)] transition-all duration-300"
                 />
                 
@@ -1063,7 +1081,7 @@ export default function LandingPage({
           {/* Timeline cards */}
           <div className="space-y-16 relative z-10">
             {portfolioData.professionalTimeline.map((item, i) => (
-              <TimelineCard key={i} item={item} idx={i} theme={theme} />
+              <TimelineCard key={i} item={item} idx={i} theme={theme} prefersReducedMotion={prefersReducedMotion} />
             ))}
           </div>
         </motion.div>
@@ -1293,6 +1311,8 @@ export default function LandingPage({
                   <img 
                     src={paper.image} 
                     alt={paper.title}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
@@ -1545,7 +1565,7 @@ export default function LandingPage({
           {certifications.map((cert, i) => (
             <motion.div
               key={i}
-              whileHover={{ y: -4, boxShadow: theme === 'light' ? '0 15px 30px rgba(99,102,241,0.15)' : '0 15px 30px rgba(245,158,11,0.15)', borderColor: theme === 'light' ? 'rgba(99,102,241,0.4)' : 'rgba(245,158,11,0.4)' }}
+              whileHover={{ y: -4, opacity: 0.95, borderColor: theme === 'light' ? 'rgba(99,102,241,0.4)' : 'rgba(245,158,11,0.4)' }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className="bg-zinc-950/45 border border-zinc-900 p-6 rounded-2xl flex flex-col justify-between hover:border-zinc-800 transition-all select-text"
             >
@@ -1614,7 +1634,7 @@ export default function LandingPage({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          whileHover={{ scale: 1.02, boxShadow: theme === 'light' ? '0 25px 50px rgba(99,102,241,0.1)' : '0 25px 50px rgba(99,102,241,0.15)' }}
+          whileHover={{ scale: 1.02, opacity: 0.95 }}
           className="bg-[#0b0c14]/55 border border-zinc-900 p-8 sm:p-12 rounded-3xl relative overflow-hidden select-text shadow-xl"
         >
           <motion.div 
@@ -1962,7 +1982,7 @@ export default function LandingPage({
                 </div>
 
                 <motion.button 
-                  whileHover={{ scale: 1.02, boxShadow: '0 0 25px rgba(99,102,241,0.4)' }}
+                  whileHover={{ scale: 1.02, opacity: 0.95 }}
                   whileTap={{ scale: 0.98 }}
                   animate={{ boxShadow: ['0 0 15px rgba(99,102,241,0.2)', '0 0 25px rgba(99,102,241,0.35)', '0 0 15px rgba(99,102,241,0.2)'] }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
@@ -1973,7 +1993,7 @@ export default function LandingPage({
                   {formLoading ? (
                     <>
                       <motion.div
-                        animate={{ rotate: 360 }}
+                        animate={prefersReducedMotion ? {} : { rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                       >
                         <RefreshCw className="w-4 h-4" />
