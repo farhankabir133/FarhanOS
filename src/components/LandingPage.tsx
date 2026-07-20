@@ -799,7 +799,7 @@ export default function LandingPage({
           >
             {[
               { label: "EXPERIENCE", value: "4+ Years", desc: "AI & Full-Stack Architectures" },
-              { label: "NLP PAPERS", value: "4 Pubs", desc: "IEEE Journals & Conference Index" },
+               { label: "NLP PAPERS", value: "6 Pubs", desc: "IEEE Journals & Conference Index" },
               { label: "DEPLOYED SAAS", value: "12+ Apps", desc: "High-performance codebases" },
               { label: "CERTIFICATES", value: "5+ Credentials", desc: "Deep Learning & GCP" }
             ].map((stat, i) => (
@@ -1226,6 +1226,30 @@ export default function LandingPage({
         <div className="grid grid-cols-1 gap-8">
           {[
             {
+              title: "DEEP LEARNING-BASED PREDICTIVE MODELING FOR ENERGY CONSUMPTION IN CLIMATE-RESILIENT URBAN STRUCTURES",
+              authors: "Farhan Kabir, Tanzim Ahmed, Muhammad Rahman",
+              conference: "ISEE 2026",
+              year: 2026,
+              publisher: "ISEE",
+              abstract: "Tackling climate-resilient energy prediction by fusing CNN-LSTM models with urban heat island features. This paper presents a deep learning-based predictive modeling framework for forecasting energy consumption in climate-resilient urban structures. By integrating Convolutional Neural Networks (CNN) with Long Short-Term Memory (LSTM) architectures and augmenting them with urban heat island geospatial features, the model captures complex spatial-temporal dependencies that traditional approaches miss. The framework is validated against projected climate scenarios, demonstrating robust generalization across extreme weather events and urban morphology variations.",
+              link: "#",
+              image: "/research-images/energy-consumption-prediction.svg",
+              color: "from-amber-600 to-emerald-600",
+              badge: "NEWLY ACCEPTED @ ISEE 2026"
+            },
+            {
+              title: "Integrating Computer Vision and Building Information Modeling (BIM) for Real-Time Monitoring of Operational Energy Efficiency",
+              authors: "Farhan Kabir, Sadia Zaman, Arman Reza",
+              conference: "ISEE 2026",
+              year: 2026,
+              publisher: "ISEE",
+              abstract: "Engineering an end-to-end smart-building workflow utilizing computer vision, digital twins, and model-predictive control. This paper proposes an integrated framework that combines real-time computer vision occupancy detection, Building Information Modeling (BIM) digital twin synchronization, and Model-Predictive Control (MPC) to continuously monitor and optimize operational energy efficiency in commercial buildings. The system fuses visual spatial data with structural BIM repositories to generate actionable energy insights, reducing wasted consumption without compromising occupant comfort.",
+              link: "#",
+              image: "/research-images/cv-bim-energy-efficiency.svg",
+              color: "from-cyan-600 to-blue-600",
+              badge: "PUBLISHING SOON @ ISEE 2026"
+            },
+            {
               title: "AI-Driven Live Interview System for Real-Time Candidate Evaluation Using NLP and Computer Vision",
               authors: "Farhan Kabir, M Arman Reza Shah, Razat Biswas",
               conference: "2025 28th International Conference on Computer and Information Technology (ICCIT)",
@@ -1281,6 +1305,13 @@ export default function LandingPage({
 
                 {/* Paper Content */}
                 <div className="md:col-span-8 p-6 md:p-8 flex flex-col">
+                  {paper.badge && (
+                    <div className="mb-3">
+                      <span className="text-[9px] font-mono font-extrabold uppercase tracking-widest bg-gradient-to-r from-amber-500/20 to-emerald-500/20 border border-amber-500/40 text-amber-300 px-3 py-1 rounded-full backdrop-blur-sm animate-pulse">
+                        {paper.badge}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex items-center gap-2">
                       <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${styleSet.badgeStyle}`}>
@@ -1969,10 +2000,10 @@ export default function LandingPage({
         viewport={{ once: true, margin: "-80px" }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         className={`mt-auto border-t ${theme === 'light' ? 'border-slate-200/80 bg-slate-100/50' : 'border-zinc-900/60 bg-black/45'} backdrop-blur-md py-12 px-6 md:px-12 z-10 select-none`}>
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.5)]" />
-            <span className={`text-[10px] font-mono tracking-widest uppercase ${theme === 'light' ? 'text-slate-600' : 'text-zinc-450'}`}>
+            <span className={`text-[10px] font-mono tracking-widest uppercase ${theme === 'light' ? 'text-slate-600' : 'text-zinc-400'}`}>
               © {new Date().getFullYear()} FARHAN KABIR. ALL RIGHTS SECURED.
             </span>
           </div>
@@ -1982,7 +2013,7 @@ export default function LandingPage({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="flex flex-wrap items-center justify-center gap-5 text-[9.5px] font-mono text-zinc-550 font-bold"
+            className="flex flex-wrap items-center justify-center gap-5 text-[9.5px] font-mono text-zinc-400 font-bold"
           >
             {[
               { href: "#about", label: "ABOUT", target: "about" },
@@ -2036,7 +2067,7 @@ export default function LandingPage({
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                className="p-2 rounded-lg border border-zinc-900 hover:border-zinc-800 text-zinc-500 hover:text-white bg-zinc-950/30 transition-colors"
+                className="p-2 rounded-lg border border-zinc-900 hover:border-zinc-800 text-zinc-400 hover:text-white bg-zinc-950/30 transition-colors"
                 title={social.title}
               >
                 <social.Icon className="w-3.5 h-3.5" />

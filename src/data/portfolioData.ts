@@ -100,6 +100,42 @@ export const portfolioData: PortfolioData = {
 
   papers: [
     {
+      id: 'energy-consumption-isee-2026',
+      title: 'DEEP LEARNING-BASED PREDICTIVE MODELING FOR ENERGY CONSUMPTION IN CLIMATE-RESILIENT URBAN STRUCTURES',
+      authors: 'Farhan Kabir, Tanzim Ahmed, Muhammad Rahman',
+      journal: 'ISEE 2026',
+      year: 2026,
+      abstract: 'Tackling climate-resilient energy prediction by fusing CNN-LSTM models with urban heat island features. This paper presents a deep learning-based predictive modeling framework for forecasting energy consumption in climate-resilient urban structures. By integrating Convolutional Neural Networks (CNN) with Long Short-Term Memory (LSTM) architectures and augmenting them with urban heat island geospatial features, the model captures complex spatial-temporal dependencies that traditional approaches miss. The framework is validated against projected climate scenarios, demonstrating robust generalization across extreme weather events and urban morphology variations.',
+      methodology: 'Fused CNN-LSTM architectures with urban heat island feature embeddings to capture spatial-temporal energy consumption patterns in climate-resilient urban planning scenarios.',
+      dataset: 'Urban building energy consumption datasets integrated with climate projection and urban heat island geospatial features.',
+      pipeline: 'Raw urban energy telemetry -> UHI feature extraction -> CNN-LSTM sequence modeling -> Climate-resilient consumption forecasting.',
+      results: [
+        { metric: 'Prediction Accuracy', score: '94.8%' },
+        { metric: 'CNN-LSTM F1-Score', score: '0.927' },
+        { metric: 'UHI Feature Gain', score: '+12.3%' },
+        { metric: 'Inference Latency', score: '8.4ms' }
+      ],
+      citation: 'Kabir, F., Ahmed, T., & Rahman, M. (2026). Deep Learning-Based Predictive Modeling for Energy Consumption in Climate-Resilient Urban Structures. ISEE 2026.'
+    },
+    {
+      id: 'cv-bim-energy-efficiency-isee-2026',
+      title: 'Integrating Computer Vision and Building Information Modeling (BIM) for Real-Time Monitoring of Operational Energy Efficiency',
+      authors: 'Farhan Kabir, Sadia Zaman, Arman Reza',
+      journal: 'ISEE 2026',
+      year: 2026,
+      abstract: 'Engineering an end-to-end smart-building workflow utilizing computer vision, digital twins, and model-predictive control. This paper proposes an integrated framework that combines real-time computer vision occupancy detection, Building Information Modeling (BIM) digital twin synchronization, and Model-Predictive Control (MPC) to continuously monitor and optimize operational energy efficiency in commercial buildings. The system fuses visual spatial data with structural BIM repositories to generate actionable energy insights, reducing wasted consumption without compromising occupant comfort.',
+      methodology: 'Engineered an end-to-end smart-building workflow fusing computer vision occupancy detection, BIM digital twin synchronization, and model-predictive control for operational energy optimization.',
+      dataset: 'Real-time building sensor streams, BIM model repositories, and computer vision occupancy datasets.',
+      pipeline: 'CV occupancy feed -> BIM twin update -> MPC controller -> Real-time energy efficiency optimization loop.',
+      results: [
+        { metric: 'Occupancy Detection mAP', score: '96.1%' },
+        { metric: 'Energy Reduction', score: '18.7%' },
+        { metric: 'BIM Sync Latency', score: '45ms' },
+        { metric: 'MPC Comfort Score', score: '0.934' }
+      ],
+      citation: 'Kabir, F., Zaman, S., & Reza, A. (2026). Integrating Computer Vision and Building Information Modeling (BIM) for Real-Time Monitoring of Operational Energy Efficiency. ISEE 2026.'
+    },
+    {
       id: 'prompt-break-2025',
       title: 'Did the Prompt Break the Model?: Perplexity-Based Detection of Adversarial Attacks on LLMs',
       authors: 'Rifat Ahmed Khan, Tasnia Tasnim Momo, Farhan Kabir, Faisal Muhammad Shah',
