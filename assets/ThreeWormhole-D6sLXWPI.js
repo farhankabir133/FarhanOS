@@ -1,4 +1,4 @@
-import{r as ji,j as ro}from"./index-rqLTmb-c.js";/**
+import{r as ji,j as ro}from"./index-317pIq0K.js";/**
  * @license
  * Copyright 2010-2026 Three.js Authors
  * SPDX-License-Identifier: MIT
