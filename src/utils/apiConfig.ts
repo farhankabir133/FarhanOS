@@ -22,7 +22,7 @@ export const getApiBaseUrl = (): string => {
       return '';
     }
 
-    const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_REF || 'rsacfzyiydjxiqnynxfb';
+    const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_REF || 'urhwapbyxtjaulslmfao';
 
     if (
       hostname === 'farhankabir.me' ||
