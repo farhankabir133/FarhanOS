@@ -377,14 +377,9 @@ async function startServer() {
     });
   }
 
-  const isVercel = process.env.VERCEL === '1';
-  if (!isVercel) {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`FarhanOS full-stack server listening on http://0.0.0.0:${PORT}`);
-    });
-  }
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`FarhanOS full-stack server listening on http://0.0.0.0:${PORT}`);
+  });
 }
 
 startServer();
-
-export default app;
