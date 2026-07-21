@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Framework: React 18/19](https://img.shields.io/badge/Framework-React_19-indigo.svg)](https://react.dev/)
 [![Styling: Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-06b6d4.svg)](https://tailwindcss.com)
-[![AI-Core: Gemini 3.5](https://img.shields.io/badge/AI--Core-Gemini_3.5_Flash-emerald.svg)](https://deepmind.google/technologies/gemini/)
+[![AI-Core: Groq Llama 3.3](https://img.shields.io/badge/AI--Core-Groq_Llama_3.3_70B-orange.svg)](https://groq.com/)
 [![WebGL: Three.js](https://img.shields.io/badge/WebGL-Three.js-orange.svg)](https://threejs.org/)
 
 > An immersive, high-fidelity windowed operating system simulator presenting clinical NLP research, conceptual garden maps, and AI SaaS agent architectures in an interactive desktop environment.
@@ -47,12 +47,12 @@ The interface bridges professional NLP researcher credentials with premium front
 ## 🌟 Key Features
 
 ### 1. Digital Twin AI Clone (`FarhanTwin`)
-* **First-Person Conversationalist**: Integrated server-side proxy route communicating with a **Gemini 3.5 Flash** model. Answers questions about Farhan's biography, achievements, tech stack, and publications in his verified tone.
+* **First-Person Conversationalist**: Integrated server-side proxy route communicating with a **Llama 3.3 70B (via Groq)** model. Answers questions about Farhan's biography, achievements, tech stack, and publications in his verified tone.
 * **Contextual Knowledge Base**: Ingests custom clinical datasets, RoBERTa accuracy F1 indicators, and product metrics directly from system prompts.
 
 ### 2. Neural OS Speech Synthesizer (TTS)
-* **High-Fidelity Audio Narration**: Connects to the experimental `gemini-3.1-flash-tts-preview` model to synthesize custom speech.
-* **Dual Output Modes**: Supports structured website-guided audio tours or article summaries read aloud in a warm, authoritative feminine voice (`Kore`).
+* **Client-Side Fallback Narration**: Uses the browser's native Web Speech API for voice synthesis. Server-side TTS is not available through Groq, so all narration falls back to client-side speech synthesis with premium voice selection.
+* **Dual Output Modes**: Supports structured website-guided audio tours or article summaries read aloud in a warm, authoritative voice.
 * **Visualizer Waveforms**: Animated canvas waveforms rendering real-time audio playback states.
 
 ### 3. Monographs & Publications Reader
@@ -82,7 +82,7 @@ The interface bridges professional NLP researcher credentials with premium front
 * **Styling & HUD**: Tailwind CSS v4 + custom CSS variable CRT scans + glassmorphic filters
 * **WebGL Elements**: Vanilla Three.js (particle gravity wells, node coordinates)
 * **Server Backend**: Node.js + Express + CORS proxies + tsx runner
-* **AI Engine**: Google GenAI SDK (`@google/genai` Node client wrapper)
+* **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via direct fetch calls
 * **Deployment**: GitHub Pages (Client) + Google Cloud Run (Server)
 
 ---
@@ -105,7 +105,7 @@ The interface bridges professional NLP researcher credentials with premium front
 │
 ├── dist/                      # Deployed production assets
 ├── supabase/                  # Edge functions for serverless API endpoints
-├── server.ts                  # Express production server & Gemini API proxy routing
+├── server.ts                  # Express production server & Groq API proxy routing
 ├── tsconfig.json              # TypeScript compiler parameters
 ├── vite.config.ts             # Vite bundler configurations with dynamic base paths
 └── package.json               # Scripts, manifest dependencies, and devDependencies
@@ -131,7 +131,7 @@ npm install
 ### 3. Setup Environment Variables
 Create a `.env` file in the root directory based on `.env.example`:
 ```env
-GEMINI_API_KEY="your_google_ai_studio_api_key"
+GROQ_API_KEY="your_groq_api_key"
 PORT=3001
 ```
 
@@ -139,7 +139,7 @@ PORT=3001
 ```bash
 npm run dev
 ```
-Navigate to `http://localhost:3001` in your browser. The Express server acts as both the API proxy for Gemini and the static middleware server.
+Navigate to `http://localhost:3001` in your browser. The Express server acts as both the API proxy for Groq and the static middleware server.
 
 ---
 

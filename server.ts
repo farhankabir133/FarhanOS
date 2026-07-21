@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
 
@@ -10,27 +9,6 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
 app.use(express.json({ limit: '10mb' }));
-
-// Lazy initializer for Google GenAI Client
-let aiClient: GoogleGenAI | null = null;
-
-function getAiClient(): GoogleGenAI {
-  if (!aiClient) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error('GEMINI_API_KEY environment variable is required but missing.');
-    }
-    aiClient = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  }
-  return aiClient;
-}
 
 // 1. Digital Twin AI Chat Endpoint
 app.post('/api/ask-twin', async (req, res) => {
@@ -41,9 +19,6 @@ app.post('/api/ask-twin', async (req, res) => {
       return;
     }
 
-    const ai = getAiClient();
-
-    // Context detailing Farhan's biography, achievements, and papers
     const systemPrompt = `You are "FarhanTwin", a state-of-the-art AI clone representing Farhan Kabir.
 Farhan Kabir is an AI Engineer, NLP Researcher, Full Stack Developer, and Technical Writer.
 Your tone is brilliant, conversational, slightly futuristic (like an operating system interface), and highly precise.
@@ -60,9 +35,9 @@ FARHAN KABIR DATASET:
   3. "Emotion Detection From Textual Data Using Natural Language Processing and Machine Learning Techniques" (25). In IEEE ECCE. Custom Transformer classifiers (BERT/RoBERTa) mapping clinical emotional states.
   4. "Depression Detection From Social Media Textual Data Using Natural Language Processing and Machine Learning Techniques" (23). In IEEE ICCIT. RoBERTa models mapping negative pronouns and vocabulary shifts (F1: 0.914).
 - Core SaaS Products & Projects:
-  1. "TypeRush" - An immersive, atmospheric typing survival game with real-time sound synthesis and adaptive visual themes. (React 19, TailwindCSS, Web Audio API, Express, Gemini API, Firebase).
+  1. "TypeRush" - An immersive, atmospheric typing survival game with real-time sound synthesis and adaptive visual themes. (React 19, TailwindCSS, Web Audio API, Express, Groq API, Firebase).
   2. "The Ink Home" - Immersive 3D spatial publication portal syncing Medium RSS feeds into interactive WebGL carousels. (React 18, Vite, Three.js, Framer Motion, TailwindCSS, Node.js).
-  3. "SafeSide Predictor" - Tactical football analytics command center providing live match simulations and Poisson risk modeling. (React, Supabase, TailwindCSS, Express, Gemini AI, Recharts).
+  3. "SafeSide Predictor" - Tactical football analytics command center providing live match simulations and Poisson risk modeling. (React, Supabase, TailwindCSS, Express, Groq AI, Recharts).
   4. "Multimodal Emotion Recognizer" - Spectrogram bimodal fusion system aligning pitch with BERT embeddings (92.3% accurate).
 - Career Timeline:
   - 2026: Architect & Researcher, Cognitive Diagnostics Lab.
@@ -80,30 +55,35 @@ RULES FOR CHATTING:
 - Highlight research metrics (e.g. RoBERTa F1: 0.914, Wav2Vec voice analysis) when relevant!
 - Integrate subtle futuristic terminal references or OS metaphors if requested or appropriate.`;
 
-    const formattedContents = [];
-    if (history && Array.isArray(history)) {
-      for (const h of history) {
-        formattedContents.push({
-          role: h.role === 'user' ? 'user' : 'model',
-          parts: [{ text: h.content }]
-        });
-      }
-    }
-    formattedContents.push({
-      role: 'user',
-      parts: [{ text: message }]
-    });
+    const historyPayload = history && Array.isArray(history) ? history.map(h => ({
+      role: h.role === 'user' ? 'user' : 'assistant',
+      content: h.content
+    })) : [];
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: formattedContents,
-      config: {
-        systemInstruction: systemPrompt,
-        temperature: 0.7,
+    const targetUrl = 'https://api.groq.com/openai/v1/chat/completions';
+    const groqRes = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
       },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...historyPayload,
+          { role: 'user', content: message }
+        ],
+        temperature: 0.7
+      })
     });
 
-    res.json({ reply: response.text });
+    const data = await groqRes.json();
+    if (!groqRes.ok) {
+      throw new Error(data.error?.message || 'Groq api error');
+    }
+
+    res.json({ reply: data.choices?.[0]?.message?.content || '' });
   } catch (err: any) {
     console.error('Error in ask-twin route:', err);
     res.status(500).json({ error: err.message || 'Error occurred while contacting the digital twin.' });
@@ -113,39 +93,13 @@ RULES FOR CHATTING:
 // 2. Audio Speech Synthesis (TTS) Endpoint
 app.post('/api/tts', async (req, res) => {
   try {
-    const { text, type } = req.body;
+    const { text } = req.body;
     if (!text) {
       res.status(400).json({ error: 'Text content is required' });
       return;
     }
 
-    const ai = getAiClient();
-
-    // Use gemini-3.1-flash-tts-preview to generate TTS
-    const voiceInstruct = type === 'tour' 
-      ? `Speak in an extremely premium, calm, cinematic, and slightly futuristic synthetic voice of an AI operating system guide. Explain clearly: ${text}`
-      : `Narrate the following article summary with warm, thoughtful, clinical, and precise speech: ${text}`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.1-flash-tts-preview',
-      contents: [{ parts: [{ text: voiceInstruct }] }],
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' }, // Warm & authoritative feminine
-          },
-        },
-      },
-    });
-
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) {
-      res.status(502).json({ error: 'Model failed to synthesize voice data.' });
-      return;
-    }
-
-    res.json({ audio: base64Audio });
+    res.json({ audio: null });
   } catch (err: any) {
     console.error('Error in TTS route:', err);
     res.status(500).json({ error: err.message || 'Error executing Speech Synthesis.' });
@@ -161,7 +115,6 @@ app.post('/api/summarize-brief', async (req, res) => {
       return;
     }
 
-    const ai = getAiClient();
     const promptText = `Analyze the following mission parameters sent to Farhan Kabir, AI Architect:
 - Venture Category: ${projectType}
 - Capital Boundary: ${budget}
@@ -171,12 +124,26 @@ app.post('/api/summarize-brief', async (req, res) => {
 
 Please construct a ultra-polished, futuristic, technical "Mission Assessment & Strategy" (3-4 sentences), formatted like an OS diagnostics readout. Detail the technical feasibility, model selection candidates (e.g. BERT variations or custom fine-tuning), and estimated deployment approach. Keep it sharp, professional, and elegant. No markdown headings, just a clean paragraph.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: promptText,
+    const targetUrl = 'https://api.groq.com/openai/v1/chat/completions';
+    const groqRes = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: promptText }],
+        temperature: 0.7
+      })
     });
 
-    res.json({ summary: response.text });
+    const data = await groqRes.json();
+    if (!groqRes.ok) {
+      throw new Error(data.error?.message || 'Groq summarizer api error');
+    }
+
+    res.json({ summary: data.choices?.[0]?.message?.content || '' });
   } catch (err: any) {
     console.error('Error in analyze brief route:', err);
     res.status(500).json({ error: err.message || 'Failed to authorize brief analysis.' });

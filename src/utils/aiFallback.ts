@@ -127,9 +127,9 @@ export function getAskTwinFallback(
   // 4. TypeRush
   if (q.includes('typerush') || q.includes('typing') || q.includes('game')) {
     return (
-      "TypeRush is an atmospheric, typing survival game built with React 19, TailwindCSS, the Web Audio API, Express, the Gemini API, and Firebase. " +
+       "TypeRush is an atmospheric, typing survival game built with React 19, TailwindCSS, the Web Audio API, Express, the Groq API, and Firebase. " +
       "It renders moving kinetic letters as physics-based threats, prompting the player to type them before they collide with a spaceship shield. " +
-      "I built a zero-re-render character buffer grid in React running at 60fps, integrated custom Web Audio oscillators for real-time laser synthesis, and used Gemini for adaptive visual difficulty scaling."
+      "I built a zero-re-render character buffer grid in React running at 60fps, integrated custom Web Audio oscillators for real-time laser synthesis, and used Groq for adaptive visual difficulty scaling."
     );
   }
 
@@ -147,7 +147,7 @@ export function getAskTwinFallback(
     return (
       "SafeSide Predictor is a tactical football analytics dashboard and simulation engine. " +
       "It models match outcomes using a custom Poisson probability risk distribution model (F1: 0.88), storing results in Supabase. " +
-      "The system utilizes Gemini AI to write tactical match pre-views and automates result checks via Express cron jobs."
+      "The system utilizes Groq AI to write tactical match pre-views and automates result checks via Express cron jobs."
     );
   }
 
@@ -190,7 +190,7 @@ export function getAskTwinFallback(
   // 9. General greetings / Help / Default
   return (
     "Greetings! I am FarhanTwin, a neural clone representing Farhan Kabir. " +
-    "Since this page is currently running on a static hosting environment, the server-side Gemini routes are disabled. However, I have full local access to Farhan's portfolio logs.\n\n" +
+    "Since this page is currently running on a static hosting environment, the server-side Groq routes are disabled. However, I have full local access to Farhan's portfolio logs.\n\n" +
     "You can ask me about:\n" +
     "• My research papers (depression classification F1: 0.914, adversarial prompt defense models)\n" +
     "• My projects (TypeRush typing game, The Ink Home 3D portal, SafeSide football modeling)\n" +
@@ -217,7 +217,7 @@ export function generateClientBriefSummary(briefForm: {
 
   const modelCandidate = isNLP
     ? 'RoBERTa-Clinical or custom fine-tuned BERT'
-    : 'Gemini 3.5 Flash / distilled Llama 3B';
+    : 'Llama 3.3 70B Versatile / distilled Llama 3B';
 
   const pipelineLatency = isNLP ? '<5ms inference threshold' : '<150ms roundtrip HMR';
 

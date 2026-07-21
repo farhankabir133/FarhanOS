@@ -438,7 +438,7 @@ export default function LandingPage({
           throw new Error(data.error || 'Failed to transmit message.');
         }
         
-        // Output Gemini analytical metrics to console for verified diagnostics
+        // Output Groq analytical metrics to console for verified diagnostics
         if (data.analysis) {
           console.log('[Transmission Diagnostics Analysed]:', data.analysis);
         }

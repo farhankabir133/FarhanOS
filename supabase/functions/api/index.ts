@@ -145,7 +145,7 @@ function buildContactEmailHtml(params: {
             <td style="padding:20px 32px 0;">
               <p style="margin:0 0 12px;font-size:9px;letter-spacing:3px;color:#475569;text-transform:uppercase;font-weight:700;">▶ AI-SUGGESTED REPLY DRAFT</p>
               <div style="background:#0d1a0d;border:1px solid #1e3a1e;border-left:3px solid #22c55e;border-radius:10px;padding:18px 20px;">
-                <p style="margin:0 0 8px;font-size:9px;color:#4ade80;letter-spacing:2px;text-transform:uppercase;font-weight:700;">✦ GEMINI ANALYSIS — SUGGESTED RESPONSE</p>
+                 <p style="margin:0 0 8px;font-size:9px;color:#4ade80;letter-spacing:2px;text-transform:uppercase;font-weight:700;">✦ AI ANALYSIS — SUGGESTED RESPONSE</p>
                 <p style="margin:0;font-size:12px;color:#86efac;line-height:1.75;font-style:italic;">${params.suggestedAutoReply}</p>
               </div>
             </td>
@@ -277,10 +277,10 @@ Deno.serve(async (req: Request) => {
       .replace(/^\/api/, '')
       .replace(/\/+$/, '') || '/';
 
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const apiKey = Deno.env.get('GROQ_API_KEY');
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'GEMINI_API_KEY environment variable is required but missing.' }),
+        JSON.stringify({ error: 'GROQ_API_KEY environment variable is required but missing.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -316,9 +316,9 @@ FARHAN KABIR DATASET:
   3. "Emotion Detection From Textual Data Using Natural Language Processing and Machine Learning Techniques" (25). In IEEE ECCE. Custom Transformer classifiers (BERT/RoBERTa) mapping clinical emotional states.
   4. "Depression Detection From Social Media Textual Data Using Natural Language Processing and Machine Learning Techniques" (23). In IEEE ICCIT. RoBERTa models mapping negative pronouns and vocabulary shifts (F1: 0.914).
 - Core SaaS Products & Projects:
-  1. "TypeRush" - An immersive, atmospheric typing survival game with real-time sound synthesis and adaptive visual themes. (React 19, TailwindCSS, Web Audio API, Express, Gemini API, Firebase).
+   1. "TypeRush" - An immersive, atmospheric typing survival game with real-time sound synthesis and adaptive visual themes. (React 19, TailwindCSS, Web Audio API, Express, Groq API, Firebase).
   2. "The Ink Home" - Immersive 3D spatial publication portal syncing Medium RSS feeds into interactive WebGL carousels. (React 18, Vite, Three.js, Framer Motion, TailwindCSS, Node.js).
-  3. "SafeSide Predictor" - Tactical football analytics command center providing live match simulations and Poisson risk modeling. (React, Supabase, TailwindCSS, Express, Gemini AI, Recharts).
+   3. "SafeSide Predictor" - Tactical football analytics command center providing live match simulations and Poisson risk modeling. (React, Supabase, TailwindCSS, Express, Groq AI, Recharts).
   4. "Multimodal Emotion Recognizer" - Spectrogram bimodal fusion system aligning pitch with BERT embeddings (92.3% accurate).
 - Career Timeline:
   - 2026: Architect & Researcher, Cognitive Diagnostics Lab.
@@ -350,27 +350,30 @@ RULES FOR CHATTING:
         parts: [{ text: message }]
       });
 
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const geminiRes = await fetch(targetUrl, {
+      const targetUrl = 'https://api.groq.com/openai/v1/chat/completions';
+      const groqRes = await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
         body: JSON.stringify({
-          contents: formattedContents,
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          generationConfig: {
-            temperature: 0.7,
-          }
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...(history && Array.isArray(history) ? history.map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: h.content })) : []),
+            { role: 'user', content: message }
+          ],
+          temperature: 0.7
         })
       });
 
-      const data = await geminiRes.json();
-      if (!geminiRes.ok) {
-        throw new Error(data.error?.message || 'Gemini api error');
+      const data = await groqRes.json();
+      if (!groqRes.ok) {
+        throw new Error(data.error?.message || 'Groq api error');
       }
 
-      const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const reply = data.choices?.[0]?.message?.content || '';
       return new Response(JSON.stringify({ reply }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -386,39 +389,7 @@ RULES FOR CHATTING:
         );
       }
 
-      const voiceInstruct = type === 'tour'
-        ? `Speak in an extremely premium, calm, cinematic, and slightly futuristic synthetic voice of an AI operating system guide. Explain clearly: ${text}`
-        : `Narrate the following article summary with warm, thoughtful, clinical, and precise speech: ${text}`;
-
-      // Use gemini-2.5-flash-preview-tts for audio synthesis
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-      const geminiRes = await fetch(targetUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: voiceInstruct }] }],
-          generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Kore' },
-              },
-            },
-          }
-        })
-      });
-
-      const data = await geminiRes.json();
-      if (!geminiRes.ok) {
-        throw new Error(data.error?.message || 'Gemini tts api error');
-      }
-
-      const base64Audio = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) {
-        throw new Error('Model failed to synthesize voice data.');
-      }
-
-      return new Response(JSON.stringify({ audio: base64Audio }), {
+      return new Response(JSON.stringify({ audio: null }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
@@ -442,21 +413,26 @@ RULES FOR CHATTING:
 
 Please construct a ultra-polished, futuristic, technical "Mission Assessment & Strategy" (3-4 sentences), formatted like an OS diagnostics readout. Detail the technical feasibility, model selection candidates (e.g. BERT variations or custom fine-tuning), and estimated deployment approach. Keep it sharp, professional, and elegant. No markdown headings, just a clean paragraph.`;
 
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const geminiRes = await fetch(targetUrl, {
+      const targetUrl = 'https://api.groq.com/openai/v1/chat/completions';
+      const groqRes = await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }]
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: promptText }],
+          temperature: 0.7
         })
       });
 
-      const data = await geminiRes.json();
-      if (!geminiRes.ok) {
-        throw new Error(data.error?.message || 'Gemini summarizer api error');
+      const data = await groqRes.json();
+      if (!groqRes.ok) {
+        throw new Error(data.error?.message || 'Groq summarizer api error');
       }
 
-      const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const summary = data.choices?.[0]?.message?.content || '';
       return new Response(JSON.stringify({ summary }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -483,7 +459,7 @@ Please construct a ultra-polished, futuristic, technical "Mission Assessment & S
 
       let emailStatus: { sent: boolean; id?: string; error?: string } = { sent: false };
 
-      // ── Step 1: Run Gemini analysis ──────────────────────────────────────────
+      // ── Step 1: Run Groq analysis ──────────────────────────────────────────
       const promptText = `Analyze the following contact inquiry or strategic mission brief sent to Farhan Kabir:
 Sender Name: ${name || 'Anonymous'}
 Sender Email: ${email}
@@ -499,24 +475,27 @@ Provide a JSON object containing:
 
 Respond ONLY with valid JSON.`;
 
-      const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-      const geminiRes = await fetch(targetUrl, {
+      const targetUrl = 'https://api.groq.com/openai/v1/chat/completions';
+      const groqRes = await fetch(targetUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }],
-          generationConfig: {
-            responseMimeType: 'application/json'
-          }
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: promptText }],
+          temperature: 0.7,
+          response_format: { type: 'json_object' }
         })
       });
 
-      const geminiData = await geminiRes.json();
-      if (!geminiRes.ok) {
-        throw new Error(geminiData.error?.message || 'Gemini contact api error');
+      const groqData = await groqRes.json();
+      if (!groqRes.ok) {
+        throw new Error(groqData.error?.message || 'Groq contact api error');
       }
 
-      const analysisText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      const analysisText = groqData.choices?.[0]?.message?.content || '{}';
       let analysis: {
         urgency?: string;
         inquiryType?: string;

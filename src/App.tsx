@@ -298,7 +298,7 @@ useEffect(() => {
         'SYS: Loading digital neural parameters...',
         'SYS: Grounding publications corpus index...',
         'NETWORK: Establishing proxy connection secure rails...',
-        'AI: Initializing Gemini bimodal model instances...',
+        'AI: Initializing Groq model instances...',
         'GRAPH: Parsing topological clinical coordinates...',
         'SYS: Systems compiled. Ready for operational execution.'
       ];
@@ -749,7 +749,7 @@ useEffect(() => {
       {
         id: 'brief',
         title: 'Mission Collaboration Brief',
-        text: 'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Gemini reasoning framework.'
+          text: 'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Groq reasoning framework.'
       }
     ];
 
@@ -782,7 +782,7 @@ useEffect(() => {
         'Review the high-precision mission panels showing fine-tuned Transformers, custom Go microservices, and metrics-driven SaaS applications.',
         'Inspect peer-reviewed NLP models, specialized Reddit depression classifiers, topological architectures, and citation modules.',
         'Explore interactive visual expertise nodes across deep ML, distributed scalable systems, and fully secure client UI architectures.',
-        'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Gemini reasoning framework.'
+        'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Groq reasoning framework.'
       ];
       const winIds = ['projects', 'research', 'skills', 'brief'];
       openWindow(winIds[next - 1]);
@@ -2109,7 +2109,7 @@ useEffect(() => {
                             <p className="text-[11px] text-slate-300 leading-relaxed font-sans select-text">{briefSummary}</p>
                           ) : (
                             <div className="text-zinc-600 font-sans text-[10.5px] italic text-center py-10">
-                              Formulate objectives on LHS & execute evaluation to render Gemini predictive architecture recommendations...
+                              Formulate objectives on LHS & execute evaluation to render Groq predictive architecture recommendations...
                             </div>
                           )}
                         </div>

@@ -16,8 +16,8 @@ export const portfolioData: PortfolioData = {
       title: 'TypeRush',
       description: 'An immersive, atmospheric typing survival game with real-time sound synthesis, particle effects, and adaptive visual themes.',
       category: 'AI',
-      techStack: ['React 19', 'TailwindCSS', 'Web Audio API', 'Express', 'Gemini API', 'Firebase'],
-      architecture: 'Zero-re-render character buffer ref grids running at stable 60fps, integrated with a server-side Gemini 3.5 API and real-time Firestore synchronization.',
+      techStack: ['React 19', 'TailwindCSS', 'Web Audio API', 'Express', 'Groq API', 'Firebase'],
+      architecture: 'Zero-re-render character buffer ref grids running at stable 60fps, integrated with a server-side Groq API and real-time Firestore synchronization.',
       timeline: 'Sep 2024 - Mar 2025',
       metrics: [
         { label: 'Audio latency', value: '0ms (Vanilla)' },
@@ -50,7 +50,7 @@ export const portfolioData: PortfolioData = {
       title: 'SafeSide Predictor',
       description: 'A tactical football analytics command center providing live match simulations, league databases, and deep Poisson risk modeling.',
       category: 'SaaS',
-      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'Gemini AI', 'Recharts'],
+      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'Groq AI', 'Recharts'],
       architecture: 'Express backend match simulation pipeline integrated with Supabase edge tables and a cron-scheduled prediction verification service.',
       timeline: 'Mar 2025 - Present',
       metrics: [
@@ -59,7 +59,7 @@ export const portfolioData: PortfolioData = {
         { label: 'Prediction checks', value: 'Automated' }
       ],
       problem: 'Football tactical analysis and predictions are highly fragmented, lacking real-time simulations and secure prediction logging.',
-      solution: 'SafeSide combines live result feeds from Football-Data API with Gemini AI analysis and Supabase storage to automate match diagnostics.',
+      solution: 'SafeSide combines live result feeds from Football-Data API with Groq AI analysis and Supabase storage to automate match diagnostics.',
       roadmap: ['Weather-impact modeling via OpenWeather API', 'Multi-league Poisson distribution charts']
     },
     {
@@ -84,8 +84,8 @@ export const portfolioData: PortfolioData = {
       title: 'FarhanOS Living Environment',
       description: 'The interactive AI-powered operating sandbox displaying deep visual performance, real-time audio narrator engines, and complete project orchestration.',
       category: 'Design',
-      techStack: ['React', 'TailwindCSS', 'Framer Motion', 'Express', 'Gemini API'],
-      architecture: 'Unidirectional virtualized OS window controller with standard sandbox processes and real-time TTS speech generators.',
+      techStack: ['React', 'TailwindCSS', 'Framer Motion', 'Express', 'Groq API'],
+      architecture: 'Unidirectional virtualized OS window controller with standard sandbox processes and real-time speech synthesis generators.',
       timeline: 'Mar 2026 - Present',
       metrics: [
         { label: 'Render pipeline frame rate', value: '120fps' },
@@ -394,7 +394,7 @@ export const portfolioData: PortfolioData = {
       date: 'May 2026',
       version: 'v1.4.2',
       title: 'Audio Node Fusion & Neural Voice Synthesizer',
-      description: 'Integrated server-side Text-to-Speech API directly using Gemini TTS models, delivering high-fidelity audio narration on-demand across FarhanOS articles.',
+      description: 'Integrated server-side speech synthesis API directly using client-side Web Speech API fallbacks, delivering high-fidelity audio narration on-demand across FarhanOS articles.',
       tasksCompleted: [
         'Constructed custom caching layer for audio binaries on the server',
         'Implemented voice control deck with visual waveform indicator',
