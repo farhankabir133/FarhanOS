@@ -213,6 +213,17 @@ body {
   animation: terminal-caret 1.05s steps(1, end) infinite;
 }
 
+/* Global text justification */
+p, li, blockquote, .text-justify {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+/* Keep terminal/code text left-aligned */
+.font-mono, code, pre, kbd, .terminal-text {
+  text-align: left;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
