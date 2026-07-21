@@ -1,7 +1,4 @@
-/**
- * Decodes base64-encoded raw signed 16-bit PCM audio (24000 Hz, Mono)
- * and plays it flawlessly using Web Audio API AudioContext.
- */
+import { bootAudio } from './bootAudio';
 export async function playRawPcm(base64Audio: string): Promise<{ source: AudioBufferSourceNode; ctx: AudioContext; stop: () => void }> {
   const binaryString = window.atob(base64Audio);
   const len = binaryString.length;
@@ -57,27 +54,5 @@ export async function playRawPcm(base64Audio: string): Promise<{ source: AudioBu
  * Creates an ultra-subtle futuristic electronic tick.
  */
 export function playSynthTick(frequency: number = 800, duration: number = 0.03): void {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + duration);
-
-    gainNode.gain.setValueAtTime(0.015, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
-    setTimeout(() => ctx.close(), 200);
-  } catch (err) {
-    // Fail silently on browsers restricting auto-play
-  }
+  bootAudio.tick(frequency, duration);
 }

@@ -9,10 +9,14 @@ const unlockAudio = () => {
   bootAudio.unlock();
   window.removeEventListener('pointerdown', unlockAudio);
   window.removeEventListener('keydown', unlockAudio);
+  window.removeEventListener('touchstart', unlockAudio);
+  window.removeEventListener('wheel', unlockAudio);
 };
 
 window.addEventListener('pointerdown', unlockAudio, { once: true });
 window.addEventListener('keydown', unlockAudio, { once: true });
+window.addEventListener('touchstart', unlockAudio, { once: true });
+window.addEventListener('wheel', unlockAudio, { once: true });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

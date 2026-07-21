@@ -1,72 +1,116 @@
-type Listener = () => void;
+type Tick = { frequency: number; duration: number };
 
 class BootAudio {
   private ctx: AudioContext | null = null;
   private unlocked = false;
-  private listeners: Listener[] = [];
-  private pendingTicks: Array<{ frequency: number; duration: number }> = [];
+  private pendingTicks: Tick[] = [];
+  private clickBuffer: AudioBuffer | null = null;
 
-  private ensureContext(): AudioContext | null {
+  private getAudioContextClass() {
     if (typeof window === 'undefined') return null;
-    const AC = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AC) return null;
+    return window.AudioContext || (window as any).webkitAudioContext || null;
+  }
 
-    if (!this.ctx) {
-      this.ctx = new AC();
+  private ensureClickBuffer() {
+    if (this.clickBuffer || !this.ctx) return;
+    const duration = 0.022;
+    const sampleRate = this.ctx.sampleRate;
+    const bufferSize = Math.max(1, Math.floor(sampleRate * duration));
+    const buffer = this.ctx.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / sampleRate;
+      const decay = Math.exp(-t / 0.0018);
+      const noise = (Math.random() * 2 - 1);
+      const resonance = Math.sin(2 * Math.PI * 4200 * t) * Math.exp(-t / 0.0012);
+      data[i] = (noise * 0.55 + resonance * 0.45) * decay * 0.7;
     }
 
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
-
-    return this.ctx;
+    this.clickBuffer = buffer;
   }
 
   unlock() {
     if (this.unlocked) return;
     this.unlocked = true;
-    const ctx = this.ensureContext();
-    this.listeners.forEach((fn) => fn());
-    this.listeners = [];
-    for (const tick of this.pendingTicks) {
-      this.tick(tick.frequency, tick.duration);
+
+    const AC = this.getAudioContextClass();
+    if (!AC) return;
+
+    let ctx = this.ctx;
+    if (!ctx || ctx.state === 'suspended') {
+      try {
+        ctx = new AC();
+        this.ctx = ctx;
+      } catch {
+        return;
+      }
     }
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    this.ensureClickBuffer();
+
+    const batch = [...this.pendingTicks];
     this.pendingTicks = [];
+    batch.forEach((tick, i) => {
+      setTimeout(() => this.playTick(tick.frequency, tick.duration), i * 6);
+    });
   }
 
-  onUnready(fn: Listener) {
-    if (this.unlocked) {
-      fn();
-      return;
-    }
-    this.listeners.push(fn);
-  }
-
-  tick(frequency = 1800, duration = 0.008) {
-    const ctx = this.ensureContext();
-    if (!ctx) return;
-
-    if (!this.unlocked && ctx.state === 'suspended') {
+  tick(frequency = 2600, duration = 0.012) {
+    if (!this.unlocked) {
       this.pendingTicks.push({ frequency, duration });
       return;
     }
 
+    if (!this.ctx) {
+      return;
+    }
+
+    const ctx = this.ctx;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => {
+        this.playTick(frequency, duration);
+      }).catch(() => {});
+      return;
+    }
+
+    this.playTick(frequency, duration);
+  }
+
+  private playTick(frequency: number, duration: number) {
+    if (!this.ctx) return;
     try {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const now = this.ctx.currentTime;
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + duration);
+      if (!this.clickBuffer) {
+        this.ensureClickBuffer();
+      }
+      if (!this.clickBuffer) return;
 
-      gain.gain.setValueAtTime(0.015, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+      const source = this.ctx.createBufferSource();
+      source.buffer = this.clickBuffer;
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      const gain = this.ctx.createGain();
+      const velocity = 0.35 + Math.random() * 0.25;
+      gain.gain.setValueAtTime(velocity, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.022);
 
-      osc.start();
-      osc.stop(ctx.currentTime + duration);
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(frequency + (Math.random() - 0.5) * 400, now);
+      filter.Q.setValueAtTime(0.8 + Math.random() * 0.8, now);
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      source.start(now);
+      source.stop(now + 0.025);
     } catch {
       // ignore audio errors
     }

@@ -8,7 +8,8 @@ import {
   Clock, CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
 import { portfolioData } from './data/portfolioData';
-import { playRawPcm, playSynthTick } from './utils/audioPlay';
+import { playRawPcm } from './utils/audioPlay';
+import { bootAudio } from './utils/bootAudio';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
 import LandingPage from './components/LandingPage';
 import Whiteboard from './components/Whiteboard';
@@ -283,7 +284,7 @@ useEffect(() => {
   // System Sound Effect player wrap
   const triggerSound = (freq: number = 800, dur: number = 0.03) => {
     if (soundOn) {
-      playSynthTick(freq, dur);
+      bootAudio.tick(freq, dur);
     }
   };
 
@@ -1070,7 +1071,7 @@ useEffect(() => {
           {/* Sound, Voice, Time indicators */}
           <div className="flex items-center gap-3 border-l border-zinc-800/60 pl-3">
             <button 
-              onClick={() => { setSoundOn(!soundOn); playSynthTick(1000, 0.02); }}
+              onClick={() => { setSoundOn(!soundOn); bootAudio.tick(1000, 0.02); }}
               className={`p-1 rounded cursor-pointer hover:bg-zinc-900 ${soundOn ? 'text-zinc-300' : 'text-zinc-600'}`}
               title="Toggle Audio Feedback"
             >

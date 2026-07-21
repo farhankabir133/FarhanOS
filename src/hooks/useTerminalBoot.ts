@@ -95,7 +95,15 @@ export function useTerminalBoot({
     engineRef.current = engine;
 
     if (!reducedMotion) {
-      engine.setOnType(() => bootAudio.tick(1800, 0.008));
+      engine.setOnType(() => bootAudio.tick(2200, 0.012));
+    }
+
+    // Diagnostic: try playing a test tone immediately on boot
+    try {
+      bootAudio.tick(440, 0.05);
+      console.log('[BootDiagnostic] test tick sent');
+    } catch (e) {
+      console.log('[BootDiagnostic] test tick failed', e);
     }
 
     const run = async () => {
