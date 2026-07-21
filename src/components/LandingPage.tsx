@@ -148,8 +148,6 @@ function TimelineCard({ item, idx, theme, prefersReducedMotion }: TimelineCardPr
 interface LandingPageProps {
   isWarping: boolean;
   theme: 'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light';
-  soundOn: boolean;
-  triggerSound: (freq?: number, dur?: number) => void;
   onLaunchOS: () => void;
   onOpenWindowDirectly: (winId: string) => void;
   articles?: Article[];
@@ -159,8 +157,6 @@ interface LandingPageProps {
 export default function LandingPage({
   isWarping,
   theme,
-  soundOn,
-  triggerSound,
   onLaunchOS,
   onOpenWindowDirectly,
   articles = [],
@@ -239,7 +235,7 @@ export default function LandingPage({
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    triggerSound(1000, 0.05);
+    ;
   };
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
@@ -400,7 +396,7 @@ export default function LandingPage({
   // Handle Contact Form Submit
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    triggerSound(950, 0.04);
+    ;
     
     // Simple Validations
     const errors: Record<string, string> = {};
@@ -449,7 +445,7 @@ export default function LandingPage({
 
         setFormLoading(false);
         setFormSubmitted(true);
-        triggerSound(1050, 0.12);
+        ;
         
         // Clear inputs
         setFormName('');
@@ -463,7 +459,7 @@ export default function LandingPage({
         setTimeout(() => {
           setFormLoading(false);
           setFormSubmitted(true);
-          triggerSound(1050, 0.12);
+          ;
           
           setFormName('');
           setFormEmail('');
@@ -518,7 +514,7 @@ export default function LandingPage({
             <motion.a
               key={link.href}
               href={link.href}
-              onClick={(e) => { triggerSound(900, 0.02); handleAnchorClick(e, link.target); }}
+              onClick={(e) => { ; handleAnchorClick(e, link.target); }}
               whileHover={{ y: -2 }}
               className="relative hover:text-white transition-colors group"
             >
@@ -735,7 +731,7 @@ export default function LandingPage({
               href={social.href}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => triggerSound(900, 0.02)}
+              onClick={() => {}}
               className="p-2 rounded-lg border border-zinc-850 hover:border-zinc-700 bg-zinc-950/50 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer"
               title={social.title}
             >
@@ -825,7 +821,7 @@ export default function LandingPage({
                 key={i}
                 whileHover={{ y: -4, opacity: 0.95 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => triggerSound(900, 0.02)}
+                onClick={() => {}}
                 className={`bg-zinc-950/45 border border-zinc-900 p-5 rounded-2xl flex flex-col justify-between transition-all duration-300 cursor-pointer backdrop-blur-md ${styleSet.statCardGlow}`}
               >
                 <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-widest font-bold">{stat.label}</span>
@@ -869,7 +865,7 @@ export default function LandingPage({
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              onClick={() => { setActiveTab(cat); triggerSound(800, 0.03); }}
+              onClick={() => { setActiveTab(cat); ; }}
               className={`px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-bold ${
                 activeTab === cat ? styleSet.activeTabBtn : styleSet.tabBtn
               }`}
@@ -1217,7 +1213,7 @@ export default function LandingPage({
                     href="https://github.com/farhankabir133" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    onClick={() => triggerSound(900, 0.02)}
+                    onClick={() => {}}
                     className="p-2.5 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-950/60 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
                     title="View Source on GitHub"
                   >
@@ -1362,7 +1358,7 @@ export default function LandingPage({
                       href={paper.link} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      onClick={() => triggerSound(900, 0.02)}
+                      onClick={() => {}}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-800/80 bg-zinc-950 text-[10px] font-mono text-zinc-350 hover:text-white hover:border-zinc-750 transition-all cursor-pointer font-bold active:scale-98"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -1522,7 +1518,7 @@ export default function LandingPage({
                           href={article.link} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          onClick={() => triggerSound(900, 0.02)}
+                          onClick={() => {}}
                           className="p-2.5 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-950/60 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
                           title="Read on Medium"
                         >
@@ -1695,7 +1691,7 @@ export default function LandingPage({
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   onClick={() => {
                     setActiveTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-                    triggerSound(800, 0.02);
+                    ;
                   }}
                   className="p-1.5 rounded-lg border border-zinc-850 hover:border-zinc-700 bg-zinc-950/65 hover:bg-zinc-900/60 text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
@@ -1707,7 +1703,7 @@ export default function LandingPage({
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   onClick={() => {
                     setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
-                    triggerSound(800, 0.02);
+                    ;
                   }}
                   className="p-1.5 rounded-lg border border-zinc-850 hover:border-zinc-700 bg-zinc-950/65 hover:bg-zinc-900/60 text-zinc-400 hover:text-white cursor-pointer transition-colors"
                 >
@@ -1742,7 +1738,7 @@ export default function LandingPage({
                 }}
                 onClick={() => {
                   setActiveTestimonial(idx);
-                  triggerSound(800, 0.02);
+                  ;
                 }}
                 className={`w-2 h-2 rounded-full transition-colors ${
                   activeTestimonial === idx ? 'bg-indigo-400' : 'bg-zinc-700'
@@ -1802,7 +1798,7 @@ export default function LandingPage({
                 </motion.div>
                 <div>
                   <span className="text-[7.5px] text-zinc-500 block">ENVELOPE ADDRESS</span>
-                  <a href="mailto:farhankabir133@gmail.com" onClick={() => triggerSound(900, 0.02)} className={`text-[11px] font-bold ${theme === 'light' ? 'text-slate-850' : 'text-slate-200'} hover:underline`}>
+                  <a href="mailto:farhankabir133@gmail.com" onClick={() => {}} className={`text-[11px] font-bold ${theme === 'light' ? 'text-slate-850' : 'text-slate-200'} hover:underline`}>
                     farhankabir133@gmail.com
                   </a>
                 </div>
@@ -1849,7 +1845,7 @@ export default function LandingPage({
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={() => triggerSound(900, 0.02)}
+                  onClick={() => {}}
                   className="flex items-center gap-2 p-2.5 rounded-xl border border-zinc-900 bg-zinc-950/40 hover:bg-zinc-900/40 text-zinc-400 hover:text-white transition-colors cursor-pointer text-[9px] font-bold"
                 >
                   <social.Icon className={`w-4 h-4 ${social.color}`} />
@@ -1904,7 +1900,7 @@ export default function LandingPage({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  onClick={() => { setFormSubmitted(false); triggerSound(800, 0.02); }}
+                  onClick={() => { setFormSubmitted(false); ; }}
                   className="bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-zinc-400 hover:text-white px-5 py-2 rounded-lg cursor-pointer transition-colors"
                 >
                   Establish New Node
@@ -2047,7 +2043,7 @@ export default function LandingPage({
               <motion.a
                 key={link.href}
                 href={link.href}
-                onClick={(e) => { triggerSound(800, 0.02); handleAnchorClick(e, link.target!); }}
+                onClick={(e) => { ; handleAnchorClick(e, link.target!); }}
                 whileHover={{ y: -2, scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 className="relative hover:text-white transition-colors group"
@@ -2083,7 +2079,7 @@ export default function LandingPage({
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => triggerSound(900, 0.02)}
+                onClick={() => {}}
                 whileHover={{ scale: 1.1, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}

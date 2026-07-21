@@ -8,8 +8,6 @@ import {
   Clock, CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
 import { portfolioData } from './data/portfolioData';
-import { playRawPcm } from './utils/audioPlay';
-import { bootAudio } from './utils/bootAudio';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
 import LandingPage from './components/LandingPage';
 import Whiteboard from './components/Whiteboard';
@@ -45,8 +43,6 @@ export default function App() {
   const [bootProgress, setBootProgress] = useState(0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
   const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
-  const [soundOn, setSoundOn] = useState(true);
-  const [voiceOn, setVoiceOn] = useState(true);
   const [currentTime, setCurrentTime] = useState('');
   
   // Window Management States
@@ -281,12 +277,7 @@ useEffect(() => {
   // Draggable State Management (Simple manual drag handler to avoid external libraries complexity)
   const [draggedWindow, setDraggedWindow] = useState<string | null>(null);
 
-  // System Sound Effect player wrap
-  const triggerSound = (freq: number = 800, dur: number = 0.03) => {
-    if (soundOn) {
-      bootAudio.tick(freq, dur);
-    }
-  };
+  const triggerSound = (_freq: number = 800, _dur: number = 0.03) => {};
 
   // Clock Ticker
   useEffect(() => {
@@ -404,7 +395,7 @@ useEffect(() => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [soundOn]);
+  });
 
   // Drag Window logic handlers
   const draggedWindowRef = useRef<string | null>(null);
@@ -555,7 +546,6 @@ useEffect(() => {
 
   // TTS Speech Player
   const speakText = async (text: string, index: number | null = null, mode: 'tour' | 'narrate' = 'narrate') => {
-    if (!voiceOn) return;
     try {
       if (currentTTSAudio) {
         currentTTSAudio.stop();
@@ -569,14 +559,10 @@ useEffect(() => {
       });
       const data = await res.json();
       if (data.audio) {
-        const audioControl = await playRawPcm(data.audio);
-        setCurrentTTSAudio(audioControl);
-        
-        // Listen for standard completion to reset indicators
-        const playTimeSec = (data.audio.length * 0.75) / 24000; // rough estimation
+        // TTS playback removed
         setTimeout(() => {
           setPlayingMessageIndex(null);
-        }, playTimeSec * 1000);
+        }, 2000);
       }
     } catch (err) {
       console.error('Narrator service unreachable, falling back to client voice:', err);
@@ -631,9 +617,7 @@ useEffect(() => {
         setTwinMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
         setTwinLoading(false);
         // Play response automatically via Voice Synthesizer if switched on
-        if (voiceOn) {
-          speakText(data.reply, twinMessages.length + 1);
-        }
+        speakText(data.reply, twinMessages.length + 1);
       } else {
         throw new Error(data.error || 'General twin system fault.');
       }
@@ -646,9 +630,7 @@ useEffect(() => {
       const fallbackReply = getAskTwinFallback(userMsg, historyPayload);
       setTwinMessages(prev => [...prev, { role: 'assistant', content: fallbackReply }]);
       setTwinLoading(false);
-      if (voiceOn) {
-        speakText(fallbackReply, twinMessages.length + 1);
-      }
+      speakText(fallbackReply, twinMessages.length + 1);
     }
   };
 
@@ -783,9 +765,7 @@ useEffect(() => {
       openWindow(cur.id);
       setTourLoading(true);
 
-      if (voiceOn) {
-        await speakText(cur.text, null, 'tour');
-      }
+      await speakText(cur.text, null, 'tour');
       setTourLoading(false);
     };
 
@@ -807,9 +787,7 @@ useEffect(() => {
       const winIds = ['projects', 'research', 'skills', 'brief'];
       openWindow(winIds[next - 1]);
       setTourMsg(tourStepsText[next - 2]);
-      if (voiceOn) {
-        speakText(tourStepsText[next - 2], null, 'tour');
-      }
+      speakText(tourStepsText[next - 2], null, 'tour');
     } else {
       setIsTourActive(false);
       setTourStep(0);
@@ -961,8 +939,6 @@ useEffect(() => {
         <LandingPage
           isWarping={isWarping}
           theme={theme}
-          soundOn={soundOn}
-          triggerSound={triggerSound}
           onLaunchOS={handleWarpAndEnter}
           onOpenWindowDirectly={handleOpenWindowDirectly}
           articles={articles}
@@ -1068,32 +1044,12 @@ useEffect(() => {
             <span>Theme: {theme}</span>
           </button>
 
-          {/* Sound, Voice, Time indicators */}
-          <div className="flex items-center gap-3 border-l border-zinc-800/60 pl-3">
-            <button 
-              onClick={() => { setSoundOn(!soundOn); bootAudio.tick(1000, 0.02); }}
-              className={`p-1 rounded cursor-pointer hover:bg-zinc-900 ${soundOn ? 'text-zinc-300' : 'text-zinc-600'}`}
-              title="Toggle Audio Feedback"
-            >
-              {soundOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            </button>
-            
-            <button 
-              onClick={() => { setVoiceOn(!voiceOn); if (playingMessageIndex !== null) stopSpeaking(); }}
-              className={`text-[10px] font-semibold flex items-center gap-1.5 px-1.5 py-0.5 rounded cursor-pointer select-none ${voiceOn ? 'text-purple-400 border border-purple-500/20 bg-purple-500/5' : 'text-zinc-600 border border-zinc-800'}`}
-              title="Toggle Voice synthesizer narration output"
-            >
-              <Cpu className="w-3 h-3 text-purple-400" />
-              <span className="hidden sm:inline">OS Voice</span>
-            </button>
-
             <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
               <Clock className="w-3.5 h-3.5 text-sky-400" />
               <span>{currentTime || '14:37:33'} (UTC)</span>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       {/* 3. AI SITE GUIDED TOUR STATUS ALERTER */}
       {isTourActive && (
@@ -2375,7 +2331,7 @@ useEffect(() => {
             </div>
           </div>
         </div>
-      )}
+       )}
         </>
       )}
     </div>

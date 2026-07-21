@@ -238,7 +238,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     setCurrentStroke([coords]);
     setRedoStack([]); // Clear redo timeline once user starts alternative ideation pathway
     
-    if (triggerSound) triggerSound(700, 0.015);
   };
 
   // Draw process
@@ -268,7 +267,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     }
     
     setCurrentStroke([]);
-    if (triggerSound) triggerSound(850, 0.02);
   };
 
   // Undo operational trigger
@@ -279,7 +277,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     if (undone) {
       setRedoStack(prev => [...prev, undone]);
       setHistory(trackingStack);
-      if (triggerSound) triggerSound(500, 0.03);
     }
   };
 
@@ -291,7 +288,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     if (redone) {
       setHistory(prev => [...prev, redone]);
       setRedoStack(trackingStack);
-      if (triggerSound) triggerSound(900, 0.03);
     }
   };
 
@@ -302,7 +298,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
       setHistory([]);
       setRedoStack([]);
       setCurrentStroke([]);
-      if (triggerSound) triggerSound(350, 0.07);
     }
   };
 
@@ -367,7 +362,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     anchor.click();
     document.body.removeChild(anchor);
 
-    if (triggerSound) triggerSound(1100, 0.08);
   };
 
   const activeThemeClass = 
@@ -380,7 +374,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
   const selectColorHandler = (val: string) => {
     setCurrentColor(val);
     setIsEraser(false);
-    if (triggerSound) triggerSound(900, 0.015);
   };
 
   return (
@@ -413,7 +406,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
 
           {/* Draw/Eraser Selector Mode */}
           <button
-            onClick={() => { setIsEraser(false); if (triggerSound) triggerSound(800, 0.01); }}
             className={`p-1.5 rounded transition-all duration-200 flex items-center gap-1 ${!isEraser ? 'bg-indigo-600/30 font-bold border border-indigo-500/35 text-indigo-300' : 'hover:bg-white/10 hover:scale-105 active:scale-95 text-zinc-400 hover:text-zinc-200'}`}
             title="Paint Brush Mode"
           >
@@ -422,7 +414,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
           </button>
 
           <button
-            onClick={() => { setIsEraser(true); if (triggerSound) triggerSound(600, 0.01); }}
             className={`p-1.5 rounded transition-all duration-200 flex items-center gap-1 ${isEraser ? 'bg-indigo-600/30 font-bold border border-indigo-500/35 text-indigo-300' : 'hover:bg-white/10 hover:scale-105 active:scale-95 text-zinc-400 hover:text-zinc-200'}`}
             title="Eraser tool"
           >
@@ -435,14 +426,12 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 bg-black/40 p-1 rounded-md border border-zinc-900/80 text-[9px] font-mono">
             <button
-              onClick={() => { setPaletteType('theme'); if (triggerSound) triggerSound(700, 0.012); }}
               className={`px-1.5 py-0.5 rounded transition uppercase font-bold tracking-tight ${paletteType === 'theme' ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Switch to Theme-specific colors"
             >
               OS Aura
             </button>
             <button
-              onClick={() => { setPaletteType('classic'); if (triggerSound) triggerSound(700, 0.012); }}
               className={`px-1.5 py-0.5 rounded transition uppercase font-bold tracking-tight ${paletteType === 'classic' ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Switch to classic drawing colors (Black, Red, Blue, Green, etc.)"
             >
@@ -503,7 +492,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
                 setBrushWidth(val);
-                if (triggerSound) triggerSound(750 + val * 3, 0.005);
               }}
               className="w-16 sm:w-20 md:w-24 accent-indigo-500 bg-zinc-800 h-1 rounded-lg appearance-none cursor-pointer"
               title="Slide to adjust brush thickness"
@@ -514,7 +502,6 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
             {[2, 4, 8, 16].map((sz) => (
               <button
                 key={sz}
-                onClick={() => { setBrushWidth(sz); if (triggerSound) triggerSound(750, 0.01); }}
                 className={`w-5 h-5 rounded flex items-center justify-center transition border ${brushWidth === sz ? 'bg-white/10 border-indigo-500/50 text-indigo-400' : 'border-transparent hover:bg-white/5 text-zinc-400'}`}
                 title={`Brush size ${sz}px`}
               >
