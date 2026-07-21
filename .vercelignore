@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+
+# Source / build configs not needed at runtime
+src/
+server.ts
+tsconfig.json
+vite.config.ts
+tailwind.config.js
+postcss.config.js
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Misc
+README.md
+LICENSE
+.vercelignore
