@@ -7,6 +7,10 @@
     "dev": "tsx server.ts",
     "build": "vite build",
     "vercel-build": "npm run build",
+    "predeploy": "VITE_BASE=/FarhanOS/ npm run build",
+    "deploy": "gh-pages -d dist",
+    "predeploy:domain": "VITE_BASE=/ npm run build",
+    "deploy:domain": "gh-pages -d dist",
     "start": "node dist/server.cjs",
     "lint": "tsc --noEmit"
   },

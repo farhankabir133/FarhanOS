@@ -1,10 +1,10 @@
-# 🌌 FarhanOS // COGNITIVE DIALECTICS OS
+# farhanos // COGNITIVE DIALECTICS OS
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Framework: React 18/19](https://img.shields.io/badge/Framework-React_19-indigo.svg)](https://react.dev/)
+[![Framework: React 19](https://img.shields.io/badge/Framework-React_19-indigo.svg)](https://react.dev/)
 [![Styling: Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-06b6d4.svg)](https://tailwindcss.com)
 [![AI-Core: Groq Llama 3.3](https://img.shields.io/badge/AI--Core-Groq_Llama_3.3_70B-orange.svg)](https://groq.com/)
-[![WebGL: Three.js](https://img.shields.io/badge/WebGL-Three.js-orange.svg)](https://threejs.org/)
+[![Backend: Express + Supabase](https://img.shields.io/badge/Backend-Express_%2B_Supabase-green.svg)](https://supabase.com/)
 
 > An immersive, high-fidelity windowed operating system simulator presenting clinical NLP research, conceptual garden maps, and AI SaaS agent architectures in an interactive desktop environment.
 
@@ -18,7 +18,6 @@
 ## 🔗 Live Deployments
 * **Official Website (Custom Domain)**: [https://farhankabir.me/](https://farhankabir.me/)
 * **Alternative GitHub Pages URL**: [https://farhankabir133.github.io/FarhanOS/](https://farhankabir133.github.io/FarhanOS/)
-* **Digital Twin Backend Endpoint**: [http://localhost:3001](http://localhost:3001) (when running locally)
 
 ---
 
@@ -29,7 +28,7 @@
 4. [Project Structure](#-project-structure)
 5. [Getting Started](#-getting-started)
 6. [Usage & Configurations](#-usage--configurations)
-7. [Roadmap](#-roadmap)
+7. [Build & Deployment](#-build--deployment)
 8. [Contributing](#-contributing)
 9. [License](#-license)
 10. [Contact / Author](#-contact--author)
@@ -38,7 +37,7 @@
 
 ## 🛸 About The Project
 
-**FarhanOS** is a production-grade interactive portfolio workspace structured as a functional simulator OS. Designed to showcase clinical NLP methodologies, WebGL visualizations, and full-stack SaaS project architectures, the application rejects flat layouts in favor of an engaging, high-contrast desktop ecosystem.
+**farhanos** is a production-grade interactive portfolio workspace structured as a functional simulator OS. Designed to showcase clinical NLP methodologies, WebGL visualizations, and full-stack SaaS project architectures, the application rejects flat layouts in favor of an engaging, high-contrast desktop ecosystem.
 
 The interface bridges professional NLP researcher credentials with premium frontend craftsmanship. Visitors can run real-time system tours, examine peer-reviewed publication data with mathematical classifier statistics, check live repository telemetry feeds, and chat directly with an AI-native digital twin clone.
 
@@ -47,43 +46,43 @@ The interface bridges professional NLP researcher credentials with premium front
 ## 🌟 Key Features
 
 ### 1. Digital Twin AI Clone (`FarhanTwin`)
-* **First-Person Conversationalist**: Integrated server-side proxy route communicating with a **Llama 3.3 70B (via Groq)** model. Answers questions about Farhan's biography, achievements, tech stack, and publications in his verified tone.
+* **Direct Groq Integration**: Client and server routes communicate with **Llama 3.3 70B (via Groq)**. Answers questions about Farhan's biography, achievements, tech stack, and publications in his verified tone.
 * **Contextual Knowledge Base**: Ingests custom clinical datasets, RoBERTa accuracy F1 indicators, and product metrics directly from system prompts.
 
 ### 2. Neural OS Speech Synthesizer (TTS)
-* **Client-Side Fallback Narration**: Uses the browser's native Web Speech API for voice synthesis. Server-side TTS is not available through Groq, so all narration falls back to client-side speech synthesis with premium voice selection.
-* **Dual Output Modes**: Supports structured website-guided audio tours or article summaries read aloud in a warm, authoritative voice.
+* **Client-Side Fallback Narration**: The `/api/tts` route returns a null audio payload; all narration falls back to the browser's native Web Speech API with premium voice selection.
 * **Visualizer Waveforms**: Animated canvas waveforms rendering real-time audio playback states.
 
 ### 3. Monographs & Publications Reader
-* **IEEE Publication Database**: Catalog hosting peer-reviewed research papers (e.g., LLM Adversarial Attacks, NLP Candidate Evaluation, Emotion & Depression classifiers).
+* **IEEE Publication Database**: Catalog hosting peer-reviewed research papers (e.g., LLM Adversarial Attacks, NLP Candidate Evaluation, Emotion & Depression classifiers) including recent ISEE 2026 acceptances.
 * **Classifier Dataflow Visualizers**: Animated pipeline models showing text preprocessing and tensor matrix paths.
 * **Accuracy Statistics & Citations**: Dynamic matrices tracking precision, F1-scores, sensitivity, and copyable BibTeX resources.
 
 ### 4. Sandbox Projects Explorer
 * **TypeRush**: Immersive typing survival interface featuring Web Audio API synthesizers and adaptive visual prompts.
-* **The Ink Home**: Immersive WebGL particle-galaxy carousel and dynamic scraping portal mapping Medium RSS feeds.
-* **SafeSide Predictor**: Tactical football analytics center running Poisson distribution simulations and prediction engines.
+* **The Ink Home**: Immersive WebGL particle-galaxy carousel and dynamic scraping portal syncing Medium RSS feeds.
+* **SafeSide Predictor**: Tactical football analytics command center running Poisson distribution simulations.
 
-### 5. Systems Telemetry & Desktop customizers
+### 5. Systems Telemetry & Desktop Customizers
 * **Interactive Conceptual Garden**: WebGL nodes representing clinical NLP, mental wellness tracking, and data ethics connected via dynamic edges.
 * **Mood Theme Engine**: Fast theme switching supporting Dark Slate, Cyberpunk Neon, AI Lavender, Classic Green Terminal, and Clean Light Mode.
 * **GitHub Monitor**: Live mock git activity feeds displaying compiling status, lines added, and active package telemetry.
 
-### 6. Futuristic Loading Sequence
-* **Animated Entry Experience**: Custom motion-powered loading screen with scan lines, particle effects, and rotating orbital rings.
-* **Graceful Exit Transition**: Smooth fade-out with brightness pulse and scale-up animation before entering the main interface.
+### 6. Premium Terminal Boot Loader
+* **Animated Entry Experience**: Custom motion-powered boot sequence with scan lines, particle effects, terminal window aesthetics, and typing engine.
+* **Graceful Exit Transition**: Smooth fade-out before entering the main landing page interface.
 
 ---
 
 ## 🛠️ Tech Stack
 
-* **Frontend Framework**: React 19 (Hooks, useRef cache layers, Framer Motion transitions)
+* **Frontend Framework**: React 19 (Hooks, Motion transitions)
 * **Styling & HUD**: Tailwind CSS v4 + custom CSS variable CRT scans + glassmorphic filters
 * **WebGL Elements**: Vanilla Three.js (particle gravity wells, node coordinates)
 * **Server Backend**: Node.js + Express + CORS proxies + tsx runner
 * **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via direct fetch calls
-* **Deployment**: GitHub Pages (Client) + Google Cloud Run (Server)
+* **Backendless Functions**: Supabase Edge Functions with Resend email integration
+* **Static Hosting**: GitHub Pages (`gh-pages`) + Vercel (`vercel.json`)
 
 ---
 
@@ -91,21 +90,26 @@ The interface bridges professional NLP researcher credentials with premium front
 
 ```bash
 ├── src/                       # Primary React Client application
-│   ├── components/            # UI components (Wormholes, Whiteboards, Decrypt tags, Loaders, Typewriters)
-│   │   ├── TerminalBootLoader/      # Premium terminal boot loader (opening experience)
-│   │   ├── LoopingTypewriter.tsx    # Infinite looping typewriter effect
-│   │   ├── OneTimeTypewriter.tsx    # Single-run typewriter effect
-│   │   ├── ThreeWormhole.tsx        # WebGL starfield background
-│   │   └── LandingPage.tsx          # Hero section with animated text
+│   ├── components/            # UI components
+│   │   ├── TerminalBootLoader/       # Premium terminal boot loader (opening experience)
+│   │   ├── LoopingTypewriter.tsx     # Infinite looping typewriter effect
+│   │   ├── OneTimeTypewriter.tsx     # Single-run typewriter effect
+│   │   ├── ThreeWormhole.tsx         # WebGL starfield background
+│   │   ├── Whiteboard.tsx            # Interactive whiteboard component
+│   │   ├── DecryptText.tsx           # Decrypting text effect
+│   │   └── LandingPage.tsx           # Hero section with animated text
 │   ├── data/                  # Static portfolio configurations (portfolioData.ts)
 │   ├── utils/                 # Audio synthesis helper libraries, API configs
+│   ├── hooks/                 # Custom React hooks (terminal boot, scroll reveal)
 │   ├── types.ts               # Core model interfaces and TS contracts
 │   ├── index.css              # Main tailwind and CRT scan styles
 │   └── main.tsx               # Client entry node
 │
 ├── dist/                      # Deployed production assets
 ├── supabase/                  # Edge functions for serverless API endpoints
+├── public/                    # Static assets (images, fonts, research SVGs)
 ├── server.ts                  # Express production server & Groq API proxy routing
+├── vercel.json                # Vercel static deployment configuration
 ├── tsconfig.json              # TypeScript compiler parameters
 ├── vite.config.ts             # Vite bundler configurations with dynamic base paths
 └── package.json               # Scripts, manifest dependencies, and devDependencies
@@ -133,6 +137,7 @@ Create a `.env` file in the root directory based on `.env.example`:
 ```env
 GROQ_API_KEY="your_groq_api_key"
 PORT=3001
+APP_URL="your_app_url"
 ```
 
 ### 4. Run Development Server
@@ -146,28 +151,32 @@ Navigate to `http://localhost:3001` in your browser. The Express server acts as 
 ## 🏗️ Build & Deployment
 
 ### Production Compilation
-Bundle the static assets and compile the TypeScript backend server down to a single compact CJS executable:
+Bundle the static assets for frontend deployment:
 ```bash
 npm run build
 ```
-The compiled output is saved under `dist/` and `dist/server.cjs`. Run the compiled build locally via:
-```bash
-npm run start
-```
+The compiled output is saved under `dist/`.
 
 ### GitHub Pages Static Deployment
-To build and publish the frontend bundle directly to your GitHub repository pages branch, run:
+To build and publish the frontend bundle to the `FarhanOS` project pages path:
 ```bash
 npm run deploy
 ```
-*Note: The asset base URL automatically updates to `/FarhanOS/` under static deployment to prevent resource load errors.*
+*Note: The asset base URL automatically updates to `/FarhanOS/` to prevent resource load errors.*
 
 ### Custom Domain Static Deployment
-To build and publish the frontend bundle with a root base path (`/`) and push your custom domain settings to GitHub Pages, run:
+To build and publish the frontend bundle with a root base path (`/`) and push custom domain settings to GitHub Pages:
 ```bash
 npm run deploy:domain
 ```
 *Note: The CNAME configuration is located under `public/CNAME` and will be bundled automatically during the build process.*
+
+### Vercel Static Deployment
+A `vercel.json` configuration is included for Vercel deployments:
+```bash
+vercel-build
+```
+Deploy via the Vercel CLI or connect your Git repository for automatic deployments.
 
 ---
 
@@ -195,3 +204,4 @@ Distributed under the MIT License. See [LICENSE](LICENSE) or headers for details
 * **Contact Email**: [farhankabir133@gmail.com](mailto:farhankabir133@gmail.com)
 * **GitHub Profile**: [farhankabir133](https://github.com/farhankabir133)
 * **LinkedIn**: [Farhan Kabir Profile](https://www.linkedin.com/in/farhankabir133)
+* **Website**: [https://farhankabir.me/](https://farhankabir.me/)
