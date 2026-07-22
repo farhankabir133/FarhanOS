@@ -654,7 +654,7 @@ export default function LandingPage({
                 className="mt-4 text-base sm:text-lg md:text-xl font-medium font-sans tracking-wide text-zinc-400 select-text"
               >
                 <OneTimeTypewriter
-                  text="Crafting digital experiences with code and creativity!!"
+                  text="Crafting Digital Experience with code and creativity"
                   speed={55}
                 />
               </motion.p>
@@ -676,7 +676,7 @@ export default function LandingPage({
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             animate={{ boxShadow: ['0 0 15px rgba(99,102,241,0.2)', '0 0 25px rgba(99,102,241,0.35)', '0 0 15px rgba(99,102,241,0.2)'] }}
             onClick={onLaunchOS}
-            className={`w-full sm:w-auto px-6 py-3.5 rounded-xl text-[10.5px] font-mono font-bold tracking-wider uppercase cursor-pointer active:scale-95 duration-100 ${styleSet.btnPrimary}`}
+            className={`w-full sm:w-auto px-6 py-3.5 rounded-xl text-[10.5px] font-mono font-bold tracking-wider uppercase cursor-pointer active:scale-95 duration-100 flex items-center justify-center ${styleSet.btnPrimary}`}
           >
             Activate Cosmic OS
           </motion.button>
