@@ -94,7 +94,211 @@ export const portfolioData: PortfolioData = {
       ],
       problem: 'Static grid portfolios fail to showcase the sophisticated architectural capabilities, design sensibilities, and core AI engineering talents of top-tier builders.',
       solution: 'FarhanOS encapsulates complete interactive applications into a beautiful, cohesive operating desktop running local simulator widgets.',
-      roadmap: ['Add support for complete sandboxed terminal commands', 'Introduce voice command parsing natively via browser audio APIs']
+       roadmap: ['Add support for complete sandboxed terminal commands', 'Introduce voice command parsing natively via browser audio APIs']
+    },
+    {
+      id: '9th-grade',
+      title: '9th Grade',
+      description: 'An interactive educational web platform designed for middle school students, featuring adaptive quizzes, progress tracking dashboards, and gamified learning paths covering math, science, and language arts.',
+      category: 'Education',
+      techStack: ['React', 'TailwindCSS', 'Firebase', 'Node.js', 'Recharts'],
+      architecture: 'Firebase-backed SPA with serverless Cloud Functions for quiz scoring, progress persistence, and real-time leaderboard synchronization.',
+      timeline: 'Jun 2023 - Dec 2023',
+      metrics: [
+        { label: 'Active Learners', value: '350+' },
+        { label: 'Quiz Accuracy', value: '94.2%' },
+        { label: 'Load Time', value: '<1.2s' }
+      ],
+      problem: 'Middle school students lacked engaging, interactive platforms that adapt to individual learning paces and provide visual progress feedback.',
+      solution: 'Built a gamified learning interface with adaptive quiz algorithms, streak tracking, and animated progress dashboards that motivate consistent study habits.',
+      roadmap: ['AI-powered question recommendations', 'Multi-player challenge mode']
+    },
+    {
+      id: 'buildsafe',
+      title: 'BuildSafe',
+      description: 'A construction safety compliance platform that digitizes site hazard reports, tracks safety inspection schedules, and generates automated compliance documentation for regulatory audits.',
+      category: 'SaaS',
+      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'PostGIS'],
+      architecture: 'Express backend with PostGIS spatial indexing for geo-tagged hazard reports, Supabase Edge Functions for notification dispatch, and a React dashboard for compliance visualization.',
+      timeline: 'Aug 2024 - Feb 2025',
+      metrics: [
+        { label: 'Reports processed', value: '1.2k+' },
+        { label: 'Compliance rate', value: '97.8%' },
+        { label: 'Audit time saved', value: '62%' }
+      ],
+      problem: 'Construction sites rely on paper-based safety logs that are error-prone, difficult to audit, and slow to generate compliance reports.',
+      solution: 'BuildSafe mobile-first platform replaces paper checklists with real-time digital hazard logging, GPS-tagged incident reports, and automated audit trail generation.',
+      roadmap: ['Offline-first PWA for remote sites', 'Drone integration for automated site scanning']
+    },
+    {
+      id: 'buddy-script',
+      title: 'Buddy-Script',
+      description: 'An AI-powered coding companion that provides real-time code review suggestions, error explanations, and pair-programming assistance directly inside the browser editor.',
+      category: 'Developer Tools',
+      techStack: ['React', 'Groq API', 'Monaco Editor', 'WebSocket', 'Node.js'],
+      architecture: 'WebSocket-connected real-time analysis engine sending code diffs to a Groq-hosted code model for instant feedback, rendered inline via Monaco editor decorations.',
+      timeline: 'Nov 2024 - Apr 2025',
+      metrics: [
+        { label: 'Suggestion accuracy', value: '89.4%' },
+        { label: 'Latency', value: '<200ms' },
+        { label: 'Code corrections', value: '4.8k+' }
+      ],
+      problem: 'Developers lack affordable, real-time AI coding assistants that integrate seamlessly into their existing browser-based workflows.',
+      solution: 'Buddy-Script injects a non-intelligent AI pair programmer into the Monaco editor, providing contextual suggestions without requiring a full IDE switch.',
+      roadmap: ['Support for 5+ languages', 'Integration with VS Code extension marketplace']
+    },
+    {
+      id: 'rankflow-ai',
+      title: 'RankFlow AI',
+      description: 'A machine learning pipeline platform for automated model ranking and benchmarking, allowing teams to compare hundreds of model variants across standardized metrics.',
+      category: 'AI/ML',
+      techStack: ['Python', 'FastAPI', 'PostgreSQL', 'Docker', 'React'],
+      architecture: 'FastAPI orchestration service running isolated Docker containers per model variant, PostgreSQL timeseries storage for benchmark results, and a React dashboard for comparative visualizations.',
+      timeline: 'Mar 2025 - Jul 2025',
+      metrics: [
+        { label: 'Models ranked', value: '840+' },
+        { label: 'Benchmark throughput', value: '12/min' },
+        { label: 'Uptime', value: '99.7%' }
+      ],
+      problem: 'ML teams struggle to systematically track, compare, and reproduce model performance across experiments and iterations.',
+      solution: 'RankFlow AI automates the benchmarking pipeline, containerizing each model variant and producing standardized comparison reports with interactive charts.',
+      roadmap: ['Cloud-native deployment templates', 'Collaborative annotation layers']
+    },
+    {
+      id: 'exam-survival',
+      title: 'Exam-Survival',
+      description: 'An adaptive exam preparation platform that uses spaced repetition algorithms and AI-generated mock exams to maximize retention and improve test scores in minimal time.',
+      category: 'Education',
+      techStack: ['React', 'TypeScript', 'Supabase', 'Groq AI', 'PWA'],
+      architecture: 'Supabase-backed PWA with Groq AI generating dynamic mock exam questions, and a spaced repetition engine scheduling reviews based on Ebbinghaus forgetting curves.',
+      timeline: 'Jan 2025 - Jun 2025',
+      metrics: [
+        { label: 'Avg. score improvement', value: '+23%' },
+        { label: 'Users', value: '1.8k+' },
+        { label: 'Questions generated', value: '12k+' }
+      ],
+      problem: 'Students waste hours on inefficient study methods, re-reading material without active recall or spaced review.',
+      solution: 'Exam-Survival combines AI-generated mock tests with adaptive spaced repetition to focus study time on weak areas, cutting preparation time in half.',
+      roadmap: ['Image-based question recognition', 'Collaborative study rooms']
+    },
+    {
+      id: 'codelab-ai-genkit-rag',
+      title: 'codelab-ai-genkit-rag',
+      description: 'A production-ready RAG (Retrieval-Augmented Generation) starter kit for building AI-powered search and answer engines over codebases and technical documentation.',
+      category: 'AI/Code',
+      techStack: ['Python', 'LangChain', 'ChromaDB', 'FastAPI', 'Next.js'],
+      architecture: 'FastAPI ingestion pipeline chunking and embedding code files into ChromaDB vector store, LangChain orchestration for retrieval and generation, and a Next.js frontend for query interface.',
+      timeline: 'Feb 2025 - May 2025',
+      metrics: [
+        { label: 'Chunking accuracy', value: '96.1%' },
+        { label: 'Retrieval latency', value: '<350ms' },
+        { label: 'Code coverage', value: '98.4%' }
+      ],
+      problem: 'Developers need AI assistants that can search and understand codebases rather than general-purpose chatbots.',
+      solution: 'A modular RAG kit that embeds code into vector space and serves contextually relevant code snippets and explanations for natural language queries.',
+      roadmap: ['Multi-repo aggregation', 'IDE plugin for inline suggestions']
+    },
+    {
+      id: 'autospark',
+      title: 'AutoSpark',
+      description: 'An intelligent automation tool that connects APIs, spreadsheets, and databases to build no-code workflow automations with conditional logic and error handling.',
+      category: 'Automation',
+      techStack: ['React', 'Node.js', 'Redis', 'GraphQL', 'BullMQ'],
+      architecture: 'Redis-backed job queue with BullMQ workers executing API calls and data transformations, a real-time GraphQL subscription layer for workflow monitoring, and a React canvas editor for visual workflow construction.',
+      timeline: 'Sep 2024 - Dec 2024',
+      metrics: [
+        { label: 'Workflows created', value: '3.6k+' },
+        { label: 'Avg. execution time', value: '1.4s' },
+        { label: 'Success rate', value: '99.1%' }
+      ],
+      problem: 'No-code automation tools lack the flexibility to handle complex conditional logic and error recovery across heterogeneous data sources.',
+      solution: 'AutoSpark provides a visual workflow builder with branching logic, retry policies, and built-in connectors for popular APIs and databases.',
+      roadmap: ['Webhook triggers', 'Team collaboration features']
+    },
+    {
+      id: 'omniva-ai',
+      title: 'OMNIVA AI',
+      description: 'An enterprise AI operations platform for monitoring, tuning, and governing large language model deployments across production environments with real-time observability.',
+      category: 'MLOps',
+      techStack: ['React', 'Go', 'Prometheus', 'Grafana', 'TensorFlow'],
+      architecture: 'Go-based ingestion layer collecting model telemetry from production endpoints, Prometheus for metrics storage, Grafana dashboards for observability, and a React portal for governance controls.',
+      timeline: 'Apr 2025 - Jul 2025',
+      metrics: [
+        { label: 'Models monitored', value: '40+' },
+        { label: 'Anomaly detection', value: '98.7%' },
+        { label: 'Drift alerts', value: 'Real-time' }
+      ],
+      problem: 'Teams deploying LLMs in production lack unified observability into model performance, cost, drift, and safety compliance.',
+      solution: 'OMNIVA AI aggregates model telemetry across services, detecting anomalies and drift automatically while providing governance dashboards for compliance teams.',
+      roadmap: ['Automated rollback triggers', 'Multi-model A/B testing framework']
+    },
+    {
+      id: 'farhankabir-com',
+      title: 'farhankabir.com',
+      description: 'A personal brand website serving as the public-facing portfolio and landing page, showcasing professional identity, contact information, and project highlights for Farhan Kabir.',
+      category: 'Design',
+      techStack: ['React', 'TailwindCSS', 'Framer Motion', 'Vercel'],
+      architecture: 'React single-page application deployed on Vercel with TailwindCSS for styling and Framer Motion for entrance animations and micro-interactions.',
+      timeline: 'Aug 2023 - Present',
+      metrics: [
+        { label: 'Page load', value: '<1s' },
+        { label: 'Design score', value: '100' },
+        { label: 'Uptime', value: '99.99%' }
+      ],
+      problem: 'Personal brands need a clean, fast, and memorable web presence that communicates professional identity at a glance.',
+      solution: 'farhankabir.com delivers a minimalist, high-performance portfolio with clear CTAs and immediate visibility of key projects and contact channels.',
+      roadmap: ['Blog integration', 'Multi-language support']
+    },
+    {
+      id: 'personal-site',
+      title: 'Personal_Site',
+      description: 'A minimalist personal website built as a foundation for online presence, featuring bio, skills matrix, and a contact form with spam filtering.',
+      category: 'Web',
+      techStack: ['HTML', 'CSS', 'JavaScript', 'Netlify', 'Formspree'],
+      architecture: 'Static HTML/CSS/JS site hosted on Netlify with Formspree handling form submissions and built-in spam filtering via honeypot fields.',
+      timeline: 'Jan 2022 - Jun 2022',
+      metrics: [
+        { label: 'PageSpeed Score', value: '98' },
+        { label: 'Form submissions', value: '280+' },
+        { label: 'Spam blocked', value: '94%' }
+      ],
+      problem: 'Early career professionals need a simple, fast personal site without the overhead of a full framework.',
+      solution: 'A zero-dependency static site with vanilla JS and a clean design that loads instantly and handles inquiries reliably.',
+      roadmap: ['Dark mode toggle', 'Project showcase grid']
+    },
+    {
+      id: 'routineos',
+      title: 'RoutineOS',
+      description: 'A command-line productivity tool that manages daily routines, habit tracking, and task scheduling with a terminal-based interface inspired by operating system workflows.',
+      category: 'CLI Tool',
+      techStack: ['TypeScript', 'Node.js', 'Tauri', 'SQLite', 'Ink'],
+      architecture: 'Tauri-powered desktop shell with an Ink-based React terminal UI, storing all routine data in a local SQLite database with SQLite migration versioning.',
+      timeline: 'Jul 2024 - Nov 2024',
+      metrics: [
+        { label: 'Habits tracked', value: '50+' },
+        { label: 'Routine completion', value: '78%' },
+        { label: 'Bundle size', value: '8.2MB' }
+      ],
+      problem: 'Desktop productivity tools are fragmented between web apps and native clients, lacking a unified terminal-native workflow.',
+      solution: 'RoutineOS combines a full terminal interface with local-first persistence, allowing users to manage their entire daily workflow without leaving the command line.',
+      roadmap: ['Natural language routine creation', 'Cross-platform sync via cloud backup']
+    },
+    {
+      id: 'vocab-x',
+      title: 'vocab-X',
+      description: 'A vocabulary acquisition engine that uses spaced repetition and generative AI to create personalized word learning sessions from any text corpus or curriculum.',
+      category: 'Education',
+      techStack: ['React Native', 'Python', 'FastAPI', 'SQLite', 'OpenAI Embeddings'],
+      architecture: 'FastAPI backend generating embeddings for vocabulary items, OpenAI embeddings for semantic similarity matching, SQLite for local storage, and a React Native cross-platform frontend.',
+      timeline: 'Dec 2023 - Aug 2024',
+      metrics: [
+        { label: 'Words learned', value: '8.2k+' },
+        { label: 'Retention rate', value: '91.7%' },
+        { label: 'Session length', value: '8 min avg' }
+      ],
+      problem: 'Language learners struggle with generic flashcard apps that don adapt to their personal reading material or proficiency level.',
+      solution: 'vocab-X extracts vocabulary from any imported text, prioritizes words using spaced repetition weighted by the learner proficiency profile.',
+      roadmap: ['Multilingual support', 'Collaborative study decks']
     }
   ],
 
