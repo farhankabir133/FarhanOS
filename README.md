@@ -13,6 +13,10 @@
 ## 🛰️ Tagline
 *Explore clinical linguistics, coordinate with real-time neural audio, and engage with AI-native twin engines inside a custom operating matrix.*
 
+*Hero greeting: "Hi, I'm Farhan Kabir! Crafting Digital Experience with code and creativity"*
+
+*Site favicon updated to custom FK-Sign logo.*
+
 ---
 
 ## 🔗 Live Deployments
@@ -39,7 +43,7 @@
 
 **farhanos** is a production-grade interactive portfolio workspace structured as a functional simulator OS. Designed to showcase clinical NLP methodologies, WebGL visualizations, and full-stack SaaS project architectures, the application rejects flat layouts in favor of an engaging, high-contrast desktop ecosystem.
 
-The interface bridges professional NLP researcher credentials with premium frontend craftsmanship. Visitors can run real-time system tours, examine peer-reviewed publication data with mathematical classifier statistics, check live repository telemetry feeds, and chat directly with an AI-native digital twin clone.
+The interface bridges professional NLP researcher credentials with premium frontend craftsmanship. Visitors can run real-time system tours, examine peer-reviewed publication data with mathematical classifier statistics, check live repository telemetry feeds, chat directly with an AI-native digital twin clone, and explore 16 sandbox projects spanning game development, AI/ML, safety engineering, education, and more.
 
 ---
 
@@ -59,9 +63,21 @@ The interface bridges professional NLP researcher credentials with premium front
 * **Accuracy Statistics & Citations**: Dynamic matrices tracking precision, F1-scores, sensitivity, and copyable BibTeX resources.
 
 ### 4. Sandbox Projects Explorer
-* **TypeRush**: Immersive typing survival interface featuring Web Audio API synthesizers and adaptive visual prompts.
-* **The Ink Home**: Immersive WebGL particle-galaxy carousel and dynamic scraping portal syncing Medium RSS feeds.
-* **SafeSide Predictor**: Tactical football analytics command center running Poisson distribution simulations.
+* **TypeRush** (`the-3d-platformer`): Immersive typing survival interface featuring Web Audio API synthesizers and adaptive visual prompts.
+* **The Ink Home** (`the-ink-home`): Immersive WebGL particle-galaxy carousel and dynamic scraping portal mapping Medium RSS feeds.
+* **SafeSide Predictor** (`safeside`): Tactical football analytics command center running Poisson distribution simulations and prediction engines.
+* **9th Grade** (`9th-grade`): Interactive educational platform for middle school students with adaptive quizzes, progress tracking, and gamified learning paths.
+* **BuildSafe** (`buildsafe`): Construction safety compliance platform digitizing site hazard reports, inspection schedules, and automated audit documentation.
+* **Buddy-Script** (`buddy-script`): AI-powered coding companion providing real-time code review suggestions and pair-programming assistance in the browser editor.
+* **RankFlow AI** (`rankflow-ai`): ML pipeline platform for automated model ranking and benchmarking across standardized metrics.
+* **Exam-Survival** (`exam-survival`): Adaptive exam preparation platform using spaced repetition and AI-generated mock exams with Ebbinghaus curve scheduling.
+* **codelab-ai-genkit-rag** (`codelab-ai-genkit-rag`): Production-ready RAG starter kit for building AI-powered search and answer engines over codebases and technical documentation.
+* **AutoSpark** (`autospark`): Intelligent automation tool connecting APIs, spreadsheets, and databases with visual no-code workflow builder.
+* **OMNIVA AI** (`omniva-ai`): Enterprise AI operations platform for monitoring, tuning, and governing LLM deployments with real-time observability.
+* **farhankabir.com** (`farhankabir-com`): Personal brand website serving as the public-facing portfolio with project highlights and contact channels.
+* **Personal_Site** (`personal-site`): Minimalist personal site foundation featuring bio, skills matrix, and spam-filtered contact form.
+* **RoutineOS** (`routineos`): Command-line productivity tool managing daily routines, habit tracking, and task scheduling with a terminal-based OS interface.
+* **vocab-X** (`vocab-x`): Vocabulary acquisition engine using spaced repetition and generative AI to create personalized learning sessions from any text corpus.
 
 ### 5. Systems Telemetry & Desktop Customizers
 * **Interactive Conceptual Garden**: WebGL nodes representing clinical NLP, mental wellness tracking, and data ethics connected via dynamic edges.
