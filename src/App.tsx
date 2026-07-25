@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense, memo, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback } from 'react';
 import { 
   Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText, 
   Calendar, Award, Activity, Search, Briefcase, Volume2, VolumeX, 

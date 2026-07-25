@@ -115,8 +115,8 @@ The interface bridges professional NLP researcher credentials with premium front
 │   │   ├── DecryptText.tsx           # Decrypting text effect
 │   │   └── LandingPage.tsx           # Hero section with animated text
 │   ├── data/                  # Static portfolio configurations (portfolioData.ts)
-│   ├── utils/                 # Audio synthesis helper libraries, API configs
-│   ├── hooks/                 # Custom React hooks (terminal boot, scroll reveal)
+│   ├── utils/                 # Audio synthesis, RSS parsing, API configs, AI fallbacks
+│   ├── hooks/                 # Custom React hooks (terminal boot)
 │   ├── types.ts               # Core model interfaces and TS contracts
 │   ├── index.css              # Main tailwind and CRT scan styles
 │   └── main.tsx               # Client entry node
@@ -130,6 +130,19 @@ The interface bridges professional NLP researcher credentials with premium front
 ├── vite.config.ts             # Vite bundler configurations with dynamic base paths
 └── package.json               # Scripts, manifest dependencies, and devDependencies
 ```
+
+---
+
+## ⚡ Performance Optimizations
+
+This repository includes a full-stack performance optimization pass based on `PERFORMANCE_OPTIMIZATION_REPORT.md`:
+
+- **React render efficiency**: `useMemo` / `useCallback` applied across `App.tsx` and `LandingPage.tsx`; drag system switched to GPU-accelerated `translate3d` with `will-change` hints.
+- **WebGL tuning**: `ThreeWormhole.tsx` now uses mobile LOD, `IntersectionObserver` visibility gating, reduced FBM octaves, and capped pixel ratio on low-end devices.
+- **CSS paint cost**: Added `.gpu-accelerated`, `.no-blur`, and mobile `backdrop-filter` reduction utilities; optimized keyframe animations with `translateZ(0)`.
+- **Backend latency**: Added `compression()` middleware, ETag/Last-Modified caching, shared RSS parser utility, and cache headers on API responses.
+- **Critical path hints**: `index.html` now includes `preconnect`/`dns-prefetch` for API domains and font preloads.
+- **Dead code removed**: Unused components, hooks, and IDE/agent config files purged from the production tree.
 
 ---
 

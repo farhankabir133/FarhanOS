@@ -11,3 +11,8 @@ coverage/
 .cursor/
 .jetro/
 .mcp.json
+.windsurfrules
+.agents/
+CLAUDE.md
+AGENT.md
+metadata.json
