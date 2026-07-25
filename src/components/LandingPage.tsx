@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { 
   Rocket, Compass, PhoneCall, Download, GitBranch, Sparkles, BookOpen, 
@@ -261,7 +261,7 @@ export default function LandingPage({
   }, []);
 
   // Theme Config mapper
-  const getThemeStyles = () => {
+  const getThemeStyles = useCallback(() => {
     switch (theme) {
       case 'cyberpunk':
         return {
@@ -334,9 +334,9 @@ export default function LandingPage({
           gradientBg: 'from-indigo-500/5 via-purple-500/2 to-transparent',
         };
     }
-  };
+  }, [theme]);
 
-  const styleSet = getThemeStyles();
+  const styleSet = useMemo(() => getThemeStyles(), [getThemeStyles]);
 
   // Testimonials database
   const testimonials = [
@@ -383,7 +383,7 @@ export default function LandingPage({
   ];
 
   // Dynamic Skills Filter Grouping
-  const filteredSkills = portfolioData.skills.filter(s => {
+  const filteredSkills = useMemo(() => portfolioData.skills.filter(s => {
     if (activeTab === 'All') return true;
     if (activeTab === 'AI/ML' && (s.category === 'AI/ML' || s.category === 'Research & Science')) return true;
     if (activeTab === 'Frontend' && s.category === 'Frontend') return true;
@@ -391,7 +391,7 @@ export default function LandingPage({
     if (activeTab === 'Database' && (s.name === 'PostgreSQL' || s.name === 'Redis Caching')) return true;
     if (activeTab === 'DevOps' && s.category === 'Systems & Devops') return true;
     return false;
-  });
+  }), [activeTab]);
 
   // Handle Contact Form Submit
   const handleContactSubmit = (e: React.FormEvent) => {

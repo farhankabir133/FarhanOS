@@ -2,7 +2,7 @@ export interface Project {
   id: string;
   title: string;
   description: string;
-  category: 'AI' | 'NLP' | 'SaaS' | 'Open Source' | 'Research' | 'Productivity' | 'Design';
+  category: 'AI' | 'NLP' | 'SaaS' | 'Open Source' | 'Research' | 'Productivity' | 'Design' | 'Education' | 'Developer Tools' | 'AI/ML' | 'AI/Code' | 'Automation' | 'MLOps' | 'Web' | 'CLI Tool';
   techStack: string[];
   architecture: string;
   timeline: string;

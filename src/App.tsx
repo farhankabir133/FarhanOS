@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, memo, useMemo, useCallback } from 'react';
 import { 
   Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText, 
   Calendar, Award, Activity, Search, Briefcase, Volume2, VolumeX, 
@@ -10,7 +10,7 @@ import {
 import { portfolioData } from './data/portfolioData';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
 import LandingPage from './components/LandingPage';
-import Whiteboard from './components/Whiteboard';
+const Whiteboard = lazy(() => import('./components/Whiteboard'));
 import DecryptText from './components/DecryptText';
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
 import { getApiBaseUrl } from './utils/apiConfig';
@@ -39,11 +39,11 @@ export default function App() {
   const [selectedResearchPaper, setSelectedResearchPaper] = useState<any>(null); // For a popup reader on landing page
 
   // OS System States
+  const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
+  const [currentTime, setCurrentTime] = useState('');
   const [isBooted, setIsBooted] = useState(false);
   const [bootProgress, setBootProgress] = useState(0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
-  const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
-  const [currentTime, setCurrentTime] = useState('');
   
   // Window Management States
   // Each open window is represented by its unique id
@@ -93,33 +93,34 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const cycleTheme = () => {
+  const cycleTheme = useCallback(() => {
     const themes: Array<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'> = ['dark', 'cyberpunk', 'ai', 'terminal', 'light'];
     const nextIdx = (themes.indexOf(theme) + 1) % themes.length;
     setTheme(themes[nextIdx]);
     triggerSound(750, 0.03);
-  };
+  }, [theme]);
 
   // Quick Action OS Bypass Helpers
-  const handleOpenWindowDirectly = (winId: string) => {
+  const handleOpenWindowDirectly = useCallback((winId: string) => {
     setViewMode('os');
     setIsBooted(true);
-    if (!openWindows.includes(winId)) {
-      setOpenWindows([...openWindows, winId]);
-    }
+    setOpenWindows(prev => {
+      if (prev.includes(winId)) return prev;
+      return [...prev, winId];
+    });
     setFocusedWindow(winId);
     triggerSound(900, 0.05);
-  };
+  }, []);
 
-  const handleOpenProjectDirectly = (project: Project) => {
+  const handleOpenProjectDirectly = useCallback((project: Project) => {
     setSelectedProject(project);
     handleOpenWindowDirectly('projects');
-  };
+  }, [handleOpenWindowDirectly]);
 
-  const handleOpenArticleDirectly = (article: Article) => {
+  const handleOpenArticleDirectly = useCallback((article: Article) => {
     setSelectedArticle(article);
     handleOpenWindowDirectly('writing');
-  };
+  }, [handleOpenWindowDirectly]);
 
   // UI Interactive States
   const [selectedProject, setSelectedProject] = useState<Project>(portfolioData.projects[0]);
@@ -141,98 +142,11 @@ useEffect(() => {
           }
         }
       } catch (err) {
-        console.warn('Backend Medium stories endpoint unavailable, trying client fallback:', err);
+        console.warn('Medium stories endpoint unavailable, using static articles:', err);
       }
 
-      // Client-side fallback - start with static articles immediately
       setArticles(portfolioData.articles);
       setSelectedArticle(portfolioData.articles[0]);
-
-      // Then try to fetch live Medium stories
-      try {
-        const proxyUrl = 'https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@farhankabir133';
-        let rssRes = await fetch(proxyUrl).catch(() => 
-          fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://medium.com/feed/@farhankabir133'))
-        );
-        if (!rssRes || !rssRes.ok) return;
-
-        const contentType = rssRes.headers.get('content-type') || '';
-        let mapped: any[] = [];
-        if (contentType.includes('application/json')) {
-          const data = await rssRes.json();
-          if (data.status === 'ok' && Array.isArray(data.items)) {
-            mapped = data.items.slice(0, 6).map((item: any, idx: number) => {
-              const descHtml = item.description || '';
-              const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
-              const imageUrl = imgMatch ? imgMatch[1] : '';
-              const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
-              let snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').trim() : '';
-              const cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-              if (!snippet) snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
-              let category: 'AI' | 'Engineering' | 'Productivity' | 'Research' | 'Life' | 'Startups' | 'Design' | 'Philosophy' = 'Life';
-              const lc = (item.categories || []).map((c: string) => c.toLowerCase());
-              if (lc.some((c: string) => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) category = 'AI';
-              else if (lc.some((c: string) => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('architecture'))) category = 'Engineering';
-              else if (lc.some((c: string) => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) category = 'Productivity';
-              else if (lc.some((c: string) => c.includes('research') || c.includes('science') || c.includes('clinic'))) category = 'Research';
-              else if (lc.some((c: string) => c.includes('design') || c.includes('ux') || c.includes('ui'))) category = 'Design';
-              else if (lc.some((c: string) => c.includes('startup') || c.includes('business') || c.includes('saas'))) category = 'Startups';
-              else if (lc.some((c: string) => c.includes('philosoph'))) category = 'Philosophy';
-              let formattedDate = item.pubDate;
-              try { const d = new Date(item.pubDate); if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch {}
-              const guidIdMatch = (item.guid || '').match(/\/p\/([a-f0-9]+)$/) || (item.link || '').match(/-([a-f0-9]+)$/);
-              return { id: guidIdMatch ? guidIdMatch[1] : `medium-${idx}`, title: item.title, category, readTime: `${Math.max(1, Math.ceil(cleanContent.split(/\s+/).length / 225))} min read`, date: formattedDate, excerpt: snippet, content: cleanContent || snippet || item.title, link: item.link, imageUrl };
-            });
-          }
-        } else {
-          const xmlText = await rssRes.text();
-          const items = xmlText.split('<item>');
-          items.shift();
-          mapped = items.slice(0, 6).map((item: string, idx: number) => {
-            const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || item.match(/<title>([\s\S]*?)<\/title>/);
-            const title = titleMatch ? titleMatch[1].trim() : '';
-            const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
-            const link = linkMatch ? linkMatch[1].trim() : '';
-            const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-            let formattedDate = pubDateMatch ? pubDateMatch[1].trim() : '';
-            try { const d = new Date(formattedDate); if (!isNaN(d.getTime())) formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch {}
-            const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/);
-            let snippet = '', imageUrl = '', cleanContent = '';
-            if (descMatch) {
-              const descHtml = descMatch[1];
-              const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
-              if (imgMatch) imageUrl = imgMatch[1];
-              const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
-              if (snippetMatch) snippet = snippetMatch[1].trim();
-              cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-              if (!snippet) snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
-            }
-            const categories: string[] = [];
-            const catRegex = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>/g;
-            let catMatch;
-            while ((catMatch = catRegex.exec(item)) !== null) categories.push(catMatch[1]);
-            let category: 'AI' | 'Engineering' | 'Productivity' | 'Research' | 'Life' | 'Startups' | 'Design' | 'Philosophy' = 'Life';
-            const lc = categories.map(c => c.toLowerCase());
-            if (lc.some(c => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) category = 'AI';
-            else if (lc.some(c => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('architecture'))) category = 'Engineering';
-            else if (lc.some(c => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) category = 'Productivity';
-            else if (lc.some(c => c.includes('research') || c.includes('science') || c.includes('clinic'))) category = 'Research';
-            else if (lc.some(c => c.includes('design') || c.includes('ux') || c.includes('ui'))) category = 'Design';
-            else if (lc.some(c => c.includes('startup') || c.includes('business') || c.includes('saas'))) category = 'Startups';
-            else if (lc.some(c => c.includes('philosoph'))) category = 'Philosophy';
-            const guidMatch = item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/);
-            const rawGuid = guidMatch ? guidMatch[1].trim() : '';
-            const guidIdMatch = rawGuid.match(/\/p\/([a-f0-9]+)$/) || link.match(/-([a-f0-9]+)$/) || rawGuid.match(/\/p\/([a-f0-9]+)/);
-            return { id: guidIdMatch ? guidIdMatch[1] : `medium-${idx}`, title, category, readTime: `${Math.max(1, Math.ceil(cleanContent.split(/\s+/).length / 225))} min read`, date: formattedDate, excerpt: snippet, content: cleanContent || snippet || title, link, imageUrl };
-          });
-}
-        if (mapped.length > 0) {
-          setArticles(mapped);
-          setSelectedArticle(mapped[0]);
-        }
-      } catch (clientErr) {
-        console.warn('Client-side RSS fallback failed:', clientErr);
-      }
     };
     fetchMediumStories();
   }, []);
@@ -290,47 +204,7 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, []);
 
-  // System Boot Sequence Sim
-  useEffect(() => {
-    if (!isBooted) {
-      const logs = [
-        'INIT: Booting FarhanOS Kernel v2.4.6...',
-        'SYS: Loading digital neural parameters...',
-        'SYS: Grounding publications corpus index...',
-        'NETWORK: Establishing proxy connection secure rails...',
-        'AI: Initializing Groq model instances...',
-        'GRAPH: Parsing topological clinical coordinates...',
-        'SYS: Systems compiled. Ready for operational execution.'
-      ];
-      
-      let step = 0;
-      const progressInterval = setInterval(() => {
-        setBootProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            setTimeout(() => {
-              setIsBooted(true);
-              triggerSound(1000, 0.15);
-            }, 600);
-            return 100;
-          }
-          const add = Math.floor(Math.random() * 15) + 5;
-          const next = Math.min(prev + add, 100);
-          
-          if (next > step * 15 && step < logs.length) {
-            setBootLogs(prevLogs => [...prevLogs, logs[step]]);
-            step++;
-            triggerSound(600 + step * 50, 0.02);
-          }
-          return next;
-        });
-      }, 120);
-
-      return () => clearInterval(progressInterval);
-    }
-  }, [isBooted]);
-
-  const handleWarpAndEnter = () => {
+  const handleWarpAndEnter = useCallback(() => {
     if (isWarping) return;
     triggerSound(1200, 0.4);
     setIsWarping(true);
@@ -349,10 +223,10 @@ useEffect(() => {
       setViewMode('os');
       setBootProgress(0);
       setBootLogs([]);
-      setIsBooted(false); // Trigger OS Boot sequence
+      setIsBooted(false);
       setIsWarping(false);
     }, 1800);
-  };
+  }, [isWarping]);
 
   const handleSendLandingChat = async () => {
     if (!landingQuery.trim() || landingChatLoading) return;
@@ -422,6 +296,8 @@ useEffect(() => {
     const winEl = document.getElementById(`window-${windowId}`);
     if (winEl) {
       winEl.style.transition = 'none';
+      winEl.style.willChange = 'transform';
+      winEl.style.transform = 'translateZ(0)';
     }
     
     setDraggedWindow(windowId);
@@ -433,7 +309,7 @@ useEffect(() => {
       const activeWindow = draggedWindowRef.current;
       if (!activeWindow) return;
       
-      const easeFactor = 0.16; // Buttery smooth spring factor
+      const easeFactor = 0.16;
       const dx = targetPosRef.current.x - currentPosRef.current.x;
       const dy = targetPosRef.current.y - currentPosRef.current.y;
       
@@ -441,16 +317,12 @@ useEffect(() => {
       currentPosRef.current.y += dy * easeFactor;
       
       const vx = dx * easeFactor;
-      
-      // Calculate inertial Z-tilt based on velocity
-      const maxTilt = 4.0; // max angle in degrees
+      const maxTilt = 4.0;
       const tiltAngle = Math.min(Math.max(-vx * 0.14, -maxTilt), maxTilt);
       
       const winEl = document.getElementById(`window-${activeWindow}`);
       if (winEl) {
-        winEl.style.left = `${currentPosRef.current.x}px`;
-        winEl.style.top = `${currentPosRef.current.y}px`;
-        winEl.style.transform = `rotateZ(${tiltAngle}deg) scale(1.025)`;
+        winEl.style.transform = `translate3d(${currentPosRef.current.x}px, ${currentPosRef.current.y}px, 0) rotateZ(${tiltAngle}deg) scale(1.025)`;
         winEl.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.65)';
         winEl.style.zIndex = '100';
       }
@@ -482,9 +354,10 @@ useEffect(() => {
       const winEl = document.getElementById(`window-${activeWindow}`);
       if (winEl) {
         winEl.style.transition = '';
-        winEl.style.transform = '';
+        winEl.style.transform = `translate3d(${finalX}px, ${finalY}px, 0)`;
         winEl.style.boxShadow = '';
         winEl.style.zIndex = '';
+        winEl.style.willChange = '';
       }
       
       setWindowPositions(prev => ({
@@ -509,43 +382,43 @@ useEffect(() => {
   }, [draggedWindow]);
 
   // Opening & Focusing a window
-  const openWindow = (windowId: string) => {
+  const openWindow = useCallback((windowId: string) => {
     triggerSound(700, 0.05);
-    if (!openWindows.includes(windowId)) {
-      setOpenWindows(prev => [...prev, windowId]);
-    }
-    // Remove from minimized if there
+    setOpenWindows(prev => {
+      if (prev.includes(windowId)) return prev;
+      return [...prev, windowId];
+    });
     setMinimizedWindows(prev => prev.filter(w => w !== windowId));
     setFocusedWindow(windowId);
-  };
+  }, []);
 
-  const closeWindow = (windowId: string) => {
+  const closeWindow = useCallback((windowId: string) => {
     triggerSound(400, 0.06);
     setOpenWindows(prev => prev.filter(w => w !== windowId));
-  };
+  }, []);
 
-  const minimizeWindow = (windowId: string) => {
+  const minimizeWindow = useCallback((windowId: string) => {
     triggerSound(450, 0.04);
-    if (!minimizedWindows.includes(windowId)) {
-      setMinimizedWindows(prev => [...prev, windowId]);
-    }
-    // Set focus to some other window if available
-    const rest = openWindows.filter(w => w !== windowId && !minimizedWindows.includes(w));
-    if (rest.length > 0) {
-      setFocusedWindow(rest[rest.length - 1]);
-    }
-  };
+    setMinimizedWindows(prev => {
+      if (prev.includes(windowId)) return prev;
+      return [...prev, windowId];
+    });
+    setFocusedWindow(prev => {
+      const rest = openWindows.filter(w => w !== windowId && !minimizedWindows.includes(w));
+      return rest.length > 0 ? rest[rest.length - 1] : prev;
+    });
+  }, [openWindows, minimizedWindows]);
 
-  const toggleMaximize = (windowId: string) => {
+  const toggleMaximize = useCallback((windowId: string) => {
     triggerSound(800, 0.04);
     setWindowPositions(prev => ({
       ...prev,
       [windowId]: { ...prev[windowId], isMaximized: !prev[windowId]?.isMaximized }
     }));
-  };
+  }, []);
 
   // TTS Speech Player
-  const speakText = async (text: string, index: number | null = null, mode: 'tour' | 'narrate' = 'narrate') => {
+  const speakText = useCallback(async (text: string, index: number | null = null, mode: 'tour' | 'narrate' = 'narrate') => {
     try {
       if (currentTTSAudio) {
         currentTTSAudio.stop();
@@ -559,7 +432,6 @@ useEffect(() => {
       });
       const data = await res.json();
       if (data.audio) {
-        // TTS playback removed
         setTimeout(() => {
           setPlayingMessageIndex(null);
         }, 2000);
@@ -580,18 +452,17 @@ useEffect(() => {
         setPlayingMessageIndex(null);
       }
     }
-  };
+  }, [currentTTSAudio]);
 
-  const stopSpeaking = () => {
+  const stopSpeaking = useCallback(() => {
     if (currentTTSAudio) {
       currentTTSAudio.stop();
       setCurrentTTSAudio(null);
     }
     setPlayingMessageIndex(null);
-  };
+  }, [currentTTSAudio]);
 
-  // Chat Twin API caller
-  const handleSendTwinMessage = async () => {
+  const handleSendTwinMessage = useCallback(async () => {
     if (!twinInput.trim()) return;
     const userMsg = twinInput.trim();
     setTwinInput('');
@@ -600,7 +471,6 @@ useEffect(() => {
     triggerSound(1100, 0.03);
 
     try {
-      // Gather historical context
       const historyPayload = twinMessages.map(m => ({
         role: m.role === 'user' ? 'user' : 'assistant',
         content: m.content
@@ -616,7 +486,6 @@ useEffect(() => {
       if (data.reply) {
         setTwinMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
         setTwinLoading(false);
-        // Play response automatically via Voice Synthesizer if switched on
         speakText(data.reply, twinMessages.length + 1);
       } else {
         throw new Error(data.error || 'General twin system fault.');
@@ -632,10 +501,9 @@ useEffect(() => {
       setTwinLoading(false);
       speakText(fallbackReply, twinMessages.length + 1);
     }
-  };
+  }, [twinInput, twinMessages, speakText]);
 
-  // Submit Mission Brief for analysis
-  const handleSendBrief = async () => {
+  const handleSendBrief = useCallback(async () => {
     if (!briefForm.goals.trim()) return;
     setBriefLoading(true);
     triggerSound(950, 0.05);
@@ -662,10 +530,9 @@ useEffect(() => {
     } finally {
       setBriefLoading(false);
     }
-  };
+  }, [briefForm]);
 
-  // Dispatch Strategic Brief to API backend
-  const handleDispatchBrief = async () => {
+  const handleDispatchBrief = useCallback(async () => {
     if (!briefForm.email.trim()) {
       alert("Please provide a valid transmission email address before dispatching.");
       return;
@@ -702,7 +569,6 @@ useEffect(() => {
       alert("Handshake confirmed. Strategy Brief successfully transmitted to Farhan's secure channel.");
       setBriefSummary(null);
       
-      // Clear briefForm fields except projectType selection
       setBriefForm(prev => ({
         ...prev,
         goals: '',
@@ -716,10 +582,9 @@ useEffect(() => {
     } finally {
       setBriefDispatchLoading(false);
     }
-  };
+  }, [briefForm, briefSummary]);
 
-  // Interactive AI Site Tour Guided cycle
-  const runTourCycle = async () => {
+  const runTourCycle = useCallback(async () => {
     triggerSound(1200, 0.1);
     setIsTourActive(true);
     setTourLoading(true);
@@ -770,9 +635,9 @@ useEffect(() => {
     };
 
     await startStep(1);
-  };
+  }, [openWindow, speakText]);
 
-  const nextTourStep = () => {
+  const nextTourStep = useCallback(() => {
     if (tourStep < 5) {
       const next = tourStep + 1;
       setTourStep(next);
@@ -794,10 +659,9 @@ useEffect(() => {
       stopSpeaking();
       triggerSound(1300, 0.05);
     }
-  };
+  }, [tourStep, openWindow, speakText, stopSpeaking]);
 
-  // Filter skills based on Category select
-  const filteredSkills = portfolioData.skills.filter(s => {
+  const filteredSkills = useMemo(() => portfolioData.skills.filter(s => {
     if (skillFilter === 'all') return true;
     if (skillFilter === 'AI/ML' && s.category === 'AI/ML') return true;
     if (skillFilter === 'Frontend' && s.category === 'Frontend') return true;
@@ -805,10 +669,10 @@ useEffect(() => {
     if (skillFilter === 'Research' && s.category === 'Research & Science') return true;
     if (skillFilter === 'Systems' && s.category === 'Systems & Devops') return true;
     return false;
-  });
+  }), [skillFilter]);
 
   // Global Command Palette matching items
-  const getSearchItems = () => {
+  const getSearchItems = useCallback(() => {
     const term = searchQuery.toLowerCase().trim();
     if (!term) return [];
     
@@ -839,12 +703,12 @@ useEffect(() => {
     }
 
     return results;
-  };
+  }, [searchQuery, articles, openWindow, setSelectedProject, setSelectedPaper, setSelectedArticle, setSkillFilter, setCommandPaletteOpen]);
 
-  const systemSearchResults = getSearchItems();
+  const systemSearchResults = useMemo(() => getSearchItems(), [getSearchItems]);
 
   // Desktop Icons Configuration for ease of access
-  const desktopIcons = [
+  const desktopIcons = useMemo(() => [
     { id: 'twin', label: 'Ask Twin AI', icon: Sparkles, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
     { id: 'projects', label: 'Mission Control', icon: Cpu, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
     { id: 'research', label: 'Research Lab', icon: BookOpen, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
@@ -858,10 +722,10 @@ useEffect(() => {
     { id: 'brief', label: 'Mission Brief', icon: Rocket, color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
     { id: 'builds', label: 'Release Logs', icon: Layers, color: 'text-teal-400 bg-teal-500/10 border-teal-500/20' },
     { id: 'whiteboard', label: 'Ideation Pad', icon: Palette, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-  ];
+  ], []);
 
   // Theme styling definitions mapping
-  const getThemeStyles = () => {
+  const getThemeStyles = useCallback(() => {
     switch (theme) {
       case 'cyberpunk':
         return {
@@ -929,9 +793,9 @@ useEffect(() => {
           badge: 'bg-sky-500/10 border border-sky-500/20 text-sky-300'
         };
     }
-  };
+  }, [theme]);
 
-  const styleSet = getThemeStyles();
+  const styleSet = useMemo(() => getThemeStyles(), [getThemeStyles]);
 
   return (
     <div className={`w-full ${viewMode === 'os' ? 'h-full overflow-hidden select-none' : 'min-h-screen'} ${styleSet.bg} transition-colors duration-500 flex flex-col relative`}>
@@ -946,44 +810,6 @@ useEffect(() => {
         />
       ) : (
         <>
-          {/* 1. INITIAL SYSTEM BOOT SCREEN */}
-          {!isBooted && (
-            <div className="absolute inset-0 bg-[#020308] z-[9999] flex flex-col items-center justify-center font-mono text-xs px-6">
-              <div className="w-full max-w-lg bg-[#080b15]/90 border border-zinc-800 p-6 rounded-lg shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500" style={{ width: `${bootProgress}%` }} />
-                
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 animate-ping" />
-                    <span className="text-zinc-400 font-bold tracking-wider">FARHAN KABIR CORE OS v2.4</span>
-                  </div>
-                  <span className="text-zinc-500 tracking-wider">BOOT: {bootProgress}%</span>
-                </div>
-
-                <div className="space-y-1.5 h-48 overflow-y-auto mb-4 scrollbar-none pr-1">
-                  {bootLogs.map((log, i) => (
-                    <div key={i} className="text-[#33ff33] opacity-90 font-mono text-[11px] leading-relaxed select-text flex items-start gap-1 justify-between">
-                      <span className="flex-1 whitespace-pre-wrap">{log}</span>
-                      <span className="text-zinc-600 text-[9px]">[SUCCESS]</span>
-                    </div>
-                  ))}
-                  {bootProgress < 100 && (
-                    <div className="text-white animate-pulse font-mono text-[11px]">⏳ Orchestrating linguistic vectors, please standby...</div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between border-t border-zinc-800 pt-3 text-[10px] text-zinc-500">
-                  <span>SYSTEM HOST: OOS LOCAL HOST INSTANCE</span>
-                  <span>PORT: 3001 ACTIVE</span>
-                </div>
-              </div>
-              
-              <div className="mt-8 text-zinc-600 text-center text-[10px] uppercase tracking-widest max-w-xs font-mono">
-                Designed for low-latency cognitive linguistics analysis with fully responsive modular desktop client matrices.
-              </div>
-            </div>
-          )}
-
           {/* 2. TOP MENU NAVIGATION BAR */}
           <header className="h-10 bg-black/40 backdrop-blur-md border-b border-zinc-800/40 flex items-center justify-between px-4 z-[99] select-none text-xs font-mono">
             <div className="flex items-center gap-5">
@@ -1146,8 +972,7 @@ useEffect(() => {
               }
             : {
                 position: 'absolute',
-                left: `${pos.x}px`,
-                top: `${pos.y}px`,
+                transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
                 width: winId === 'twin' || winId === 'garden' || winId === 'skills' ? '540px' : '720px',
                 height: winId === 'twin' ? '480px' : '550px',
                 maxHeight: '85vh',
@@ -2143,7 +1968,9 @@ useEffect(() => {
 
                 {/* L. IDEATION PAD / DRAWING WHITEBOARD */}
                 {winId === 'whiteboard' && (
-                  <Whiteboard theme={theme} triggerSound={triggerSound} />
+                  <Suspense fallback={<div className="flex items-center justify-center h-full text-zinc-500 text-xs">Loading Ideation Pad...</div>}>
+                    <Whiteboard theme={theme} triggerSound={triggerSound} />
+                  </Suspense>
                 )}
 
                 {/* K. SYSTEM BUILD MONITOR / RELEASE LOGS */}

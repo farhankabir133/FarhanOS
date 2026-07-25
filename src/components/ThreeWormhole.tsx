@@ -13,6 +13,15 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
   const isWarpingRef = useRef(isWarping);
   useEffect(() => { isWarpingRef.current = isWarping; }, [isWarping]);
 
+  const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
+  const quality = isMobile ? 'low' : 'high';
+  const particleCount = quality === 'low' ? 400 : 1200;
+  const dustCount = quality === 'low' ? 80 : 220;
+  const infallCount = quality === 'low' ? 60 : 160;
+  const tunnelSegments = quality === 'low' ? 50 : 100;
+  const asteroidCount = quality === 'low' ? 8 : 20;
+  const fbmOctaves = quality === 'low' ? 3 : 5;
+
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -26,7 +35,6 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     else if (theme === 'terminal') { primaryColor = 0x22c55e; secondaryColor = 0x16a34a; }
     else if (theme === 'light') { primaryColor = 0x4f46e5; secondaryColor = 0x06b6d4; }
 
-    // ── Scene ────────────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x020308, 0.012);
 
@@ -34,13 +42,13 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     const camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
     camera.position.set(0, 0, 10);
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: true, powerPreference: isMobile ? 'low-power' : 'high-performance' });
     renderer.setSize(container.clientWidth, container.clientHeight, false);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
 
     // ── Wormhole Tunnel ──────────────────────────────────────────────────────
-    const tunnelLength = 120, tunnelSegments = 100, tunnelRadius = 8;
-
+    const tunnelLength = 120;
+    const tunnelRadius = 8;
     const innerGeom = new THREE.CylinderGeometry(tunnelRadius, tunnelRadius, tunnelLength, 32, tunnelSegments, true);
     innerGeom.rotateX(Math.PI / 2);
     const innerMat = new THREE.MeshBasicMaterial({ color: primaryColor, wireframe: true, transparent: true, opacity: 0.0, side: THREE.DoubleSide });
@@ -132,7 +140,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     nebulaMesh.position.set(0, 0, -85);
     scene.add(nebulaMesh);
 
-    // ── Star field (1200 particles, richer color variety) ────────────────────
+    // ── Star field (particleCount particles, richer color variety) ────────────────────
     const particleCount = 1200;
     const particlePositions = new Float32Array(particleCount * 3);
     const particleColors    = new Float32Array(particleCount * 3);
@@ -177,7 +185,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     const particles = new THREE.Points(particleGeometry, pMaterial);
     scene.add(particles);
 
-    // ── Cosmic dust lanes (200 fine particles in diagonal bands) ─────────────
+    // ── Cosmic dust lanes (dustCount fine particles in diagonal bands) ─────────────
     const dustCount = 220;
     const dustPositions = new Float32Array(dustCount * 3);
     const dustVelocities: number[] = [];
@@ -204,7 +212,6 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
 
     // ── Asteroid belt ─────────────────────────────────────────────────────────
     interface AsteroidData { mesh:THREE.Mesh; vx:number; vy:number; vz:number; rx:number; ry:number; rz:number; }
-    const asteroidCount = 20;
     const asteroids: AsteroidData[] = [];
     const asteroidMats: THREE.MeshBasicMaterial[] = [];
 
@@ -416,7 +423,6 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     jetBotGlow.position.y = -0.8;
 
     // ── Infall particles (spiral into horizon) ────────────────────────────────
-    const infallCount = 160;
     const infallPositions = new Float32Array(infallCount * 3);
     const infallColors    = new Float32Array(infallCount * 3);
     const infallAngles: number[] = [], infallRadii: number[] = [], infallSpeeds: number[] = [], infallDrifts: number[] = [];
@@ -478,11 +484,21 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(container);
 
+    let isVisible = true;
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+    }, { threshold: 0 });
+    visibilityObserver.observe(container);
+
     // ── Animation state ───────────────────────────────────────────────────────
     let speed=0.25, rotationSpeed=0.0015, warpProgressVal=0.0, timeAccumulator=0.0;
     let animationFrameId: number;
 
     const animate = () => {
+      if (!isVisible) {
+        animationFrameId = requestAnimationFrame(animate);
+        return;
+      }
       const warping = isWarpingRef.current;
       timeAccumulator += warping ? 0.024 : 0.012;
 
@@ -612,37 +628,38 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
 
       // ── Supernova state machine ─────────────────────────────────────────────
       const elapsed = Date.now() - sessionStart;
-
-      if (supernovaPhase===0 && elapsed>=SUPERNOVA_TRIGGER_MS) { supernovaPhase=1; supernovaProgress=0; }
-      if (supernovaPhase===1) {
-        supernovaProgress+=0.007; const p=Math.min(supernovaProgress,1); const e=p*p*(3-2*p);
-        (supernovaCore.material as THREE.MeshBasicMaterial).opacity=e*0.95;
-        (supernovaHalo.material as THREE.MeshBasicMaterial).opacity=e*0.35;
-        (supernovaRing.material as THREE.MeshBasicMaterial).opacity=e*0.8;
-        ejectMat.opacity=e*0.75;
-        supernovaRingScale=1+e*4.5; supernovaRing.scale.set(supernovaRingScale,supernovaRingScale,1);
-        supernovaHalo.scale.setScalar(1+e*1.8); supernovaCore.scale.setScalar(1+e*2.2);
-        const ep=ejectGeo.attributes.position.array as Float32Array;
-        for (let i=0;i<ejectCount;i++){ep[i*3]=ejectVelocities[i].x*e*80;ep[i*3+1]=ejectVelocities[i].y*e*80;ep[i*3+2]=ejectVelocities[i].z*e*80;}
-        ejectGeo.attributes.position.needsUpdate=true;
-        if (supernovaProgress>=1){supernovaPhase=2;supernovaProgress=0;}
+      if (!isMobile) {
+        if (supernovaPhase===0 && elapsed>=SUPERNOVA_TRIGGER_MS) { supernovaPhase=1; supernovaProgress=0; }
+        if (supernovaPhase===1) {
+          supernovaProgress+=0.007; const p=Math.min(supernovaProgress,1); const e=p*p*(3-2*p);
+          (supernovaCore.material as THREE.MeshBasicMaterial).opacity=e*0.95;
+          (supernovaHalo.material as THREE.MeshBasicMaterial).opacity=e*0.35;
+          (supernovaRing.material as THREE.MeshBasicMaterial).opacity=e*0.8;
+          ejectMat.opacity=e*0.75;
+          supernovaRingScale=1+e*4.5; supernovaRing.scale.set(supernovaRingScale,supernovaRingScale,1);
+          supernovaHalo.scale.setScalar(1+e*1.8); supernovaCore.scale.setScalar(1+e*2.2);
+          const ep=ejectGeo.attributes.position.array as Float32Array;
+          for (let i=0;i<ejectCount;i++){ep[i*3]=ejectVelocities[i].x*e*80;ep[i*3+1]=ejectVelocities[i].y*e*80;ep[i*3+2]=ejectVelocities[i].z*e*80;}
+          ejectGeo.attributes.position.needsUpdate=true;
+          if (supernovaProgress>=1){supernovaPhase=2;supernovaProgress=0;}
+        }
+        if (supernovaPhase===2) {
+          supernovaProgress+=0.011; supernovaRingScale+=0.06;
+          supernovaRing.scale.set(supernovaRingScale,supernovaRingScale,1);
+          (supernovaCore.material as THREE.MeshBasicMaterial).opacity=0.88+0.12*Math.sin(timeAccumulator*8);
+          if (supernovaProgress>=1){supernovaPhase=3;supernovaProgress=0;}
+        }
+        if (supernovaPhase===3) {
+          supernovaProgress+=0.004; const p=Math.min(supernovaProgress,1); const fade=1-p*p;
+          (supernovaCore.material as THREE.MeshBasicMaterial).opacity=fade*0.95;
+          (supernovaHalo.material as THREE.MeshBasicMaterial).opacity=fade*0.35;
+          (supernovaRing.material as THREE.MeshBasicMaterial).opacity=fade*0.55;
+          ejectMat.opacity=fade*0.6; supernovaRingScale+=0.035;
+          supernovaRing.scale.set(supernovaRingScale,supernovaRingScale,1);
+          if (supernovaProgress>=1) supernovaPhase=4;
+        }
+        if (supernovaPhase>=1&&supernovaPhase<=3) supernovaGroup.rotation.z+=0.003;
       }
-      if (supernovaPhase===2) {
-        supernovaProgress+=0.011; supernovaRingScale+=0.06;
-        supernovaRing.scale.set(supernovaRingScale,supernovaRingScale,1);
-        (supernovaCore.material as THREE.MeshBasicMaterial).opacity=0.88+0.12*Math.sin(timeAccumulator*8);
-        if (supernovaProgress>=1){supernovaPhase=3;supernovaProgress=0;}
-      }
-      if (supernovaPhase===3) {
-        supernovaProgress+=0.004; const p=Math.min(supernovaProgress,1); const fade=1-p*p;
-        (supernovaCore.material as THREE.MeshBasicMaterial).opacity=fade*0.95;
-        (supernovaHalo.material as THREE.MeshBasicMaterial).opacity=fade*0.35;
-        (supernovaRing.material as THREE.MeshBasicMaterial).opacity=fade*0.55;
-        ejectMat.opacity=fade*0.6; supernovaRingScale+=0.035;
-        supernovaRing.scale.set(supernovaRingScale,supernovaRingScale,1);
-        if (supernovaProgress>=1) supernovaPhase=4;
-      }
-      if (supernovaPhase>=1&&supernovaPhase<=3) supernovaGroup.rotation.z+=0.003;
 
       // ── BLACK HOLE state machine ─────────────────────────────────────────────
       if (bhPhase===0 && elapsed>=BLACK_HOLE_TRIGGER_MS) { bhPhase=1; bhProgress=0; }
@@ -761,6 +778,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('mousemove', handleMouseMove);
       resizeObserver.disconnect();
+      visibilityObserver.disconnect();
       renderer.dispose();
       // Geometry/material disposal
       [innerGeom,warpGeom,outerGeom].forEach(g=>g.dispose());

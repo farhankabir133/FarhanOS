@@ -95,11 +95,11 @@ body {
 
   @keyframes scale-up {
     from {
-      transform: scale(0.95);
+      transform: scale(0.95) translateZ(0);
       opacity: 0;
     }
     to {
-      transform: scale(1);
+      transform: scale(1) translateZ(0);
       opacity: 1;
     }
   }
@@ -115,20 +115,20 @@ body {
 
   @keyframes bounce-short {
     0%, 100% {
-      transform: translate(-50%, 0);
+      transform: translate(-50%, 0) translateZ(0);
     }
     50% {
-      transform: translate(-50%, -4px);
+      transform: translate(-50%, -4px) translateZ(0);
     }
   }
 
   @keyframes window-open {
     from {
-      transform: scale(0.92) translateY(15px);
+      transform: scale(0.92) translateY(15px) translateZ(0);
       opacity: 0;
     }
     to {
-      transform: scale(1) translateY(0);
+      transform: scale(1) translateY(0) translateZ(0);
       opacity: 1;
     }
   }
@@ -136,29 +136,29 @@ body {
   @keyframes fade-in {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(8px) translateZ(0);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) translateZ(0);
     }
   }
 
   @keyframes float-particle {
     0%, 100% {
-      transform: translateY(0) translateX(0);
+      transform: translateY(0) translateX(0) translateZ(0);
       opacity: 0.2;
     }
     25% {
-      transform: translateY(-20px) translateX(10px);
+      transform: translateY(-20px) translateX(10px) translateZ(0);
       opacity: 0.6;
     }
     50% {
-      transform: translateY(-10px) translateX(-10px);
+      transform: translateY(-10px) translateX(-10px) translateZ(0);
       opacity: 0.3;
     }
     75% {
-      transform: translateY(-25px) translateX(5px);
+      transform: translateY(-25px) translateX(5px) translateZ(0);
       opacity: 0.5;
     }
   }
@@ -166,34 +166,34 @@ body {
   @keyframes glitch {
     0%, 100% {
       text-shadow: 0 0 10px rgba(0,255,255,0.5), 0 0 20px rgba(0,255,255,0.3);
-      transform: translate(0);
+      transform: translate(0) translateZ(0);
     }
     20% {
       text-shadow: 2px 0 rgba(255,0,255,0.5), -2px 0 rgba(0,255,255,0.5);
-      transform: translate(-1px, 1px);
+      transform: translate(-1px, 1px) translateZ(0);
     }
     40% {
       text-shadow: -1px 0 rgba(255,0,255,0.5), 1px 0 rgba(0,255,255,0.5);
-      transform: translate(1px, -1px);
+      transform: translate(1px, -1px) translateZ(0);
     }
     60% {
       text-shadow: 0 0 10px rgba(0,255,255,0.5), 0 0 20px rgba(0,255,255,0.3);
-      transform: translate(0);
+      transform: translate(0) translateZ(0);
     }
     80% {
       text-shadow: 1px 0 rgba(255,0,255,0.5), -1px 0 rgba(0,255,255,0.5);
-      transform: translate(0.5px, -0.5px);
+      transform: translate(0.5px, -0.5px) translateZ(0);
     }
   }
 
   @keyframes wave {
-    0%, 100% { transform: rotate(0deg); }
-    10% { transform: rotate(14deg); }
-    20% { transform: rotate(-8deg); }
-    30% { transform: rotate(14deg); }
-    40% { transform: rotate(-4deg); }
-    50% { transform: rotate(10deg); }
-    60% { transform: rotate(0deg); }
+    0%, 100% { transform: rotate(0deg) translateZ(0); }
+    10% { transform: rotate(14deg) translateZ(0); }
+    20% { transform: rotate(-8deg) translateZ(0); }
+    30% { transform: rotate(14deg) translateZ(0); }
+    40% { transform: rotate(-4deg) translateZ(0); }
+    50% { transform: rotate(10deg) translateZ(0); }
+    60% { transform: rotate(0deg) translateZ(0); }
   }
 }
 
@@ -225,10 +225,44 @@ p, li, blockquote, .text-justify {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Intentionally disables non-essential animations and transitions globally
+     for users who have requested reduced motion in their system settings. */
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Performance Utilities */
+
+/* GPU acceleration hint for frequently animated or dragged elements. */
+.gpu-accelerated {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Avoid heavy backdrop-filter usage on mobile devices. */
+@media (max-width: 768px) {
+  .backdrop-blur-mobile-reduced {
+    backdrop-filter: blur(8px);
+  }
+}
+
+/* Fallback: disable backdrop-filter entirely on mobile for performance. */
+@media (max-width: 768px) {
+  .no-blur {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* Subtle pulse animation for background elements. */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.15; }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 5s ease-in-out infinite;
 }

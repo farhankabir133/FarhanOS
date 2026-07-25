@@ -1,6 +1,8 @@
 // Supabase Edge Function: api
 // Location: supabase/functions/api/index.ts
 
+import { parseMediumRSS } from '../../../src/utils/rssParser.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -192,80 +194,17 @@ async function fetchMediumStories(): Promise<Response> {
   }
 
   const xmlText = await response.text();
-  const items = xmlText.split('<item>');
-  items.shift();
-
-  const parsedStories = items.slice(0, 6).map((item, idx) => {
-    const titleMatch = item.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || item.match(/<title>([\s\S]*?)<\/title>/);
-    const title = titleMatch ? titleMatch[1].trim() : '';
-
-    const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
-    const link = linkMatch ? linkMatch[1].trim() : '';
-
-    const pubDateMatch = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
-    const rawDate = pubDateMatch ? pubDateMatch[1].trim() : '';
-    let formattedDate = rawDate;
-    try {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) {
-        formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      }
-    } catch (_e) { /* fallback */ }
-
-    const descMatch = item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) || item.match(/<description>([\s\S]*?)<\/description>/);
-    let snippet = '';
-    let imageUrl = '';
-    let cleanContent = '';
-
-    if (descMatch) {
-      const descHtml = descMatch[1];
-      const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
-      if (imgMatch) imageUrl = imgMatch[1];
-
-      const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
-      if (snippetMatch) snippet = snippetMatch[1].trim();
-
-      cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-      if (!snippet) snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
-    }
-
-    const categories: string[] = [];
-    const catRegex = /<category><!\[CDATA\[([\s\S]*?)\]\]><\/category>/g;
-    let catMatch;
-    while ((catMatch = catRegex.exec(item)) !== null) {
-      categories.push(catMatch[1]);
-    }
-
-    let finalCategory = 'Life';
-    const lc = categories.map(c => c.toLowerCase());
-    if (lc.some(c => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) finalCategory = 'AI';
-    else if (lc.some(c => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('engineering'))) finalCategory = 'Engineering';
-    else if (lc.some(c => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) finalCategory = 'Productivity';
-    else if (lc.some(c => c.includes('research') || c.includes('science') || c.includes('clinic'))) finalCategory = 'Research';
-    else if (lc.some(c => c.includes('design') || c.includes('ux') || c.includes('ui'))) finalCategory = 'Design';
-    else if (lc.some(c => c.includes('startup') || c.includes('business') || c.includes('saas'))) finalCategory = 'Startups';
-    else if (lc.some(c => c.includes('philosoph') || c.includes('think'))) finalCategory = 'Philosophy';
-
-    const wordCount = cleanContent.split(/\s+/).length;
-    const readTimeMins = Math.max(1, Math.ceil(wordCount / 225));
-
-    const guidMatch = item.match(/<guid[^>]*>([\s\S]*?)<\/guid>/);
-    const rawGuid = guidMatch ? guidMatch[1].trim() : '';
-    const guidIdMatch = rawGuid.match(/\/p\/([a-f0-9]+)$/) || link.match(/-([a-f0-9]+)$/) || rawGuid.match(/\/p\/([a-f0-9]+)/);
-    const id = guidIdMatch ? guidIdMatch[1] : `medium-${idx}`;
-
-    return { id, title, category: finalCategory, readTime: `${readTimeMins} min read`, date: formattedDate, excerpt: snippet, content: cleanContent || snippet || title, link, imageUrl };
-  });
+  const parsedStories = parseMediumRSS(xmlText);
 
   return new Response(JSON.stringify(parsedStories), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=900' }
   });
 }
 
 Deno.serve(async (req: Request) => {
   // Handle CORS Preflight Pre-Requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: { ...corsHeaders, 'Cache-Control': 'no-store' } });
   }
 
   try {
@@ -281,7 +220,7 @@ Deno.serve(async (req: Request) => {
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'GROQ_API_KEY environment variable is required but missing.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
       );
     }
 
@@ -296,7 +235,7 @@ Deno.serve(async (req: Request) => {
       if (!message) {
         return new Response(
           JSON.stringify({ error: 'Message is required.' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
         );
       }
 
@@ -373,10 +312,10 @@ RULES FOR CHATTING:
         throw new Error(data.error?.message || 'Groq api error');
       }
 
-      const reply = data.choices?.[0]?.message?.content || '';
-      return new Response(JSON.stringify({ reply }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+const reply = data.choices?.[0]?.message?.content || '';
+       return new Response(JSON.stringify({ reply }), {
+         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
+       });
     }
 
     // --- Endpoint 2: Audio Speech Synthesis (TTS) ---
@@ -385,12 +324,12 @@ RULES FOR CHATTING:
       if (!text) {
         return new Response(
           JSON.stringify({ error: 'Text content is required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
         );
       }
 
       return new Response(JSON.stringify({ audio: null }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }
       });
     }
 
@@ -400,7 +339,7 @@ RULES FOR CHATTING:
       if (!projectType || !goals) {
         return new Response(
           JSON.stringify({ error: 'Project Type and Goals are required parameters.' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' } }
         );
       }
 
@@ -432,10 +371,10 @@ Please construct a ultra-polished, futuristic, technical "Mission Assessment & S
         throw new Error(data.error?.message || 'Groq summarizer api error');
       }
 
-      const summary = data.choices?.[0]?.message?.content || '';
-      return new Response(JSON.stringify({ summary }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+const summary = data.choices?.[0]?.message?.content || '';
+       return new Response(JSON.stringify({ summary }), {
+         headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }
+       });
     }
 
     // --- Endpoint 4: Message Transmission (Contact Form) + Email Delivery ---
@@ -444,7 +383,7 @@ Please construct a ultra-polished, futuristic, technical "Mission Assessment & S
       if (!email || !message) {
         return new Response(
           JSON.stringify({ error: 'Email and message are required fields.' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
         );
       }
 
@@ -546,19 +485,19 @@ Respond ONLY with valid JSON.`;
           analysis,
           emailStatus
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
       );
     }
 
     // Wildcard 404 handler
     return new Response(JSON.stringify({ error: `Endpoint not found: ${path}` }), {
       status: 404,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });
   } catch (err: any) {
     return new Response(
       JSON.stringify({ error: err.message || 'Error occurred.' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
     );
   }
 });
