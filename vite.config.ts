@@ -3,10 +3,20 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+const asyncCssPlugin = () => ({
+  name: 'async-css',
+  transformIndexHtml(html) {
+    return html.replace(
+      /<link rel="stylesheet" crossorigin href="([^"]+)"[^>]*>/g,
+      '<link rel="stylesheet" crossorigin href="$1" media="print" onload="this.media=\'all\'" /><noscript><link rel="stylesheet" crossorigin href="$1" /></noscript>'
+    );
+  },
+});
+
 export default defineConfig(() => {
   return {
     base: process.env.VITE_BASE || '/',
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), asyncCssPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

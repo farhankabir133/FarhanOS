@@ -569,6 +569,10 @@ export default function LandingPage({
               srcSet={`${avatar112} 112w, ${avatar144} 144w, ${avatar224} 224w, ${avatar288} 288w, ${avatarImg} 329w`}
               sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, (max-width: 1536px) 224px, 288px"
               alt="Farhan Kabir portrait" 
+              width="288"
+              height="288"
+              fetchpriority="high"
+              decoding="async"
               className="w-full h-full object-cover grayscale-30 group-hover:grayscale-0 transition-all duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
@@ -1309,6 +1313,8 @@ export default function LandingPage({
                     alt={paper.title}
                     loading="lazy"
                     decoding="async"
+                    width="400"
+                    height="192"
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
@@ -1448,6 +1454,8 @@ export default function LandingPage({
                           alt={article.title} 
                           loading="lazy"
                           decoding="async"
+                          width="384"
+                          height="144"
                           whileHover={{ scale: 1.1 }}
                           transition={{ duration: 0.5 }}
                           className="w-full h-full object-cover opacity-80 group-hover:opacity-100"

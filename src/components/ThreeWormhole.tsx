@@ -15,12 +15,13 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
 
   const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
   const quality = isMobile ? 'low' : 'high';
-  const particleCount = quality === 'low' ? 400 : 1200;
-  const dustCount = quality === 'low' ? 80 : 220;
-  const infallCount = quality === 'low' ? 60 : 160;
-  const tunnelSegments = quality === 'low' ? 50 : 100;
-  const asteroidCount = quality === 'low' ? 8 : 20;
-  const fbmOctaves = quality === 'low' ? 3 : 5;
+  const particleCount = quality === 'low' ? 300 : 600;
+  const dustCount = quality === 'low' ? 60 : 100;
+  const infallCount = quality === 'low' ? 40 : 80;
+  const tunnelSegments = quality === 'low' ? 40 : 50;
+  const asteroidCount = quality === 'low' ? 5 : 10;
+  const fbmOctaves = quality === 'low' ? 3 : 4;
+  const numRings = quality === 'low' ? 6 : 8;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -44,12 +45,12 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: true, powerPreference: isMobile ? 'low-power' : 'high-performance' });
     renderer.setSize(container.clientWidth, container.clientHeight, false);
-    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
     // ── Wormhole Tunnel ──────────────────────────────────────────────────────
     const tunnelLength = 120;
     const tunnelRadius = 8;
-    const innerGeom = new THREE.CylinderGeometry(tunnelRadius, tunnelRadius, tunnelLength, 32, tunnelSegments, true);
+    const innerGeom = new THREE.CylinderGeometry(tunnelRadius, tunnelRadius, tunnelLength, 16, tunnelSegments, true);
     innerGeom.rotateX(Math.PI / 2);
     const innerMat = new THREE.MeshBasicMaterial({ color: primaryColor, wireframe: true, transparent: true, opacity: 0.0, side: THREE.DoubleSide });
     const innerTunnel = new THREE.Mesh(innerGeom, innerMat);
@@ -96,9 +97,9 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     scene.add(outerTunnel);
 
     // Glowing rings
-    const numRings = 15;
+    const numRings = 8;
     const rings: THREE.Mesh[] = [];
-    const ringGeom = new THREE.TorusGeometry(tunnelRadius + 0.3, 0.08, 8, 48);
+    const ringGeom = new THREE.TorusGeometry(tunnelRadius + 0.3, 0.08, 8, 24);
     for (let i = 0; i < numRings; i++) {
       const ringMat = new THREE.MeshBasicMaterial({ color: i%2===0 ? primaryColor : secondaryColor, transparent: true, opacity: 0.0 });
       const ring = new THREE.Mesh(ringGeom, ringMat);
@@ -231,13 +232,13 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     }
 
     // ── Supernova system ──────────────────────────────────────────────────────
-    const supernovaCore = new THREE.Mesh(new THREE.SphereGeometry(0.8,32,32),
+    const supernovaCore = new THREE.Mesh(new THREE.SphereGeometry(0.8,16,16),
       new THREE.MeshBasicMaterial({color:0xfff6e0,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
-    const supernovaRing = new THREE.Mesh(new THREE.TorusGeometry(2.0,0.18,12,64),
+    const supernovaRing = new THREE.Mesh(new THREE.TorusGeometry(2.0,0.18,8,32),
       new THREE.MeshBasicMaterial({color:0xff8c00,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));
-    const supernovaHalo = new THREE.Mesh(new THREE.SphereGeometry(3.5,32,32),
+    const supernovaHalo = new THREE.Mesh(new THREE.SphereGeometry(3.5,16,16),
       new THREE.MeshBasicMaterial({color:0xff4500,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.BackSide}));
-    const ejectCount = 240;
+    const ejectCount = 120;
     const ejectPositions = new Float32Array(ejectCount*3), ejectColors = new Float32Array(ejectCount*3);
     const ejectVelocities: THREE.Vector3[] = [];
     for (let i=0;i<ejectCount;i++) {
@@ -269,7 +270,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       cooldown: number;
     }
     const shootingStars: ShootingStarData[] = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       const geo = new THREE.BufferGeometry();
       const pos = new Float32Array(6); // 2 points × 3 coords
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -446,7 +447,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     // ── Gravitational wave rings (periodic in eternal phase) ──────────────────
     interface GravWaveRing { mesh:THREE.Mesh; mat:THREE.MeshBasicMaterial; active:boolean; scale:number; opacity:number; cooldown:number; }
     const gravWaveRings: GravWaveRing[] = [];
-    const gravWaveBaseGeo = new THREE.TorusGeometry(1.0, 0.018, 8, 80);
+    const gravWaveBaseGeo = new THREE.TorusGeometry(1.0, 0.018, 8, 40);
     for (let i = 0; i < 4; i++) {
       const mat = new THREE.MeshBasicMaterial({ color:0xaabbff, transparent:true, opacity:0.0, blending:THREE.AdditiveBlending, depthWrite:false });
       const mesh = new THREE.Mesh(gravWaveBaseGeo, mat);
