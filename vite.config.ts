@@ -23,6 +23,13 @@ export default defineConfig(() => {
       },
     },
     server: {
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:54321',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '/functions/v1/api'),
+        },
+      },
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

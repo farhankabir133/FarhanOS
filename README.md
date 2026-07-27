@@ -96,7 +96,7 @@ The interface bridges professional NLP researcher credentials with premium front
 * **Styling & HUD**: Tailwind CSS v4 + custom CSS variable CRT scans + glassmorphic filters
 * **WebGL Elements**: Vanilla Three.js (particle gravity wells, node coordinates)
 * **Server Backend**: Supabase Edge Functions (Deno runtime, sole production backend)
-* **Dev Server**: Node.js + Express (local development only, proxies to shared route handlers)
+* **Dev Server**: Vite dev server with API proxy to local Supabase Edge Functions
 * **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via direct fetch calls
 * **Email**: Resend API for transactional email (contact form)
 * **Static Hosting**: GitHub Pages (`gh-pages`) + Vercel (`vercel.json`)
@@ -106,33 +106,21 @@ The interface bridges professional NLP researcher credentials with premium front
 ## 📂 Project Structure
 
 ```bash
-├── backend/                     # Shared backend modules (Deno + Node compatible)
-│   ├── index.ts                 # Supabase Edge Function entry point
-│   └── shared/
-│       ├── config.ts            # Centralized configuration (env vars, timeouts, limits)
-│       ├── types.ts             # Shared TypeScript interfaces for request/response bodies
-│       ├── prompts.ts           # Deduplicated AI system prompts
-│       ├── cors.ts              # CORS handling with configurable origin allowlist
-│       ├── errors.ts            # Standardized error classes (AppError, ValidationError, etc.)
-│       ├── email.ts             # HTML email builder for contact form notifications
-│       ├── middleware/
-│       │   ├── rateLimit.ts     # IP-based in-memory rate limiting
-│       │   └── sanitize.ts      # Input sanitization (XSS prevention, email validation)
-│       ├── routes/
-│       │   ├── askTwin.ts       # AI Twin chat handler (Groq proxy)
-│       │   ├── tts.ts           # Text-to-Speech handler (client-side fallback)
-│       │   ├── summarizeBrief.ts# Mission brief summarization (Groq proxy)
-│       │   ├── mediumStories.ts # Medium RSS feed fetch with caching
-│       │   ├── githubRepos.ts   # GitHub repos fetch with caching
-│       │   ├── contact.ts       # Contact form + AI analysis + Resend email
-│       │   └── health.ts        # Health check endpoint
-│       └── utils/
-│           ├── fetchWithTimeout.ts  # HTTP fetch with timeout and retry logic
-│           ├── logger.ts            # Structured JSON logger
-│           └── rssParser.ts         # Medium RSS XML parser
 ├── supabase/
-│   └── functions/api/index.ts   # Thin wrapper: re-exports backend/index.ts
-├── server.ts                    # Express dev server (local development only)
+│   └── functions/
+│       └── api/
+│           ├── index.ts               # Function entry point
+│           └── src/
+│               ├── routes/            # Main router
+│               ├── controllers/       # Request handlers
+│               ├── middleware/        # CORS, rate limiting, sanitization
+│               ├── services/          # Email delivery
+│               ├── utils/             # Fetch timeout, RSS parser, logger
+│               ├── config/            # Centralized configuration
+│               ├── types/             # TypeScript interfaces
+│               ├── errors/            # Standardized error classes
+│               └── prompts/           # AI system prompts
+├── src/                         # React frontend application
 ├── src/                         # React frontend application
 │   ├── utils/
 │   │   ├── apiConfig.ts         # Dynamic API base URL resolver
@@ -140,13 +128,15 @@ The interface bridges professional NLP researcher credentials with premium front
 │   │   └── rssParser.ts         # RSS parser (frontend-side copy)
 │   └── ...
 ├── tests/                       # Vitest test suite
-│   └── unit/backend/
-│       ├── shared/routes/       # Route handler tests
-│       └── shared/middleware/   # Sanitizer & rate limiter tests
+│   └── unit/
+│       └── api/
+│           └── src/
+│               ├── middleware/   # Sanitizer & rate limiter tests
+│               └── utils/        # RSS parser tests
 ├── dist/                        # Deployed production assets
 ├── .env.example                 # Environment variables template
 ├── vercel.json                  # Vercel static deployment configuration
-├── tsconfig.json                # TypeScript config (includes backend/ and src/)
+├── tsconfig.json                # TypeScript config (includes src/)
 ├── vite.config.ts               # Vite bundler + vitest configuration
 └── package.json                 # Scripts, dependencies, devDependencies
 ```
@@ -186,23 +176,29 @@ Create a `.env` file in the root directory based on `.env.example`:
 ```env
 GROQ_API_KEY=gsk_YOUR_GROQ_API_KEY_HERE
 RESEND_API_KEY=re_YOUR_RESEND_API_KEY_HERE
-PORT=3001
-CORS_ORIGINS=*
 ```
 Get your Groq API key from https://console.groq.com and Resend key from https://resend.com.
 
 ### 4. Run Development Server
+Start the Supabase local development stack and the Vite dev server in separate terminals:
 ```bash
+# Terminal 1: Start local Supabase (if not already running)
+supabase start
+
+# Terminal 2: Serve Edge Functions locally
+npm run dev:backend
+
+# Terminal 3: Start frontend dev server with API proxy
 npm run dev
 ```
-Navigate to `http://localhost:3001` in your browser. The Express dev server proxies API requests to shared route handlers (backend/shared/routes/). All backend logic is shared between the dev server and the production Supabase Edge Function.
+Navigate to `http://localhost:5173` in your browser. The Vite dev server proxies API requests to the local Supabase Edge Function. All backend logic lives in `supabase/functions/api/src/`.
 
 ---
 
 ## 🏗️ Build & Deployment
 
 ### Architecture
-- **Production Backend**: Supabase Edge Functions (`supabase/functions/api/`) — thin wrapper re-exporting `backend/index.ts`
+- **Production Backend**: Supabase Edge Functions (`supabase/functions/api/src/`) — single canonical backend
 - **Frontend**: Static SPA built by Vite (`npm run build` → `dist/`)
 - **Deployment**: GitHub Pages or Vercel (static assets) + Supabase Edge Functions (API routes)
 

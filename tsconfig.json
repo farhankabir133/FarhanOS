@@ -24,13 +24,12 @@
     "noEmit": true
   },
   "include": [
-    "src",
-    "backend",
-    "server.ts"
+    "src"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "supabase"
+    "supabase",
+    "tests"
   ]
 }
