@@ -1,8 +1,8 @@
 /**
  * Dynamically resolves the API Base URL.
  * In development (served by the Express dev server on localhost), returns an empty string (relative paths).
- * In production (when hosted as static assets on GitHub Pages or Vercel), returns the Supabase Edge Function URL.
- * The Supabase Edge Function serves as the sole backend in production, handling all API routes.
+ * In production (when hosted as static assets on GitHub Pages), returns the Railway backend URL.
+ * The Railway backend serves as the sole backend in production, handling all API routes.
  */
 export const getApiBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
@@ -23,15 +23,7 @@ export const getApiBaseUrl = (): string => {
       return '';
     }
 
-    const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_REF || 'urhwapbyxtjaulslmfao';
-
-    if (
-      hostname === 'farhankabir.me' ||
-      hostname.endsWith('.github.io') ||
-      hostname.endsWith('.vercel.app')
-    ) {
-      return `https://${projectRef}.supabase.co/functions/v1`;
-    }
+    return 'https://api.farhankabir.me';
   }
 
   return '';

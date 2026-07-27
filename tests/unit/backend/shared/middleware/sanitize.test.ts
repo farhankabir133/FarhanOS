@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeString, sanitizeEmail, isValidEmail, sanitizeObject, validateRequired } from "../../../../../supabase/functions/api/src/middleware/sanitize.ts";
+import { sanitizeString, sanitizeEmail, isValidEmail, sanitizeObject, validateRequired } from "../../../../../src/backend/utils/sanitize.js";
 
 describe("Sanitize Middleware", () => {
   describe("sanitizeString", () => {

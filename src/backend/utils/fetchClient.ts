@@ -1,4 +1,4 @@
-export async function fetchWithTimeout(
+export async function fetchClient(
   url: string,
   options: RequestInit,
   timeoutMs: number = 30000,
@@ -25,9 +25,8 @@ export async function fetchWithTimeout(
     } catch (err) {
       clearTimeout(timeoutId);
       if (
-        typeof err !== "undefined" &&
-        err !== null &&
         typeof err === "object" &&
+        err !== null &&
         "name" in err &&
         (err as { name?: string }).name === "AbortError"
       ) {

@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:backend": "supabase functions serve",
-    "build": "vite build",
-    "prebuild": "npm run validate",
-    "vercel-build": "npm run build",
+    "dev:backend": "tsx src/backend/app/server.ts",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:backend\"",
+    "build": "vite build && npm run build:backend",
+    "build:backend": "tsc --project tsconfig.backend.json",
+    "start": "node dist/backend/app/server.js",
+    "start:prod": "NODE_ENV=production node dist/backend/app/server.js",
     "predeploy": "VITE_BASE=/FarhanOS/ npm run build",
     "deploy": "gh-pages -d dist",
     "predeploy:domain": "VITE_BASE=/ npm run build",
@@ -19,27 +21,37 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "validate": "npm run typecheck",
-    "deploy:supabase": "supabase functions deploy api --no-verify-jwt"
+    "deploy:railway": "railway up"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.0.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "express-cors": "^0.0.3",
+    "express-rate-limit": "^8.6.1",
+    "helmet": "^8.3.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@types/three": "^0.184.1",
+    "@vitest/coverage-v8": "^2.0.5",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3",
-    "vitest": "^2.0.5",
-    "@vitest/coverage-v8": "^2.0.5"
+    "vitest": "^2.0.5"
   }
 }

@@ -19,21 +19,28 @@ export async function handlerHealth(request: Request): Promise<Response> {
     github: false,
   };
 
-  const uptime = typeof process !== "undefined" && process.uptime
-    ? Math.floor(process.uptime() * 1000)
-    : Date.now();
+  const uptime =
+    typeof globalThis !== "undefined" &&
+    typeof (globalThis as any).Deno !== "undefined"
+      ? Math.floor((globalThis as any).Deno.uptime() * 1000)
+      : typeof process !== "undefined" && process.uptime
+        ? Math.floor(process.uptime() * 1000)
+        : Date.now();
 
   try {
     const apiKey = CONFIG.groq.apiKey();
     if (apiKey) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.health.timeoutMs);
       const res = await fetch(CONFIG.groq.baseUrl, {
         method: "HEAD",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
-        signal: AbortSignal.timeout(CONFIG.health.timeoutMs),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       checks.groq = res.status < 500;
     }
   } catch {
@@ -41,6 +48,8 @@ export async function handlerHealth(request: Request): Promise<Response> {
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.health.timeoutMs);
     const res = await fetch(
       `https://api.github.com/users/${CONFIG.github.username}`,
       {
@@ -48,9 +57,10 @@ export async function handlerHealth(request: Request): Promise<Response> {
           "Accept": CONFIG.github.acceptHeader,
           "User-Agent": CONFIG.github.userAgent,
         },
-        signal: AbortSignal.timeout(CONFIG.health.timeoutMs),
+        signal: controller.signal,
       }
     );
+    clearTimeout(timeoutId);
     checks.github = res.ok;
   } catch {
     checks.github = false;

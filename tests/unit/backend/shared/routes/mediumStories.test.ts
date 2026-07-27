@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { parseMediumRSS } from "../../../../../supabase/functions/api/src/utils/rssParser.ts";
+import { parseMediumRSS } from "../../../../../src/backend/utils/rssParser.js";
 
-vi.mock("../../../../../supabase/functions/api/src/utils/fetchWithTimeout.ts", async () => ({
-  fetchWithTimeout: vi.fn().mockResolvedValue(new Response("")),
+vi.mock("../../../../../src/backend/utils/fetchClient.js", async () => ({
+  fetchClient: vi.fn().mockResolvedValue(new Response("")),
 }));
 
 describe("RSS Parser", () => {

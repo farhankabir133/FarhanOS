@@ -16,3 +16,14 @@ coverage/
 CLAUDE.md
 AGENT.md
 metadata.json
+
+# Kilo / AI agent configs
+.claude/
+skills-lock.json
+
+# Local data and artifacts
+data/
+lighthouse.pdf
+
+# Test artifacts
+.tmp-test-fn/
