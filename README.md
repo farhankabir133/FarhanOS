@@ -4,7 +4,7 @@
 [![Framework: React 19](https://img.shields.io/badge/Framework-React_19-indigo.svg)](https://react.dev/)
 [![Styling: Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-06b6d4.svg)](https://tailwindcss.com)
 [![AI-Core: Groq Llama 3.3](https://img.shields.io/badge/AI--Core-Groq_Llama_3.3_70B-orange.svg)](https://groq.com/)
-[![Backend: Express + Supabase](https://img.shields.io/badge/Backend-Express_%2B_Supabase-green.svg)](https://supabase.com/)
+[![Backend: Supabase Edge Functions](https://img.shields.io/badge/Backend-Supabase_Edge_Functions-green.svg)](https://supabase.com/)
 
 > An immersive, high-fidelity windowed operating system simulator presenting clinical NLP research, conceptual garden maps, and AI SaaS agent architectures in an interactive desktop environment.
 
@@ -95,9 +95,10 @@ The interface bridges professional NLP researcher credentials with premium front
 * **Frontend Framework**: React 19 (Hooks, Motion transitions)
 * **Styling & HUD**: Tailwind CSS v4 + custom CSS variable CRT scans + glassmorphic filters
 * **WebGL Elements**: Vanilla Three.js (particle gravity wells, node coordinates)
-* **Server Backend**: Node.js + Express + CORS proxies + tsx runner
+* **Server Backend**: Supabase Edge Functions (Deno runtime, sole production backend)
+* **Dev Server**: Node.js + Express (local development only, proxies to shared route handlers)
 * **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via direct fetch calls
-* **Backendless Functions**: Supabase Edge Functions with Resend email integration
+* **Email**: Resend API for transactional email (contact form)
 * **Static Hosting**: GitHub Pages (`gh-pages`) + Vercel (`vercel.json`)
 
 ---
@@ -105,30 +106,49 @@ The interface bridges professional NLP researcher credentials with premium front
 ## 📂 Project Structure
 
 ```bash
-├── src/                       # Primary React Client application
-│   ├── components/            # UI components
-│   │   ├── TerminalBootLoader/       # Premium terminal boot loader (opening experience)
-│   │   ├── LoopingTypewriter.tsx     # Infinite looping typewriter effect
-│   │   ├── OneTimeTypewriter.tsx     # Single-run typewriter effect
-│   │   ├── ThreeWormhole.tsx         # WebGL starfield background
-│   │   ├── Whiteboard.tsx            # Interactive whiteboard component
-│   │   ├── DecryptText.tsx           # Decrypting text effect
-│   │   └── LandingPage.tsx           # Hero section with animated text
-│   ├── data/                  # Static portfolio configurations (portfolioData.ts)
-│   ├── utils/                 # Audio synthesis, RSS parsing, API configs, AI fallbacks
-│   ├── hooks/                 # Custom React hooks (terminal boot)
-│   ├── types.ts               # Core model interfaces and TS contracts
-│   ├── index.css              # Main tailwind and CRT scan styles
-│   └── main.tsx               # Client entry node
-│
-├── dist/                      # Deployed production assets
-├── supabase/                  # Edge functions for serverless API endpoints
-├── public/                    # Static assets (images, fonts, research SVGs)
-├── server.ts                  # Express production server & Groq API proxy routing
-├── vercel.json                # Vercel static deployment configuration
-├── tsconfig.json              # TypeScript compiler parameters
-├── vite.config.ts             # Vite bundler configurations with dynamic base paths
-└── package.json               # Scripts, manifest dependencies, and devDependencies
+├── backend/                     # Shared backend modules (Deno + Node compatible)
+│   ├── index.ts                 # Supabase Edge Function entry point
+│   └── shared/
+│       ├── config.ts            # Centralized configuration (env vars, timeouts, limits)
+│       ├── types.ts             # Shared TypeScript interfaces for request/response bodies
+│       ├── prompts.ts           # Deduplicated AI system prompts
+│       ├── cors.ts              # CORS handling with configurable origin allowlist
+│       ├── errors.ts            # Standardized error classes (AppError, ValidationError, etc.)
+│       ├── email.ts             # HTML email builder for contact form notifications
+│       ├── middleware/
+│       │   ├── rateLimit.ts     # IP-based in-memory rate limiting
+│       │   └── sanitize.ts      # Input sanitization (XSS prevention, email validation)
+│       ├── routes/
+│       │   ├── askTwin.ts       # AI Twin chat handler (Groq proxy)
+│       │   ├── tts.ts           # Text-to-Speech handler (client-side fallback)
+│       │   ├── summarizeBrief.ts# Mission brief summarization (Groq proxy)
+│       │   ├── mediumStories.ts # Medium RSS feed fetch with caching
+│       │   ├── githubRepos.ts   # GitHub repos fetch with caching
+│       │   ├── contact.ts       # Contact form + AI analysis + Resend email
+│       │   └── health.ts        # Health check endpoint
+│       └── utils/
+│           ├── fetchWithTimeout.ts  # HTTP fetch with timeout and retry logic
+│           ├── logger.ts            # Structured JSON logger
+│           └── rssParser.ts         # Medium RSS XML parser
+├── supabase/
+│   └── functions/api/index.ts   # Thin wrapper: re-exports backend/index.ts
+├── server.ts                    # Express dev server (local development only)
+├── src/                         # React frontend application
+│   ├── utils/
+│   │   ├── apiConfig.ts         # Dynamic API base URL resolver
+│   │   ├── aiFallback.ts        # Client-side AI fallback + speech synthesis
+│   │   └── rssParser.ts         # RSS parser (frontend-side copy)
+│   └── ...
+├── tests/                       # Vitest test suite
+│   └── unit/backend/
+│       ├── shared/routes/       # Route handler tests
+│       └── shared/middleware/   # Sanitizer & rate limiter tests
+├── dist/                        # Deployed production assets
+├── .env.example                 # Environment variables template
+├── vercel.json                  # Vercel static deployment configuration
+├── tsconfig.json                # TypeScript config (includes backend/ and src/)
+├── vite.config.ts               # Vite bundler + vitest configuration
+└── package.json                 # Scripts, dependencies, devDependencies
 ```
 
 ---
@@ -164,20 +184,27 @@ npm install
 ### 3. Setup Environment Variables
 Create a `.env` file in the root directory based on `.env.example`:
 ```env
-GROQ_API_KEY="your_groq_api_key"
+GROQ_API_KEY=gsk_YOUR_GROQ_API_KEY_HERE
+RESEND_API_KEY=re_YOUR_RESEND_API_KEY_HERE
 PORT=3001
-APP_URL="your_app_url"
+CORS_ORIGINS=*
 ```
+Get your Groq API key from https://console.groq.com and Resend key from https://resend.com.
 
 ### 4. Run Development Server
 ```bash
 npm run dev
 ```
-Navigate to `http://localhost:3001` in your browser. The Express server acts as both the API proxy for Groq and the static middleware server.
+Navigate to `http://localhost:3001` in your browser. The Express dev server proxies API requests to shared route handlers (backend/shared/routes/). All backend logic is shared between the dev server and the production Supabase Edge Function.
 
 ---
 
 ## 🏗️ Build & Deployment
+
+### Architecture
+- **Production Backend**: Supabase Edge Functions (`supabase/functions/api/`) — thin wrapper re-exporting `backend/index.ts`
+- **Frontend**: Static SPA built by Vite (`npm run build` → `dist/`)
+- **Deployment**: GitHub Pages or Vercel (static assets) + Supabase Edge Functions (API routes)
 
 ### Production Compilation
 Bundle the static assets for frontend deployment:
@@ -185,6 +212,17 @@ Bundle the static assets for frontend deployment:
 npm run build
 ```
 The compiled output is saved under `dist/`.
+
+### Supabase Edge Functions Deployment
+Deploy the backend Edge Function to Supabase:
+```bash
+supabase link --project-ref <your-project-ref>
+supabase functions deploy api --no-verify-jwt
+```
+Set secrets in the Supabase dashboard (Settings → API → Secrets):
+- `GROQ_API_KEY` — your Groq API key
+- `RESEND_API_KEY` — your Resend API key
+- `CORS_ORIGINS` — comma-separated list of allowed origins (e.g., `https://farhankabir.me,https://*.vercel.app`)
 
 ### GitHub Pages Static Deployment
 To build and publish the frontend bundle to the `FarhanOS` project pages path:
@@ -205,6 +243,7 @@ A `vercel.json` configuration is included for Vercel deployments:
 ```bash
 vercel-build
 ```
+Deploy via the Vercel CLI or connect your Git repository for automatic deployments.
 Deploy via the Vercel CLI or connect your Git repository for automatic deployments.
 
 ---

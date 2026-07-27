@@ -23,6 +23,11 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
+  "include": [
+    "src",
+    "backend",
+    "server.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",

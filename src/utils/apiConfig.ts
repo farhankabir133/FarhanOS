@@ -1,7 +1,8 @@
 /**
  * Dynamically resolves the API Base URL.
- * In development (or when served by the Express server on localhost), this returns an empty string (relative paths).
- * In production (when hosted statically on GitHub Pages or custom domains), this returns the production API server.
+ * In development (served by the Express dev server on localhost), returns an empty string (relative paths).
+ * In production (when hosted as static assets on GitHub Pages or Vercel), returns the Supabase Edge Function URL.
+ * The Supabase Edge Function serves as the sole backend in production, handling all API routes.
  */
 export const getApiBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
