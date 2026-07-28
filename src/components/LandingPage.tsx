@@ -4,7 +4,7 @@ import {
   Rocket, Compass, PhoneCall, Download, GitBranch, Sparkles, BookOpen, 
   Cpu, Activity, Terminal, ArrowUp, Mail, MapPin, Phone, Github, Linkedin, 
   ExternalLink, Award, Calendar, ChevronRight, ChevronLeft, Star, Quote, 
-  ArrowRight, Check, Send, Sparkle, RefreshCw, Instagram, User, Clock
+  ArrowRight, Check, Send, Sparkle, RefreshCw, Instagram, User, Clock, Menu, X
 } from 'lucide-react';
 import { portfolioData } from '../data/portfolioData';
 import { Article } from '../types';
@@ -167,6 +167,7 @@ export default function LandingPage({
   const [activeTab, setActiveTab] = useState<'All' | 'AI/ML' | 'Frontend' | 'Backend' | 'Database' | 'DevOps'>('All');
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -487,7 +488,7 @@ export default function LandingPage({
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        className={`sticky top-0 z-[100] h-16 px-6 md:px-12 flex items-center justify-between border-b ${theme === 'light' ? 'border-slate-200/80 bg-white/70' : 'border-zinc-900/60 bg-black/45'} backdrop-blur-md transition-all`}
+        className={`sticky top-0 z-[100] h-16 px-4 md:px-12 flex items-center justify-between border-b ${theme === 'light' ? 'border-slate-200/80 bg-white/70' : 'border-zinc-900/60 bg-black/45'} backdrop-blur-md transition-all`}
       >
         <div className="flex items-center gap-3">
           <motion.span 
@@ -500,6 +501,15 @@ export default function LandingPage({
             <span className="text-[8.5px] font-mono text-zinc-550 uppercase tracking-widest">COGNITIVE SYSTEMS ARCHITECT</span>
           </div>
         </div>
+
+        {/* Hamburger button - mobile only */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+        </button>
 
         <nav className="hidden lg:flex items-center gap-5 text-[10.5px] font-mono tracking-wider font-semibold text-zinc-400">
           {[
@@ -514,7 +524,7 @@ export default function LandingPage({
             <motion.a
               key={link.href}
               href={link.href}
-              onClick={(e) => { ; handleAnchorClick(e, link.target); }}
+              onClick={(e) => { handleAnchorClick(e, link.target); }}
               whileHover={{ y: -2 }}
               className="relative hover:text-white transition-colors group"
             >
@@ -529,7 +539,7 @@ export default function LandingPage({
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3">
           <motion.button 
             whileHover={{ scale: 1.05, opacity: 0.95 }}
             whileTap={{ scale: 0.95 }}
@@ -542,6 +552,56 @@ export default function LandingPage({
           </motion.button>
         </div>
       </motion.header>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[9999] lg:hidden">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-72 bg-zinc-950/95 border-l border-zinc-800/60 shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-4 h-14 border-b border-zinc-800/40">
+              <span className="text-xs font-mono font-bold text-white tracking-tight">NAVIGATION</span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center w-8 h-8 rounded text-zinc-400 hover:text-white cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-1">
+              {[
+                { href: "#about", label: "ABOUT", target: "about" },
+                { href: "#skills", label: "STATIONS", target: "skills" },
+                { href: "#timeline", label: "CHRONOLOGY", target: "timeline" },
+                { href: "#prof-timeline", label: "PROF. TIMELINE", target: "prof-timeline" },
+                { href: "#projects", label: "INNOVATIONS", target: "projects" },
+                { href: "#certifications", label: "CERTIFICATES", target: "certifications" },
+                { href: "#contact", label: "TRANSMIT", target: "contact" }
+              ].map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => { handleAnchorClick(e, link.target); setMobileMenuOpen(false); }}
+                  className="flex items-center px-3 py-3 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900/60 transition-all text-sm font-mono tracking-wider"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+            <div className="p-4 border-t border-zinc-800/40">
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => { onLaunchOS(); setMobileMenuOpen(false); }}
+                disabled={isWarping}
+                className={`w-full cursor-pointer text-xs font-mono font-extrabold uppercase px-4 py-3 rounded-lg transition-all ${styleSet.btnPrimary}`}
+              >
+                {isWarping ? "Warp Core Charging..." : "Launch OS"}
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 1: HERO / INTRODUCTION */}
       <section className="relative min-h-[calc(100vh-64px)] flex flex-col justify-center items-center px-6 md:px-12 py-16 text-center select-none z-10">

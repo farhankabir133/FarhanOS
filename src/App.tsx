@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallbac
 import { 
   Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText, 
   Calendar, Award, Activity, Search, Briefcase, Volume2, VolumeX, 
-  Maximize2, Minimize2, X, Send, Sparkles, Code, Workflow, User, 
+  Maximize2, Minimize2, X, Menu, Send, Sparkles, Code, Workflow, User, 
   Folder, Map, Settings, Play, Pause, HelpCircle, Check, Copy, 
   Download, ExternalLink, Rocket, Compass, PhoneCall, RefreshCw,
   Clock, CheckSquare, FileSpreadsheet, Palette
@@ -20,6 +20,7 @@ export default function App() {
   // Navigation View Modes
   const [viewMode, setViewMode] = useState<'landing' | 'os'>('landing');
   const [isWarping, setIsWarping] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (viewMode === 'os') {
@@ -812,7 +813,7 @@ useEffect(() => {
         <>
           {/* 2. TOP MENU NAVIGATION BAR */}
           <header className="h-10 bg-black/40 backdrop-blur-md border-b border-zinc-800/40 flex items-center justify-between px-4 z-[99] select-none text-xs font-mono">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 cursor-pointer font-bold tracking-tight text-white hover:opacity-85" onClick={() => triggerSound(900, 0.05)}>
                 <span className="w-2 h-2 rounded bg-sky-400 opacity-90 shadow-[0_0_6px_#38bdf8]" />
                 <span>FarhanOS</span>
@@ -826,56 +827,127 @@ useEffect(() => {
                 title="Return to Cosmos Portal"
               >
                 <Compass className="w-3.5 h-3.5 text-indigo-400 animate-spin-slow" />
-                <span>Return to Cosmos</span>
+                <span className="hidden sm:inline">Return to Cosmos</span>
               </button>
-
-          <nav className="hidden md:flex items-center gap-4 text-zinc-400 font-medium select-none">
-            <button onClick={() => { setCommandPaletteOpen(true); triggerSound(800, 0.03); }} className="hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer">
-              <Search className="w-3.5 h-3.5" />
-              <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-0.5">Cmd+K</kbd></span>
-            </button>
-            <button onClick={runTourCycle} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer text-purple-400 hover:text-purple-300">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Site Tour</span>
-            </button>
-            <button onClick={() => openWindow('brief')} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
-              <PhoneCall className="w-3.5 h-3.5" />
-              <span>Mission Brief</span>
-            </button>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-4 select-none">
-          {/* Quick theme toggles - hidden on mobile/tablet */}
-          <div className="hidden md:flex items-center gap-1 bg-zinc-950/60 border border-zinc-800/40 rounded px-1.5 py-0.5">
-            <span className="text-[10px] text-zinc-500 font-medium mr-1.5">Mood Theme:</span>
-            {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
-              <button 
-                key={t}
-                onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
-                className={`text-[10px] px-1.5 py-0.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300'}`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* Single cycle button - visible ONLY on mobile/tablet */}
-          <button 
-            onClick={cycleTheme}
-            className="md:hidden flex items-center gap-1.5 bg-zinc-950/60 border border-zinc-800/40 rounded px-2 py-1 text-[10px] text-zinc-300 hover:text-white capitalize cursor-pointer active:scale-95 transition-all"
-            title="Cycle Theme"
-          >
-            <Palette className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-            <span>Theme: {theme}</span>
-          </button>
-
-            <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
-              <Clock className="w-3.5 h-3.5 text-sky-400" />
-              <span>{currentTime || '14:37:33'} (UTC)</span>
             </div>
-          </div>
-        </header>
+
+            {/* Hamburger button - mobile only */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+
+            <nav className="hidden md:flex items-center gap-4 text-zinc-400 font-medium select-none">
+              <button onClick={() => { setCommandPaletteOpen(true); triggerSound(800, 0.03); }} className="hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer">
+                <Search className="w-3.5 h-3.5" />
+                <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-0.5">Cmd+K</kbd></span>
+              </button>
+              <button onClick={runTourCycle} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer text-purple-400 hover:text-purple-300">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>AI Site Tour</span>
+              </button>
+              <button onClick={() => openWindow('brief')} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>Mission Brief</span>
+              </button>
+            </nav>
+
+          <div className="flex items-center gap-4 select-none">
+            {/* Quick theme toggles - hidden on mobile/tablet */}
+            <div className="hidden md:flex items-center gap-1 bg-zinc-950/60 border border-zinc-800/40 rounded px-1.5 py-0.5">
+              <span className="text-[10px] text-zinc-500 font-medium mr-1.5">Mood Theme:</span>
+              {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
+                <button 
+                  key={t}
+                  onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
+                  className={`text-[10px] px-1.5 py-0.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {/* Single cycle button - visible ONLY on mobile/tablet */}
+            <button 
+              onClick={cycleTheme}
+              className="md:hidden flex items-center gap-1.5 bg-zinc-950/60 border border-zinc-800/40 rounded px-2 py-1 text-[10px] text-zinc-300 hover:text-white capitalize cursor-pointer active:scale-95 transition-all"
+              title="Cycle Theme"
+            >
+              <Palette className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+              <span>Theme: {theme}</span>
+            </button>
+
+              <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
+                <Clock className="w-3.5 h-3.5 text-sky-400" />
+                <span>{currentTime || '14:37:33'} (UTC)</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Mobile Menu Overlay */}
+          {mobileMenuOpen && (
+            <div className="fixed inset-0 z-[9999] md:hidden">
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+              <div className="absolute right-0 top-0 h-full w-72 bg-zinc-950/95 border-l border-zinc-800/60 shadow-2xl flex flex-col">
+                <div className="flex items-center justify-between px-4 h-10 border-b border-zinc-800/40">
+                  <span className="text-xs font-mono font-bold text-white tracking-tight">MENU</span>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center w-8 h-8 rounded text-zinc-400 hover:text-white cursor-pointer"
+                    aria-label="Close menu"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  <button
+                    onClick={() => { setCommandPaletteOpen(true); setMobileMenuOpen(false); triggerSound(800, 0.03); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer text-sm"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-1">Cmd+K</kbd></span>
+                  </button>
+                  <button
+                    onClick={() => { runTourCycle(); setMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-zinc-900/60 transition-all cursor-pointer text-sm"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>AI Site Tour</span>
+                  </button>
+                  <button
+                    onClick={() => { openWindow('brief'); setMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer text-sm"
+                  >
+                    <PhoneCall className="w-4 h-4" />
+                    <span>Mission Brief</span>
+                  </button>
+                  <div className="pt-4 border-t border-zinc-800/40">
+                    <p className="text-[10px] text-zinc-500 font-medium mb-2 px-3">MOOD THEME</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
+                          className={`text-[11px] px-2 py-1.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300 bg-zinc-900/40'}`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-zinc-800/40">
+                    <div className="flex items-center gap-2 px-3 text-zinc-400 font-mono text-[11px]">
+                      <Clock className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{currentTime || '14:37:33'} (UTC)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
       {/* 3. AI SITE GUIDED TOUR STATUS ALERTER */}
       {isTourActive && (
