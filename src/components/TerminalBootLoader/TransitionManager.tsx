@@ -52,18 +52,22 @@ export function ContentReveal({
 }) {
   const settled = phase === 'done';
   const revealing = phase === 'revealing' || settled;
-  const duration = reduced ? '320ms' : '1000ms';
+  const duration = reduced ? '320ms' : '1100ms';
+  const easing = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen will-change-[opacity,transform]"
       style={{
-        transition: `opacity ${duration} ease-out, transform ${duration} ease-out`,
+        visibility: revealing ? 'visible' : 'hidden',
         opacity: revealing ? 1 : 0,
-        transform: settled ? 'none' : revealing ? 'scale(1)' : 'scale(1.01)',
+        transform: settled ? 'none' : revealing ? 'scale(1)' : 'scale(1.02)',
+        filter: revealing ? 'blur(0px)' : 'blur(4px)',
+        transition: `opacity ${duration} ${easing}, transform ${duration} ${easing}, filter ${duration} ${easing}, visibility 0ms linear ${duration}`,
+        transitionDelay: revealing ? '0ms' : `${duration}`,
       }}
     >
-      {revealing ? children : null}
+      {children}
     </div>
   );
 }
