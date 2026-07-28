@@ -106,4 +106,4 @@ React 18 · Vite · Three.js · Framer Motion · TailwindCSS · Node.js
 https://github.com/farhankabir133/the-ink-home
 
 ## Live Demo
-https://theinkhome.vercel.app
+https://theinkhome.live/
