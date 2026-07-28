@@ -8,6 +8,7 @@ import {
   Clock, CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
 import { portfolioData } from './data/portfolioData';
+import FloatingAssistant from './components/FloatingAssistant';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
 import LandingPage from './components/LandingPage';
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
@@ -2230,9 +2231,10 @@ useEffect(() => {
             </div>
           </div>
         </div>
-       )}
-        </>
-      )}
-    </div>
+        )}
+        <FloatingAssistant theme={theme} triggerSound={triggerSound} />
+      </>
+    )}
+  </div>
   );
 }
