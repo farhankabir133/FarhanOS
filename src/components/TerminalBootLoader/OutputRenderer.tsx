@@ -4,7 +4,6 @@ import type { LineKind } from '../../config/terminalCommands';
 
 interface OutputRendererProps {
   kind: Exclude<LineKind, 'cmd'>;
-  active: boolean;
 }
 
 const TONE: Record<Exclude<LineKind, 'cmd'>, string> = {
@@ -14,11 +13,11 @@ const TONE: Record<Exclude<LineKind, 'cmd'>, string> = {
 };
 
 export const OutputRenderer = memo(forwardRef<HTMLSpanElement, OutputRendererProps>(
-  function OutputRenderer({ kind, active }, ref) {
+  function OutputRenderer({ kind }, ref) {
     return (
       <div className="flex items-baseline pl-0 font-mono text-[13px] leading-[1.6]">
         <span ref={ref} className={TONE[kind]} />
-        <Cursor active={active} />
+        <Cursor />
       </div>
     );
   },

@@ -17,15 +17,9 @@ interface UseTerminalBootOptions {
 /**
  * Drives the terminal boot sequence and the reveal transition.
  *
- * - Types the script one line at a time (writing straight into the DOM so the
- *   React tree stays still).
- * - Waits for BOTH the minimum animation duration AND the app readiness signal
- *   (window `load` / `document.readyState === 'complete'`, capped by a safety
- *   timeout) before revealing.
- * - Reveals gracefully: a short dissolve, then unmounts through `onComplete`.
- *
- * Only `activeLine` and `phase` cause React re-renders (one per line + a few
- * for the transition), so the underlying app is never re-rendered by the loader.
+ * IMPORTANT: This hook only uses React state for phase transitions
+ * (booting -> revealing -> done). It does NOT use state for active line
+ * tracking. No React re-renders occur during the typing animation itself.
  */
 export function useTerminalBoot({
   script,
@@ -36,7 +30,6 @@ export function useTerminalBoot({
   reducedMotionHoldMs = BOOT_TIMING.reducedMotionHoldMs,
 }: UseTerminalBootOptions) {
   const [phase, setPhase] = useState<BootPhase>('booting');
-  const [activeLine, setActiveLine] = useState(-1);
   const [reduced, setReduced] = useState(false);
 
   const lineRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -103,7 +96,6 @@ export function useTerminalBoot({
 
       if (reducedMotion) {
         script.forEach((line, i) => engine.setInstant(lineRefs.current[i], line.text));
-        setActiveLine(script.length - 1);
         await delay(reducedMotionHoldMs);
         if (engine.isCancelled()) return;
         await finish();
@@ -112,7 +104,6 @@ export function useTerminalBoot({
 
       for (let i = 0; i < script.length; i++) {
         if (engine.isCancelled()) return;
-        setActiveLine(i);
         const line = script[i];
         await engine.typeInto(lineRefs.current[i], line.text, line.cps ?? 80);
         await delay(line.after ?? 120);
@@ -136,5 +127,5 @@ export function useTerminalBoot({
     };
   }, []);
 
-  return { phase, activeLine, reduced, setLineRef };
+  return { phase, reduced, setLineRef };
 }

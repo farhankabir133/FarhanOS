@@ -57,13 +57,12 @@ export function ContentReveal({
 
   return (
     <div
-      className="min-h-screen will-change-[opacity,transform]"
+      className="min-h-screen"
       style={{
         visibility: revealing ? 'visible' : 'hidden',
         opacity: revealing ? 1 : 0,
         transform: settled ? 'none' : revealing ? 'scale(1)' : 'scale(1.02)',
-        filter: revealing ? 'blur(0px)' : 'blur(4px)',
-        transition: `opacity ${duration} ${easing}, transform ${duration} ${easing}, filter ${duration} ${easing}, visibility 0ms linear ${duration}`,
+        transition: `opacity ${duration} ${easing}, transform ${duration} ${easing}, visibility 0ms linear ${duration}`,
         transitionDelay: revealing ? '0ms' : `${duration}`,
       }}
     >

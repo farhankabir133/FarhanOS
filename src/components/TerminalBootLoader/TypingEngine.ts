@@ -66,16 +66,20 @@ export class TypingEngine {
         this.onType?.();
       }
 
-      if (index < total && !this.cancelled) {
-        this.rafId = requestAnimationFrame(tick);
+      if (index >= total) {
+        this.rafId = null;
+        return;
       }
+
+      this.rafId = requestAnimationFrame(tick);
     };
 
     this.rafId = requestAnimationFrame(tick);
 
     await new Promise<void>((resolve) => {
       const checkDone = () => {
-        if (index >= total || this.cancelled) {
+        if (this.cancelled || index >= total) {
+          this.rafId = null;
           resolve();
         } else {
           this.timers.push(setTimeout(checkDone, 50));

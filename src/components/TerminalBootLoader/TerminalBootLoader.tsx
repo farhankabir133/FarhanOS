@@ -10,20 +10,11 @@ import { BOOT_SCRIPT, WORKSTATION_HOST } from '../../config/terminalCommands';
 
 export interface TerminalBootLoaderProps {
   children: ReactNode;
-  /** Called once the loader has fully dissolved and the app is revealed. */
   onComplete?: () => void;
 }
 
-/**
- * Premium Terminal Boot Loader — the single source of truth for the site's
- * opening experience.
- *
- * Renders the real application underneath an elegant terminal overlay, then
- * dissolves into the homepage once the boot sequence and app readiness both
- * complete. Once finished it returns only the children, leaving no hidden DOM.
- */
-export default function TerminalBootLoader({ children, onComplete }: TerminalBootLoaderProps) {
-  const { phase, activeLine, reduced, setLineRef } = useTerminalBoot({
+export function TerminalBootLoader({ children, onComplete }: TerminalBootLoaderProps) {
+  const { phase, reduced, setLineRef } = useTerminalBoot({
     script: BOOT_SCRIPT,
     onComplete,
   });
@@ -51,14 +42,12 @@ export default function TerminalBootLoader({ children, onComplete }: TerminalBoo
                     key={i}
                     ref={(el) => setLineRef(i, el)}
                     prompt={line.prompt ?? ''}
-                    active={!reduced && i === activeLine}
                   />
                 ) : (
                   <OutputRenderer
                     key={i}
                     ref={(el) => setLineRef(i, el)}
                     kind={line.kind}
-                    active={!reduced && i === activeLine}
                   />
                 ),
               )}
