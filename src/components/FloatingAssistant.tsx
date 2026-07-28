@@ -9,6 +9,7 @@ import { getApiBaseUrl } from '../utils/apiConfig';
 interface FloatingAssistantProps {
   theme: string;
   triggerSound?: (freq?: number, dur?: number) => void;
+  placement?: 'landing-left' | 'global-bottom-left';
 }
 
 interface Message {
@@ -35,7 +36,7 @@ const QUICK_ACTIONS = [
   { label: "Contact", query: "How can I contact or hire Farhan Kabir?" },
 ];
 
-export default function FloatingAssistant({ theme, triggerSound }: FloatingAssistantProps) {
+export default function FloatingAssistant({ theme, triggerSound, placement = 'global-bottom-left' }: FloatingAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -163,15 +164,17 @@ export default function FloatingAssistant({ theme, triggerSound }: FloatingAssis
     ? 'bg-slate-50 border-slate-200 text-slate-700'
     : 'bg-zinc-900/40 border-zinc-800 text-zinc-200';
 
+  const isLandingLeft = placement === 'landing-left';
+
   return (
-    <div className="fixed left-4 bottom-4 z-[9999] flex items-end gap-3">
+    <div className={`fixed z-[9999] flex items-center gap-3 ${isLandingLeft ? 'left-4 top-1/2 -translate-y-1/2 flex-col' : 'left-4 bottom-4 flex-row-reverse'}`}>
       {isOpen && isExpanded && (
         <motion.div
           initial={{ opacity: 0, x: -40, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: -40, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, mass: 0.8 }}
-          className={`hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-xl overflow-hidden ${bgClass}`}
+          className={`${isLandingLeft ? 'hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-xl overflow-hidden' : 'hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-xl overflow-hidden'} ${bgClass}`}
         >
           {/* Header */}
           <div className={`flex items-center justify-between px-4 h-14 border-b shrink-0 ${isLight ? 'border-slate-200 bg-white/60' : 'border-zinc-800/60 bg-black/40'}`}>
@@ -435,21 +438,32 @@ export default function FloatingAssistant({ theme, triggerSound }: FloatingAssis
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => { setIsOpen(true); setShowWelcome(true); triggerSound?.(800, 0.03); }}
-            className="group flex items-center gap-2 pl-1.5 pr-4 py-1.5 rounded-full bg-zinc-950/90 border border-zinc-800/60 shadow-xl backdrop-blur-xl cursor-pointer hover:border-zinc-700/80 transition-all"
+            className={`group flex items-center justify-center gap-2 cursor-pointer transition-all ${
+              isLandingLeft 
+                ? 'flex-col rounded-full py-4 px-2 w-14 h-14' 
+                : 'flex-row rounded-full pl-1.5 pr-4 py-1.5'
+            } bg-zinc-950/90 border border-zinc-800/60 shadow-xl backdrop-blur-xl hover:border-zinc-700/80`}
           >
             <div className="relative">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/30' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
-                <Sparkles className={`w-4 h-4 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
+              <div className={`flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/30' : 'bg-indigo-500/10 border border-indigo-500/20'} ${isLandingLeft ? 'w-8 h-8 rounded-full' : 'w-8 h-8 rounded-full'}`}>
+                <Sparkles className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-4 h-4' : 'w-4 h-4'}`} />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-zinc-950 animate-pulse" />
+              <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse ${isLandingLeft ? '-bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full' : '-bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full'}`} />
             </div>
-            <span className="text-[10px] font-bold tracking-wide text-zinc-200 uppercase whitespace-nowrap">
-              <span className="group-hover:opacity-100 opacity-0 transition-opacity duration-300 inline-block max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap">Ask </span>
-              Farhan AI
-            </span>
+            {!isLandingLeft && (
+              <span className="text-[10px] font-bold tracking-wide text-zinc-200 uppercase whitespace-nowrap">
+                <span className="group-hover:opacity-100 opacity-0 transition-opacity duration-300 inline-block max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap">Ask </span>
+                Farhan AI
+              </span>
+            )}
+            {isLandingLeft && (
+              <span className="text-[9px] font-bold tracking-widest text-zinc-200 uppercase whitespace-nowrap" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                ASK FARHAN AI
+              </span>
+            )}
           </motion.button>
         ) : (
           <motion.button
@@ -459,7 +473,9 @@ export default function FloatingAssistant({ theme, triggerSound }: FloatingAssis
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => { setIsOpen(false); setIsExpanded(false); stopSpeaking(); triggerSound?.(700, 0.04); }}
-            className="w-10 h-10 rounded-full bg-zinc-950/90 border border-zinc-800/60 shadow-xl backdrop-blur-xl flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer transition-all"
+            className={`flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer transition-all bg-zinc-950/90 border border-zinc-800/60 shadow-xl backdrop-blur-xl ${
+              isLandingLeft ? 'w-10 h-10 rounded-full' : 'w-10 h-10 rounded-full'
+            }`}
             title="Close assistant"
           >
             <X className="w-4 h-4" />

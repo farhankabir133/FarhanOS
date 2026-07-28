@@ -473,7 +473,7 @@ export default function LandingPage({
   return (
     <div 
       ref={containerRef}
-      className="relative min-h-screen flex flex-col w-full select-text bg-transparent"
+      className="relative min-h-screen flex flex-col w-full select-text bg-transparent md:pl-20"
     >
       {/* 3D background starfield simulation */}
       <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
