@@ -7,6 +7,7 @@ import {
   Download, ExternalLink, Rocket, Compass, PhoneCall, RefreshCw,
   Clock, CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
+import { FarhanAIIcon } from './components/FarhanAIIcon';
 import { portfolioData } from './data/portfolioData';
 import FloatingAssistant from './components/FloatingAssistant';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
@@ -1004,8 +1005,12 @@ useEffect(() => {
                 style={{ animationDelay: `${idx * 45}ms` }}
                 className={`flex flex-col items-center justify-center p-2.5 rounded-xl border border-transparent hover:border-zinc-800/40 hover:bg-zinc-950/25 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] cursor-pointer transition-all duration-300 active:scale-95 group text-center relative animate-fade-in opacity-0 ${isOpen ? 'bg-zinc-950/15' : ''}`}
               >
-                <div className={`p-4 rounded-2xl ${ico.color} transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200 relative`}>
-                  <ActiveIcon className="w-6 h-6" />
+                 <div className={`p-4 rounded-2xl ${ico.color} transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200 relative`}>
+                  {ico.id === 'twin' ? (
+                    <FarhanAIIcon className="w-6 h-6" isTerminal={theme === 'terminal'} />
+                  ) : (
+                    <ActiveIcon className="w-6 h-6" />
+                  )}
                   {isOpen && (
                     <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900 shadow-[0_0_6px_#10b981]" />
                   )}
@@ -1118,7 +1123,17 @@ useEffect(() => {
                   <div className="flex flex-col h-full gap-3">
                     <div className="border-b border-zinc-800/60 pb-2 mb-1">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-purple-400" />
+                        <div className="w-4 h-4 text-indigo-400">
+                          <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+                            <path d="M22 20L22 44L36 44L36 34L44 34L44 44L52 44" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+                            <circle cx="22" cy="20" r="3" fill="#34d399" />
+                            <circle cx="22" cy="44" r="2.5" fill="currentColor" />
+                            <circle cx="36" cy="44" r="2.5" fill="currentColor" />
+                            <circle cx="36" cy="34" r="2.5" fill="currentColor" />
+                            <circle cx="44" cy="34" r="2.5" fill="currentColor" />
+                            <circle cx="52" cy="44" r="2.5" fill="currentColor" />
+                          </svg>
+                        </div>
                         <span className="font-bold text-slate-100 tracking-tight">Interactive Ask Twin Engine</span>
                       </div>
                       <p className="text-zinc-400 text-[10px] mt-0.5 leading-relaxed font-normal">

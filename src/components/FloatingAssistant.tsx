@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'motion/react';
 import { 
-  Sparkles, X, Send, ChevronRight, Copy, Check, Volume2, VolumeX, 
+  X, Send, ChevronRight, Copy, Check, Volume2, VolumeX, 
   MessageSquare, RefreshCw, Minimize2, Maximize2, Loader2, GripVertical
 } from 'lucide-react';
 import { getApiBaseUrl } from '../utils/apiConfig';
+
+import { FarhanAIIcon } from './FarhanAIIcon';
 
 interface FloatingAssistantProps {
   theme: string;
@@ -219,9 +221,9 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
           <div className={`flex items-center justify-between px-4 h-14 border-b shrink-0 ${isLight ? 'border-slate-200 bg-white/60' : 'border-zinc-800/60 bg-black/40'}`}>
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
-                  <Sparkles className={`w-5 h-5 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
-                </div>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                    <FarhanAIIcon className={`w-5 h-5 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} isTerminal={isTerminal} />
+                  </div>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
               </div>
               <div className="flex flex-col">
@@ -252,8 +254,8 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
             {showWelcome && messages.length === 1 && (
               <div className="space-y-4">
                 <div className="text-center py-6">
-                  <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
-                    <Sparkles className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
+                  <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                    <FarhanAIIcon className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} isTerminal={isTerminal} />
                   </div>
                   <h3 className={`text-lg font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
                     Hi, I'm Farhan AI
@@ -407,9 +409,9 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
              {/* Mobile Header */}
              <div className="flex items-center justify-between px-5 h-14 border-b border-zinc-800/40">
                <div className="flex items-center gap-3">
-                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
-                   <Sparkles className={`w-5 h-5 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
-                 </div>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                    <FarhanAIIcon className={`w-5 h-5 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} isTerminal={isTerminal} />
+                  </div>
                  <div className="flex flex-col">
                    <span className="text-sm font-bold tracking-tight text-slate-100">Farhan AI</span>
                    <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
@@ -431,9 +433,9 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                {showWelcome && messages.length === 1 && (
                  <div className="space-y-4">
                    <div className="text-center py-6">
-                     <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
-                       <Sparkles className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
-                     </div>
+                      <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                        <FarhanAIIcon className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} isTerminal={isTerminal} />
+                      </div>
                      <h3 className="text-lg font-bold mb-1 text-slate-100">Hi, I'm Farhan AI</h3>
                      <p className="text-xs leading-relaxed text-zinc-400">Ask me anything about Farhan's work and experience.</p>
                    </div>
@@ -562,10 +564,10 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
               }}
             />
             
-            <div className="relative">
-              <div className={`flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/30' : 'bg-indigo-500/10 border border-indigo-500/20'} ${isLandingLeft ? 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl' : 'w-7 h-7 sm:w-8 sm:h-8 rounded-full'} transition-all group-hover:scale-110`}>
-                <Sparkles className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-3.5 h-3.5 sm:w-4 sm:h-4'} transition-all group-hover:rotate-12`} />
-              </div>
+              <div className="relative">
+                <div className={`flex items-center justify-center transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/30' : 'bg-indigo-500/10 border border-indigo-500/20'} ${isLandingLeft ? 'w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl' : 'w-7 h-7 sm:w-8 sm:h-8 rounded-full'} transition-all group-hover:scale-110`}>
+                  <FarhanAIIcon className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-4 h-4 sm:w-5 sm:h-5' : 'w-3.5 h-3.5 sm:w-4 sm:h-4'} transition-all group-hover:rotate-12`} isTerminal={isTerminal} />
+                </div>
               <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse ${isLandingLeft ? '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full' : '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full'} shadow-lg`} />
             </div>
             {!isLandingLeft && (
