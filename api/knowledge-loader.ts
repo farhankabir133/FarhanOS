@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export interface KnowledgeDoc {
   id: string;
@@ -37,10 +38,12 @@ export interface KnowledgeDoc {
   raw: string;
 }
 
-const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const KNOWLEDGE_DIR = path.join(__dirname, '..', 'knowledge');
 
 let docs: KnowledgeDoc[] = [];
 let indexReady = false;
+let loadError: string | null = null;
 
 function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
   const fmRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
@@ -61,7 +64,7 @@ function parseFrontmatter(raw: string): { data: Record<string, unknown>; content
     else if (value === 'false') value = false;
     else if (!isNaN(Number(value)) && value !== '') value = Number(value);
     else if (typeof value === 'string' && ((value.startsWith('[') && value.endsWith(']')) || (value.startsWith('"') && value.endsWith('"')))) {
-      value = value.slice(1, -1).split(',').map((s) => s.trim()).filter(Boolean);
+      value = value.slice(1, -1).split(',').map((s: string) => s.trim()).filter(Boolean);
     }
     data[key] = value;
   }
@@ -123,7 +126,14 @@ function scoreQuery(query: string, doc: KnowledgeDoc): number {
 }
 
 export function searchKnowledge(query: string, options: { category?: string; tags?: string[]; topK?: number; featuredOnly?: boolean } = {}): KnowledgeDoc[] {
-  if (!indexReady) loadKnowledgeBase();
+  if (!indexReady && !loadError) {
+    try {
+      loadKnowledgeBase();
+    } catch (err) {
+      loadError = err instanceof Error ? err.message : String(err);
+      console.error('[knowledge] load failed:', loadError);
+    }
+  }
   const { category, tags, topK = 5, featuredOnly = false } = options;
 
   let candidates = docs.filter((d) => d.public);
@@ -146,7 +156,14 @@ export function searchKnowledge(query: string, options: { category?: string; tag
 }
 
 export function getRelated(docId: string, limit = 3): KnowledgeDoc[] {
-  if (!indexReady) loadKnowledgeBase();
+  if (!indexReady && !loadError) {
+    try {
+      loadKnowledgeBase();
+    } catch (err) {
+      loadError = err instanceof Error ? err.message : String(err);
+      console.error('[knowledge] load failed:', loadError);
+    }
+  }
   const doc = docs.find((d) => d.id === docId);
   if (!doc) return [];
   const related = docs
@@ -156,28 +173,57 @@ export function getRelated(docId: string, limit = 3): KnowledgeDoc[] {
 }
 
 export function getAllDocs(): KnowledgeDoc[] {
-  if (!indexReady) loadKnowledgeBase();
+  if (!indexReady && !loadError) {
+    try {
+      loadKnowledgeBase();
+    } catch (err) {
+      loadError = err instanceof Error ? err.message : String(err);
+      console.error('[knowledge] load failed:', loadError);
+    }
+  }
   return docs.filter((d) => d.public);
 }
 
 export function getKnowledgeCount(): number {
-  if (!indexReady) loadKnowledgeBase();
+  if (!indexReady && !loadError) {
+    try {
+      loadKnowledgeBase();
+    } catch (err) {
+      loadError = err instanceof Error ? err.message : String(err);
+      console.error('[knowledge] load failed:', loadError);
+    }
+  }
   return docs.filter((d) => d.public).length;
 }
 
 export function listCategories(): string[] {
-  if (!indexReady) loadKnowledgeBase();
+  if (!indexReady && !loadError) {
+    try {
+      loadKnowledgeBase();
+    } catch (err) {
+      loadError = err instanceof Error ? err.message : String(err);
+      console.error('[knowledge] load failed:', loadError);
+    }
+  }
   return Array.from(new Set(docs.filter((d) => d.public).map((d) => d.category).filter(Boolean))) as string[];
 }
 
 export function loadKnowledgeBase() {
+  if (indexReady || loadError) return;
   const files: string[] = [];
   if (!fs.existsSync(KNOWLEDGE_DIR)) {
     indexReady = true;
+    loadError = 'knowledge directory missing';
     return;
   }
   const walk = (dir: string) => {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    let entries: fs.Dirent[] = [];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (err) {
+      console.error('[knowledge] readdir failed:', dir, err);
+      return;
+    }
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
@@ -187,49 +233,66 @@ export function loadKnowledgeBase() {
       }
     }
   };
-  walk(KNOWLEDGE_DIR);
-  docs = files.map((file) => {
-    const raw = fs.readFileSync(file, 'utf-8');
-    const { data, content } = parseFrontmatter(raw);
-    const relative = path.relative(KNOWLEDGE_DIR, file);
-    const id = data.id || relative.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
-    return {
-      id: String(id),
-      title: String(data.title || id),
-      category: String(data.category || 'uncategorized'),
-      description: String(data.description || ''),
-      summary: String(data.summary || ''),
-      visibility: String(data.visibility || 'public'),
-      priority: Number(data.priority || 1),
-      importance: Number(data.importance || 1),
-      status: String(data.status || 'active'),
-      created: String(data.created || new Date().toISOString()),
-      updated: String(data.updated || new Date().toISOString()),
-      owner: String(data.owner || 'Farhan Kabir'),
-      version: String(data.version || '1.0.0'),
-      language: String(data.language || 'en'),
-      reading_time: String(data.reading_time || '1 min read'),
-      difficulty: String(data.difficulty || 'intermediate'),
-      confidence: Number(data.confidence || 1),
-      tags: Array.isArray(data.tags) ? (data.tags as string[]) : [],
-      keywords: Array.isArray(data.keywords) ? (data.keywords as string[]) : [],
-      skills: Array.isArray(data.skills) ? (data.skills as string[]) : [],
-      technologies: Array.isArray(data.technologies) ? (data.technologies as string[]) : [],
-      companies: Array.isArray(data.companies) ? (data.companies as string[]) : [],
-      projects: Array.isArray(data.projects) ? (data.projects as string[]) : [],
-      related_documents: Array.isArray(data.related_documents) ? (data.related_documents as string[]) : [],
-      related_projects: Array.isArray(data.related_projects) ? (data.related_projects as string[]) : [],
-      related_skills: Array.isArray(data.related_skills) ? (data.related_skills as string[]) : [],
-      search_boost: Number(data.search_boost || 1),
-      embedding_enabled: Boolean(data.embedding_enabled),
-      retrieval_priority: Number(data.retrieval_priority || 1),
-      public: Boolean(data.public),
-      featured: Boolean(data.featured),
-      content,
-      raw,
-    };
-  });
+  try {
+    walk(KNOWLEDGE_DIR);
+  } catch (err) {
+    loadError = err instanceof Error ? err.message : String(err);
+    console.error('[knowledge] walk failed:', loadError);
+    indexReady = true;
+    return;
+  }
 
-  computeIdf();
+  docs = [];
+  for (const file of files) {
+    try {
+      const raw = fs.readFileSync(file, 'utf-8');
+      const { data, content } = parseFrontmatter(raw);
+      const relative = path.relative(KNOWLEDGE_DIR, file);
+      const id = data.id || relative.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+      docs.push({
+        id: String(id),
+        title: String(data.title || id),
+        category: String(data.category || 'uncategorized'),
+        description: String(data.description || ''),
+        summary: String(data.summary || ''),
+        visibility: String(data.visibility || 'public'),
+        priority: Number(data.priority || 1),
+        importance: Number(data.importance || 1),
+        status: String(data.status || 'active'),
+        created: String(data.created || new Date().toISOString()),
+        updated: String(data.updated || new Date().toISOString()),
+        owner: String(data.owner || 'Farhan Kabir'),
+        version: String(data.version || '1.0.0'),
+        language: String(data.language || 'en'),
+        reading_time: String(data.reading_time || '1 min read'),
+        difficulty: String(data.difficulty || 'intermediate'),
+        confidence: Number(data.confidence || 1),
+        tags: Array.isArray(data.tags) ? (data.tags as string[]) : [],
+        keywords: Array.isArray(data.keywords) ? (data.keywords as string[]) : [],
+        skills: Array.isArray(data.skills) ? (data.skills as string[]) : [],
+        technologies: Array.isArray(data.technologies) ? (data.technologies as string[]) : [],
+        companies: Array.isArray(data.companies) ? (data.companies as string[]) : [],
+        projects: Array.isArray(data.projects) ? (data.projects as string[]) : [],
+        related_documents: Array.isArray(data.related_documents) ? (data.related_documents as string[]) : [],
+        related_projects: Array.isArray(data.related_projects) ? (data.related_projects as string[]) : [],
+        related_skills: Array.isArray(data.related_skills) ? (data.related_skills as string[]) : [],
+        search_boost: Number(data.search_boost || 1),
+        embedding_enabled: Boolean(data.embedding_enabled),
+        retrieval_priority: Number(data.retrieval_priority || 1),
+        public: Boolean(data.public),
+        featured: Boolean(data.featured),
+        content,
+        raw,
+      });
+    } catch (err) {
+      console.error('[knowledge] parse failed:', file, err);
+    }
+  }
+
+  try {
+    computeIdf();
+  } catch (err) {
+    console.error('[knowledge] idf compute failed:', err);
+  }
   indexReady = true;
 }

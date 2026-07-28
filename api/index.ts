@@ -158,8 +158,13 @@ export default async function handler(req: any, res: any) {
         return;
       }
 
-      const docs = searchKnowledge(message, { topK: 6, featuredOnly: false });
-      const context = docs.map(d => `## ${d.title}\n${d.content}`).join('\n\n---\n\n');
+      let context = '';
+      try {
+        const docs = searchKnowledge(message, { topK: 6, featuredOnly: false });
+        context = docs.map(d => `## ${d.title}\n${d.content}`).join('\n\n---\n\n');
+      } catch (err) {
+        console.error('RAG retrieval failed, falling back to inline prompt', err);
+      }
 
       const basePrompt = `You are "Farhan AI", a premium personal AI representative of Farhan Kabir.
 You are NOT a generic chatbot. You are Farhan's personal AI — knowledgeable, intelligent, structured, and beautifully expressive.
