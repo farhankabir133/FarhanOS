@@ -8,6 +8,7 @@ import {
   Clock, CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
 import { FarhanAIIcon } from './components/FarhanAIIcon';
+import MarkdownRenderer from './components/MarkdownRenderer';
 import { portfolioData } from './data/portfolioData';
 import FloatingAssistant from './components/FloatingAssistant';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
@@ -1144,8 +1145,12 @@ useEffect(() => {
                     <div className="flex-1 overflow-y-auto space-y-3 p-1 scrollbar-none text-[11px] leading-relaxed select-text font-normal max-h-[220px]">
                       {twinMessages.map((m, idx) => (
                         <div key={idx} className={`flex flex-col gap-1 w-full ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div className={`p-3 rounded-xl max-w-[90%] whitespace-pre-wrap select-text border shadow-xs ${m.role === 'user' ? 'bg-sky-500/10 border-sky-500/20 text-slate-100' : 'bg-zinc-950/40 border-zinc-900 text-slate-300'}`}>
-                            {m.content}
+                          <div className={`p-3 rounded-xl max-w-[90%] select-text border shadow-xs ${m.role === 'user' ? 'bg-sky-500/10 border-sky-500/20 text-slate-100' : 'bg-zinc-950/40 border-zinc-900 text-slate-300'}`}>
+                            {m.role === 'assistant' ? (
+                              <MarkdownRenderer content={m.content} />
+                            ) : (
+                              <p className="whitespace-pre-wrap text-[11px]">{m.content}</p>
+                            )}
                           </div>
                           
                           {/* Synth TTS play button for model messages */}

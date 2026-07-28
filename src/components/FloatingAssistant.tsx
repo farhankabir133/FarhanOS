@@ -5,6 +5,7 @@ import {
   MessageSquare, RefreshCw, Minimize2, Maximize2, Loader2, GripVertical
 } from 'lucide-react';
 import { getApiBaseUrl } from '../utils/apiConfig';
+import MarkdownRenderer from './MarkdownRenderer';
 
 import { FarhanAIIcon } from './FarhanAIIcon';
 
@@ -308,8 +309,12 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? userBubble : assistantBubble}`}>
-                    {msg.content}
+                  <div className={`px-4 py-3 rounded-2xl max-w-[90%] border shadow-sm ${msg.role === 'user' ? userBubble : assistantBubble}`}>
+                    {msg.role === 'assistant' ? (
+                      <MarkdownRenderer content={msg.content} />
+                    ) : (
+                      <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    )}
                   </div>
                   {msg.role === 'assistant' && (
                     <div className="flex items-center gap-2">
@@ -453,13 +458,17 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                    </div>
                  </div>
                )}
-               {messages.map((msg) => (
-                 <div key={msg.id} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? userBubble : assistantBubble}`}>
-                      {msg.content}
-                    </div>
-                 </div>
-               ))}
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                     <div className={`px-4 py-3 rounded-2xl max-w-[90%] border shadow-sm ${msg.role === 'user' ? userBubble : assistantBubble}`}>
+                       {msg.role === 'assistant' ? (
+                         <MarkdownRenderer content={msg.content} />
+                       ) : (
+                         <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                       )}
+                     </div>
+                  </div>
+                ))}
                {isLoading && (
                  <div className="flex items-center gap-2 text-indigo-400">
                    <Loader2 className="w-4 h-4 animate-spin" />
