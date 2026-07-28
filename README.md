@@ -1,272 +1,438 @@
-# farhanos // COGNITIVE DIALECTICS OS
+# farhanos
 
+[![React](https://img.shields.io/badge/React-19-61dafb?logo=react)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6-646cff?logo=vite)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
+[![Groq](https://img.shields.io/badge/Groq-Llama_3.3_70B-orange)](https://groq.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Serverless-black?logo=vercel)](https://vercel.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Framework: React 19](https://img.shields.io/badge/Framework-React_19-indigo.svg)](https://react.dev/)
-[![Styling: Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-06b6d4.svg)](https://tailwindcss.com)
-[![AI-Core: Groq Llama 3.3](https://img.shields.io/badge/AI--Core-Groq_Llama_3.3_70B-orange.svg)](https://groq.com/)
-[![Backend: Vercel Serverless](https://img.shields.io/badge/Backend-Vercel_Serverless-black.svg)](https://vercel.com/)
 
-> An immersive, high-fidelity windowed operating system simulator presenting clinical NLP research, conceptual garden maps, and AI SaaS agent architectures in an interactive desktop environment.
+An interactive portfolio workspace structured as a functional operating system. Built with React 19, Vite 6, Tailwind CSS v4, and Groq Llama 3.3 70B.
+
+**Live:** [https://farhankabir.me](https://farhankabir.me)
 
 ---
 
-## 🛰️ Tagline
-*Explore clinical linguistics, coordinate with real-time neural audio, and engage with AI-native twin engines inside a custom operating matrix.*
+## Overview
 
-*Hero greeting: "Hi, I'm Farhan Kabir! Crafting Digital Experience with code and creativity"*
+`farhanos` is a production-grade portfolio application that presents clinical NLP research, full-stack SaaS architectures, and AI engineering work inside an interactive desktop-like environment. It replaces conventional portfolio layouts with a windowed OS interface, motion-driven transitions, a terminal boot sequence, and a floating AI assistant.
 
-*Site favicon updated to custom FK-Sign logo.*
+The project is built by **Farhan Kabir** — AI Engineer, NLP Researcher, and Full Stack Developer. It serves as a public-facing showcase for peer-reviewed publications, open-source projects, research metrics, and AI-driven interaction patterns.
 
----
-
-## 🔗 Live Deployments
-* **Official Website (Custom Domain)**: [https://farhankabir.me/](https://farhankabir.me/)
-* **Vercel Backend**: [https://farhanos.vercel.app/](https://farhanos.vercel.app/)
-* **Alternative GitHub Pages URL**: [https://farhankabir133.github.io/FarhanOS/](https://farhankabir133.github.io/FarhanOS/)
+The application supports two views:
+- **Landing page** — scrollable single-page experience with 3D starfield background, sections for about, skills, timeline, projects, publications, and contact.
+- **OS mode** — desktop-like environment with draggable windows, command palette, and system utilities.
 
 ---
 
-## 📋 Table of Contents
-1. [About The Project](#-about-the-project)
-2. [Key Features](#-key-features)
-3. [Tech Stack](#-tech-stack)
-4. [Project Structure](#-project-structure)
-5. [Getting Started](#-getting-started)
-6. [Usage & Configurations](#-usage--configurations)
-7. [Build & Deployment](#-build--deployment)
-8. [Contributing](#-contributing)
-9. [License](#-license)
-10. [Contact / Author](#-contact--author)
+## Features
+
+### Core Experience
+- **Terminal Boot Loader** — animated entry sequence with scan lines, particles, and a 60fps typing engine synced to display refresh via `requestAnimationFrame`.
+- **Dual View Modes** — landing page and OS mode, with transition animations between them.
+- **Command Palette** — `Cmd/Ctrl + K` triggers search across projects, papers, articles, skills, and system actions.
+- **Theme Engine** — five built-in themes: `dark`, `cyberpunk`, `ai`, `terminal`, `light`.
+
+### Floating AI Assistant
+- **Always-available chat** — positioned at the bottom-left on both landing and OS views.
+- **Groq-backed responses** — routes to `/api/ask-twin` and uses `llama-3.3-70b-versatile` with a system prompt containing verified biographical, research, and project data.
+- **Quick actions** — one-tap prompts for Research, Projects, Skills, and Contact.
+- **Responsive behavior** — desktop uses an expanded panel; mobile opens a full-screen bottom-sheet with drag handle and large close button.
+
+### Content Modules
+- **Projects Explorer** — 16 projects with tech stack, architecture, metrics, and GitHub links.
+- **Publications Reader** — peer-reviewed papers with methodology, datasets, pipelines, results, and citations.
+- **Timeline** — career and professional timeline components.
+- **Skills Graph** — categorized skill nodes with categorical filtering.
+- **Conceptual Garden** — interactive graph visualization of research and engineering focus areas.
+- **Resume Viewer** — audience-switchable resume (recruiter, investor, founder, researcher).
+- **Mission Brief** — contact form that uses Groq to analyze incoming inquiries and dispatches email via Resend.
+- **Whiteboard** — lazy-loaded interactive canvas for sketching ideas.
+
+### Integrations
+- **Groq API** — AI chat completions and brief analysis.
+- **Resend** — contact form email delivery.
+- **GitHub API** — live repository telemetry by username.
+- **Medium RSS** — live article feed parsing and caching.
+- **Web Speech API** — client-side text-to-speech fallback.
 
 ---
 
-## 🛸 About The Project
+## Tech Stack
 
-**farhanos** is a production-grade interactive portfolio workspace structured as a functional simulator OS. Designed to showcase clinical NLP methodologies, WebGL visualizations, and full-stack SaaS project architectures, the application rejects flat layouts in favor of an engaging, high-contrast desktop ecosystem.
-
-The interface bridges professional NLP researcher credentials with premium frontend craftsmanship. Visitors can run real-time system tours, examine peer-reviewed publication data with mathematical classifier statistics, check live repository telemetry feeds, chat with an AI-native digital twin clone, and explore 16 sandbox projects spanning game development, AI/ML, safety engineering, education, and more.
-
----
-
-## 🌟 Key Features
-
-### 1. Floating AI Assistant (`Farhan AI`)
-A premium, always-available chat assistant positioned on the left side of the landing page and bottom-left in OS mode.
-* **Interactive Chat**: Click the floating capsule to open a full chat interface with streaming responses from Groq Llama 3.3 70B.
-* **Responsive Design**: Adapts seamlessly from mobile bottom-sheet to desktop side panel.
-* **Quick Actions**: One-tap prompts for Research, Projects, Skills, and Contact.
-* **Premium Animations**: Magnetic hover effects, breathing glow, ripple clicks, and spring-based open/close transitions.
-* **Mobile-First UX**: Large touch targets, safe-area support, drag handle, and accessible close button.
-
-### 2. Digital Twin AI Clone (`FarhanTwin`)
-* **Direct Groq Integration**: Client and server routes communicate with **Llama 3.3 70B (via Groq)**. Answers questions about Farhan's biography, achievements, tech stack, and publications in his verified tone.
-* **Contextual Knowledge Base**: Ingests custom clinical datasets, RoBERTa accuracy F1 indicators, and product metrics directly from system prompts.
-
-### 3. Neural OS Speech Synthesizer (TTS)
-* **Client-Side Fallback Narration**: The `/api/tts` route returns a null audio payload; all narration falls back to the browser's native Web Speech API with premium voice selection.
-* **Visualizer Waveforms**: Animated canvas waveforms rendering real-time audio playback states.
-
-### 4. Monographs & Publications Reader
-* **IEEE Publication Database**: Catalog hosting peer-reviewed research papers (e.g., LLM Adversarial Attacks, NLP Candidate Evaluation, Emotion & Depression classifiers) including recent ISEE 2026 acceptances.
-* **Classifier Dataflow Visualizers**: Animated pipeline models showing text preprocessing and tensor matrix paths.
-* **Accuracy Statistics & Citations**: Dynamic matrices tracking precision, F1-scores, sensitivity, and copyable BibTeX resources.
-
-### 5. Sandbox Projects Explorer
-* **TypeRush** (`the-3d-platformer`): Immersive typing survival interface featuring Web Audio API synthesizers and adaptive visual prompts.
-* **The Ink Home** (`the-ink-home`): Immersive WebGL particle-galaxy carousel and dynamic scraping portal mapping Medium RSS feeds.
-* **SafeSide Predictor** (`safeside`): Tactical football analytics command center running Poisson distribution simulations and prediction engines.
-* **9th Grade** (`9th-grade`): Interactive educational platform for middle school students with adaptive quizzes, progress tracking, and gamified learning paths.
-* **BuildSafe** (`buildsafe`): Construction safety compliance platform digitizing site hazard reports, inspection schedules, and automated audit documentation.
-* **Buddy-Script** (`buddy-script`): AI-powered coding companion providing real-time code review suggestions and pair-programming assistance in the browser editor.
-* **RankFlow AI** (`rankflow-ai`): ML pipeline platform for automated model ranking and benchmarking across standardized metrics.
-* **Exam-Survival** (`exam-survival`): Adaptive exam preparation platform using spaced repetition and AI-generated mock exams with Ebbinghaus curve scheduling.
-* **codelab-ai-genkit-rag** (`codelab-ai-genkit-rag`): Production-ready RAG starter kit for building AI-powered search and answer engines over codebases and technical documentation.
-* **AutoSpark** (`autospark`): Intelligent automation tool connecting APIs, spreadsheets, and databases with visual no-code workflow builder.
-* **OMNIVA AI** (`omniva-ai`): Enterprise AI operations platform for monitoring, tuning, and governing LLM deployments with real-time observability.
-* **farhankabir.com** (`farhankabir-com`): Personal brand website serving as the public-facing portfolio with project highlights and contact channels.
-* **Personal_Site** (`personal-site`): Minimalist personal site foundation featuring bio, skills matrix, and spam-filtered contact form.
-* **RoutineOS** (`routineos`): Command-line productivity tool managing daily routines, habit tracking, and task scheduling with a terminal-based OS interface.
-* **vocab-X** (`vocab-x`): Vocabulary acquisition engine using spaced repetition and generative AI to create personalized learning sessions from any text corpus.
-
-### 6. Systems Telemetry & Desktop Customizers
-* **Interactive Conceptual Garden**: WebGL nodes representing clinical NLP, mental wellness tracking, and data ethics connected via dynamic edges.
-* **Mood Theme Engine**: Fast theme switching supporting Dark Slate, Cyberpunk Neon, AI Lavender, Classic Green Terminal, and Clean Light Mode.
-* **GitHub Monitor**: Live mock git activity feeds displaying compiling status, lines added, and active package telemetry.
-
-### 7. Premium Terminal Boot Loader
-* **Animated Entry Experience**: Custom motion-powered boot sequence with scan lines, particle effects, terminal window aesthetics, and typing engine.
-* **60fps Typing Engine**: Replaced per-character `setTimeout` with `requestAnimationFrame` batching for display-synced, jank-free typing on all devices.
-* **GPU-Friendly Transitions**: Removed expensive CSS `blur()` from reveal transitions; uses only `opacity` and `scale` for smooth dissolves.
-* **Reduced Particle Load**: Optimized ambient particle count for low-end devices while maintaining visual depth.
-* **React Render Optimization**: Boot components wrapped in `React.memo`; underlying app is deferred until boot completes to keep the sequence smooth.
-
-### 8. Responsive Mobile Navigation
-* **Hamburger Menu**: Professional slide-out drawer navigation on mobile devices (`md:hidden`) with smooth backdrop blur and touch-friendly targets.
-* **Landing Page + OS Mode**: Both the landing page header and the OS top bar include fully functional mobile menus with theme toggles and navigation links.
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19, TypeScript, Vite 6 |
+| Styling | Tailwind CSS v4 |
+| Animation | Motion (Framer Motion), CSS transitions |
+| 3D / WebGL | Three.js |
+| Icons | Lucide React |
+| Backend (dev) | Express, Node.js |
+| Backend (prod) | Vercel Serverless Functions |
+| AI | Groq API (`llama-3.3-70b-versatile`) |
+| Email | Resend |
+| Fonts | Custom woff2 with preload |
+| Deployment | Vercel (production), GitHub Pages (legacy) |
 
 ---
 
-## 🛠️ Tech Stack
+## Architecture
 
-* **Frontend Framework**: React 19 (Hooks, Motion transitions)
-* **Styling & HUD**: Tailwind CSS v4 + custom CSS variable CRT scans + glassmorphic filters
-* **WebGL Elements**: Vanilla Three.js (particle gravity wells, node coordinates)
-* **Server Backend**: Vercel Serverless Functions (`api/index.ts`) with Express-style routing
-* **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via direct fetch calls
-* **Email Integration**: Resend API for contact form transmissions
-* **Static Hosting**: Vercel (production) + GitHub Pages (legacy)
+### Request Lifecycle
+
+1. **Dev mode** — `server.ts` starts a Vite middleware server on `PORT` (default `3001`). API routes are mounted on the same Express app.
+2. **Production (Vercel)** — `vercel.json` routes `/api/*` to `api/index.ts` (single serverless function) and all other paths to the Vercel static build output (`dist/`).
+3. **Production (Express)** — `server.ts` serves `dist/` statically and falls back to `index.html` for SPA routing.
+
+### Frontend Structure
+- `App.tsx` — root component managing view mode (`landing` / `os`), window state, theme, and global shortcuts.
+- `LandingPage.tsx` — scrollable landing sections and animations.
+- `FloatingAssistant.tsx` — floating chat UI with magnetic hover, ripple effects, and responsive sheet behavior.
+- `TerminalBootLoader/` — boot sequence with custom typing engine and particle effects.
+- `ThreeWormhole.tsx` — WebGL background scene.
+- `Whiteboard.tsx` — lazy-loaded canvas component.
+
+### Backend Structure
+- `api/index.ts` — single bundled Vercel serverless handler containing all API routes:
+  - `POST /api/ask-twin`
+  - `POST /api/tts`
+  - `POST /api/summarize-brief`
+  - `GET /api/medium-stories`
+  - `GET /api/github-repos`
+  - `POST /api/contact`
+- `server.ts` — local development server that mirrors the same API routes and serves Vite middleware / static dist.
+
+### Data Flow
+- Static portfolio data lives in `src/data/portfolioData.ts` and is typed by `src/types.ts`.
+- Dynamic data is fetched from backend APIs or falls back to static data.
+- AI requests are proxied to Groq from both the Vercel serverless function and the local Express server.
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
-```bash
-├── src/                       # Primary React Client application
-│   ├── components/            # UI components
-│   │   ├── FloatingAssistant.tsx     # Premium floating AI assistant
-│   │   ├── TerminalBootLoader/       # Premium terminal boot loader (opening experience)
-│   │   ├── LoopingTypewriter.tsx     # Infinite looping typewriter effect
-│   │   ├── OneTimeTypewriter.tsx     # Single-run typewriter effect
-│   │   ├── ThreeWormhole.tsx         # WebGL starfield background
-│   │   ├── Whiteboard.tsx            # Interactive whiteboard component
-│   │   ├── DecryptText.tsx           # Decrypting text effect
-│   │   └── LandingPage.tsx           # Hero section with animated text
-│   ├── data/                  # Static portfolio configurations (portfolioData.ts)
-│   ├── utils/                 # Audio synthesis, RSS parsing, API configs, AI fallbacks
-│   ├── hooks/                 # Custom React hooks (terminal boot)
-│   ├── types.ts               # Core model interfaces and TS contracts
-│   ├── index.css              # Main tailwind and CRT scan styles
-│   └── main.tsx               # Client entry node
-│
-├── api/                       # Vercel serverless backend
-│   ├── index.ts               # Single bundled API handler for all endpoints
-│   └── utils/                 # Backend utilities (RSS parser, etc.)
-│
-├── dist/                      # Deployed production assets
-├── supabase/                  # Legacy edge functions for serverless API endpoints
-├── public/                    # Static assets (images, fonts, research SVGs)
-├── server.ts                  # Express production server & Groq API proxy routing
-├── vercel.json                # Vercel static deployment configuration
-├── tsconfig.json              # TypeScript compiler parameters
-├── vite.config.ts             # Vite bundler configurations with dynamic base paths
-└── package.json               # Scripts, manifest dependencies, and devDependencies
+```
+├── api/
+│   ├── index.ts              # Vercel serverless backend (all endpoints)
+│   └── utils/
+│       └── rssParser.ts      # Medium RSS feed parser
+├── src/
+│   ├── components/
+│   │   ├── FloatingAssistant.tsx
+│   │   ├── LandingPage.tsx
+│   │   ├── Whiteboard.tsx
+│   │   ├── ThreeWormhole.tsx
+│   │   ├── DecryptText.tsx
+│   │   ├── OneTimeTypewriter.tsx
+│   │   ├── LoopingTypewriter.tsx
+│   │   └── TerminalBootLoader/
+│   │       ├── TerminalBootLoader.tsx
+│   │       ├── CommandRenderer.tsx
+│   │       ├── OutputRenderer.tsx
+│   │       ├── Cursor.tsx
+│   │       ├── Prompt.tsx
+│   │       ├── Particles.tsx
+│   │       ├── Background.tsx
+│   │       ├── TransitionManager.tsx
+│   │       └── TypingEngine.ts
+│   ├── config/
+│   │   └── terminalCommands.ts
+│   ├── data/
+│   │   └── portfolioData.ts
+│   ├── hooks/
+│   │   └── useTerminalBoot.ts
+│   ├── utils/
+│   │   ├── apiConfig.ts
+│   │   ├── rssParser.ts
+│   │   ├── aiFallback.ts
+│   │   └── audio.ts
+│   ├── types.ts
+│   ├── index.css
+│   ├── main.tsx
+│   └── App.tsx
+├── public/
+│   ├── CNAME
+│   ├── fonts/
+│   └── assets/
+├── .env.example
+├── index.html
+├── package.json
+├── server.ts
+├── tsconfig.json
+├── vite.config.ts
+└── vercel.json
 ```
 
 ---
 
-## ⚡ Performance Optimizations
+## Getting Started
 
-This repository includes a full-stack performance optimization pass:
+### Prerequisites
+- Node.js 18+
+- npm
 
-- **Terminal Boot Loader**: 60fps typing via `requestAnimationFrame` batching, GPU-friendly transitions (`opacity`/`scale` only), reduced particle count, and deferred heavy component mounting.
-- **Floating AI Assistant**: Magnetic hover interactions, `React.memo` optimization, spring-based animations, and responsive panel sizing to maintain 60fps on mobile and desktop.
-- **React Render Efficiency**: `useMemo` / `useCallback` applied across `App.tsx` and `LandingPage.tsx`; drag system switched to GPU-accelerated `translate3d` with `will-change` hints.
-- **WebGL Tuning**: `ThreeWormhole.tsx` now uses mobile LOD, `IntersectionObserver` visibility gating, reduced FBM octaves, and capped pixel ratio on low-end devices.
-- **CSS Paint Cost**: Added `.gpu-accelerated`, `.no-blur`, and mobile `backdrop-filter` reduction utilities; optimized keyframe animations with `translateZ(0)`.
-- **Backend Latency**: Single bundled Vercel serverless function with CORS headers, ETag/Last-Modified caching, shared RSS parser utility, and cache headers on API responses.
-- **Critical Path Hints**: `index.html` now includes `preconnect`/`dns-prefetch` for API domains and font preloads.
-- **Dead code removed**: Unused components, hooks, and IDE/agent config files purged from the production tree.
-
----
-
-## 🚀 Getting Started
-
-Ensure you have [Node.js (v18+)](https://nodejs.org/) installed in your workspace.
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/farhankabir133/FarhanOS.git
-cd FarhanOS
-```
-
-### 2. Install Dependencies
+### Install
 ```bash
 npm install
 ```
 
-### 3. Setup Environment Variables
-Create a `.env` file in the root directory based on `.env.example`:
+### Environment Variables
+Create a `.env` file in the project root:
+
 ```env
 GROQ_API_KEY="your_groq_api_key"
 PORT=3001
 APP_URL="your_app_url"
 ```
 
-### 4. Run Development Server
+Do not commit `.env`. It is gitignored.
+
+### Development
 ```bash
 npm run dev
 ```
-Navigate to `http://localhost:3001` in your browser. The Express server acts as both the API proxy for Groq and the static middleware server.
+Opens `http://localhost:3001` with Express + Vite middleware.
 
----
-
-## 🏗️ Build & Deployment
-
-### Production Compilation
-Bundle the static assets for frontend deployment:
+### Build
 ```bash
 npm run build
 ```
-The compiled output is saved under `dist/`.
+Outputs static assets to `dist/`.
 
-### GitHub Pages Static Deployment
-To build and publish the frontend bundle to the `FarhanOS` project pages path:
+### Production (Express)
+```bash
+npm run start
+```
+Serves the built `dist/` folder from `PORT`.
+
+---
+
+## Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start Express + Vite dev server on port 3001 |
+| `npm run build` | Build frontend with Vite |
+| `npm run vercel-build` | Alias for `npm run build` |
+| `npm run start` | Serve production build with Express |
+| `npm run lint` | Run TypeScript type checking (`tsc --noEmit`) |
+| `npm run deploy` | Build with `/FarhanOS/` base and publish to GitHub Pages |
+| `npm run deploy:domain` | Build with `/` base and publish to GitHub Pages for custom domain |
+
+---
+
+## API Documentation
+
+Base path in production: `/api`
+
+### `POST /api/ask-twin`
+Chat completion endpoint for the digital twin and floating assistant.
+
+**Request body:**
+```json
+{
+  "message": "string",
+  "history": [{ "role": "user" | "assistant", "content": "string" }]
+}
+```
+
+**Response body:**
+```json
+{ "reply": "string" }
+```
+
+---
+
+### `POST /api/tts`
+Text-to-speech placeholder endpoint.
+
+**Request body:**
+```json
+{ "text": "string" }
+```
+
+**Response body:**
+```json
+{ "audio": null }
+```
+
+---
+
+### `POST /api/summarize-brief`
+Analyzes a project brief and returns an AI-generated strategy summary.
+
+**Request body:**
+```json
+{
+  "projectType": "string",
+  "budget": "string",
+  "timeline": "string",
+  "goals": "string",
+  "comments": "string"
+}
+```
+
+**Response body:**
+```json
+{ "summary": "string" }
+```
+
+---
+
+### `GET /api/medium-stories`
+Returns parsed Medium RSS stories with ETag and Last-Modified caching headers.
+
+**Response body:**
+```json
+[
+  {
+    "id": "string",
+    "title": "string",
+    "category": "AI | Engineering | Productivity | Research | Life | Startups | Design | Philosophy",
+    "readTime": "string",
+    "date": "string",
+    "excerpt": "string",
+    "content": "string",
+    "link": "string",
+    "imageUrl": "string"
+  }
+]
+```
+
+---
+
+### `GET /api/github-repos`
+Returns top GitHub repositories by stars for `farhankabir133` with ETag and Last-Modified caching headers.
+
+**Response body:**
+```json
+[
+  {
+    "id": "number",
+    "name": "string",
+    "full_name": "string",
+    "description": "string",
+    "html_url": "string",
+    "language": "string",
+    "stargazers_count": "number",
+    "forks_count": "number",
+    "updated_at": "string",
+    "topics": ["string"],
+    "homepage": "string"
+  }
+]
+```
+
+---
+
+### `POST /api/contact`
+Processes contact form submissions, analyzes urgency via Groq, and sends email via Resend.
+
+**Request body:**
+```json
+{
+  "name": "string",
+  "email": "string",
+  "subject": "string",
+  "message": "string",
+  "metadata": "object"
+}
+```
+
+**Response body:**
+```json
+{
+  "success": true,
+  "message": "string",
+  "analysis": {
+    "urgency": "High | Medium | Low",
+    "inquiryType": "string",
+    "summaryText": "string",
+    "suggestedAutoReply": "string"
+  },
+  "emailStatus": { "sent": boolean, "id": "string", "error": "string" }
+}
+```
+
+---
+
+## Deployment
+
+### Vercel (Production)
+The site is live at **https://farhankabir.me** via a Vercel custom domain.
+
+**Configuration files:**
+- `vercel.json` — routes `/api/*` to the serverless backend and all other routes to the static build.
+- `CNAME` — contains `farhankabir.me` for custom domain configuration.
+
+**Deploy:**
+```bash
+npx vercel --prod
+```
+
+### GitHub Pages (Legacy)
 ```bash
 npm run deploy
 ```
-*Note: The asset base URL automatically updates to `/FarhanOS/` to prevent resource load errors.*
-
-### Custom Domain Static Deployment
-To build and publish the frontend bundle with a root base path (`/`) and push custom domain settings to GitHub Pages:
-```bash
-npm run deploy:domain
-```
-*Note: The CNAME configuration is located under `public/CNAME` and will be bundled automatically during the build process.*
-
-### Vercel Deployment
-The project is configured for Vercel deployment with serverless backend functions:
-```bash
-vercel-build
-```
-Deploy via the Vercel CLI or connect your Git repository for automatic deployments. The Vercel backend includes:
-- `/api/ask-twin` — Groq AI chat completions
-- `/api/tts` — Text-to-speech placeholder
-- `/api/summarize-brief` — AI brief analysis
-- `/api/medium-stories` — Medium RSS feed proxy
-- `/api/github-repos` — GitHub repository telemetry
-- `/api/contact` — Contact form with Resend email integration
-
-### Live Deployment
-The site is live at **https://farhankabir.me** with:
-- Frontend hosted on Vercel
-- Backend serverless functions on Vercel
-- Custom domain configured with SSL
-- Global CDN distribution
+Publishes the built site to the `gh-pages` branch.
 
 ---
 
-## 🤝 Contributing
+## Environment Variables
 
-We encourage optimization, visual styling enhancements, and performance fixes!
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GROQ_API_KEY` | Yes | Groq API key for Llama 3.3 70B completions |
+| `PORT` | No | Development server port (default: `3001`) |
+| `APP_URL` | No | Base URL for self-referential links |
 
-1. Fork the Project.
-2. Create your Feature Branch (`git checkout -b feature/quantum-audio`).
-3. Commit your Changes (`git commit -m 'feat: Add vintage keyboard clicks'`).
-4. Push to the Branch (`git push origin feature/quantum-audio`).
-5. Open a Pull Request.
-
----
-
-## 📄 License
-
-Distributed under the MIT License. See [LICENSE](LICENSE) or headers for details.
+Secrets are configured in the Vercel dashboard for production deployments.
 
 ---
 
-## 🛰️ Human Terminal Connection
+## Performance
 
-* **Project Owner**: Farhan Kabir
-* **Contact Email**: [farhankabir133@gmail.com](mailto:farhankabir133@gmail.com)
-* **GitHub Profile**: [farhankabir133](https://github.com/farhankabir133)
-* **LinkedIn**: [Farhan Kabir Profile](https://www.linkedin.com/in/farhankabir133)
-* **Website**: [https://farhankabir.me/](https://farhankabir.me/)
+- **Typing Engine** — `requestAnimationFrame` batching replaces per-character `setTimeout` for display-synced animation.
+- **GPU-Friendly Transitions** — uses `opacity` and `scale` only; no `blur()` in reveal animations.
+- **Code Splitting** — manual chunks for `react`, `three`, and `motion`.
+- **Caching** — `medium-stories` and `github-repos` endpoints use in-memory caching with ETag/Last-Modified.
+- **Lazy Loading** — Whiteboard and heavy 3D components are lazy-loaded.
+- **Font Preloads** — critical fonts preloaded with `preload` and `preconnect` hints.
+- **Responsive Design** — fluid widths, safe-area insets, and reduced motion support for mobile.
+
+---
+
+## Security
+
+- Server-side API keys (`GROQ_API_KEY`, `RESEND_API_KEY`) are injected as Vercel environment variables and never exposed to the client bundle.
+- Express server uses `compression` thresholded at 1024 bytes.
+- Contact form validates required fields server-side before processing.
+- No client-side secrets are logged or rendered.
+
+---
+
+## Browser Support
+
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- Mobile Safari 14+
+- Chrome for Android
+
+Uses modern JavaScript features (`ES2022`), CSS nesting, and `react-jsx` transform.
+
+---
+
+## License
+
+MIT
+
+---
+
+## Maintainer
+
+**Farhan Kabir**
+- Website: [https://farhankabir.me](https://farhankabir.me)
+- GitHub: [@farhankabir133](https://github.com/farhankabir133)
+- LinkedIn: [farhankabir133](https://www.linkedin.com/in/farhankabir133)
+- Email: [farhankabir133@gmail.com](mailto:farhankabir133@gmail.com)
