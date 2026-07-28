@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 import { Cursor } from './Cursor';
 import type { LineKind } from '../../config/terminalCommands';
 
@@ -13,11 +13,7 @@ const TONE: Record<Exclude<LineKind, 'cmd'>, string> = {
   info: 'text-sky-300/90',
 };
 
-/**
- * A single output line (status, success or info). The typed text is written
- * imperatively into the forwarded `<span>` by the typing engine.
- */
-export const OutputRenderer = forwardRef<HTMLSpanElement, OutputRendererProps>(
+export const OutputRenderer = memo(forwardRef<HTMLSpanElement, OutputRendererProps>(
   function OutputRenderer({ kind, active }, ref) {
     return (
       <div className="flex items-baseline pl-0 font-mono text-[13px] leading-[1.6]">
@@ -26,4 +22,4 @@ export const OutputRenderer = forwardRef<HTMLSpanElement, OutputRendererProps>(
       </div>
     );
   },
-);
+));

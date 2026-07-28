@@ -1,14 +1,13 @@
 /**
  * Imperative typing engine.
  *
- * It writes directly into DOM text nodes so the React tree does not re-render
- * on every character — keeping the boot sequence at a smooth 60 FPS with a
- * minimal number of component updates. Every pending timeout is tracked so the
- * whole sequence can be cancelled cleanly on unmount (no leaks).
+ * Uses requestAnimationFrame batching for smoother, display-synced typing
+ * instead of per-character setTimeout, which can drift and cause visible jank.
  */
 export class TypingEngine {
   private timers: ReturnType<typeof setTimeout>[] = [];
   private cancelled = false;
+  private rafId: number | null = null;
   private onType?: () => void;
 
   setOnType(callback: () => void): void {
@@ -17,6 +16,10 @@ export class TypingEngine {
 
   cancel(): void {
     this.cancelled = true;
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
     for (const id of this.timers) clearTimeout(id);
     this.timers = [];
   }
@@ -37,17 +40,49 @@ export class TypingEngine {
     if (el) el.textContent = text;
   }
 
-  /** Types `text` into `el` at `cps` characters per second. */
+  /** Types `text` into `el` at `cps` characters per second using rAF batching. */
   async typeInto(el: HTMLElement | null, text: string, cps: number): Promise<void> {
     if (!el || this.cancelled) return;
     const perChar = 1000 / Math.max(1, cps);
     el.textContent = '';
-    for (let i = 1; i <= text.length; i++) {
+
+    let index = 0;
+    const total = text.length;
+    let lastTime = performance.now();
+    let accumulator = 0;
+
+    const tick = (now: number) => {
       if (this.cancelled) return;
-      el.textContent = text.slice(0, i);
-      this.onType?.();
-      await this.wait(perChar);
-    }
+
+      const delta = now - lastTime;
+      lastTime = now;
+      accumulator += delta;
+
+      if (accumulator >= perChar) {
+        const charsToAdd = Math.min(total - index, Math.floor(accumulator / perChar));
+        accumulator -= charsToAdd * perChar;
+        index += charsToAdd;
+        el.textContent = text.slice(0, index);
+        this.onType?.();
+      }
+
+      if (index < total && !this.cancelled) {
+        this.rafId = requestAnimationFrame(tick);
+      }
+    };
+
+    this.rafId = requestAnimationFrame(tick);
+
+    await new Promise<void>((resolve) => {
+      const checkDone = () => {
+        if (index >= total || this.cancelled) {
+          resolve();
+        } else {
+          this.timers.push(setTimeout(checkDone, 50));
+        }
+      };
+      this.timers.push(setTimeout(checkDone, 50));
+    });
   }
 
   /** Resolves once the app becomes ready or after `timeoutMs`, whichever first. */

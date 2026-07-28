@@ -22,12 +22,11 @@ export function Overlay({
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 z-[99999] flex items-center justify-center will-change-[opacity,transform,filter]"
+      className="fixed inset-0 z-[99999] flex items-center justify-center will-change-[opacity,transform]"
       style={{
-        transition: `opacity ${duration} ${easing}, transform ${duration} ${easing}, filter ${duration} ${easing}`,
+        transition: `opacity ${duration} ${easing}, transform ${duration} ${easing}`,
         opacity: revealing ? 0 : 1,
-        transform: revealing ? 'scale(1.04)' : 'scale(1)',
-        filter: revealing ? 'blur(8px)' : 'blur(0px)',
+        transform: revealing ? 'scale(1.02)' : 'scale(1)',
         pointerEvents: revealing ? 'none' : 'auto',
       }}
     >
@@ -39,7 +38,7 @@ export function Overlay({
 
 /**
  * Wraps the real application. While booting it sits hidden (and slightly
- * blurred/scaled) beneath the overlay; on reveal it eases into place so the
+ * scaled) beneath the overlay; on reveal it eases into place so the
  * homepage appears as though it was already mounted underneath the terminal.
  */
 export function ContentReveal({
@@ -59,13 +58,12 @@ export function ContentReveal({
     <div
       className="min-h-screen"
       style={{
-        transition: `opacity ${duration} ease-out, transform ${duration} ease-out, filter ${duration} ease-out`,
+        transition: `opacity ${duration} ease-out, transform ${duration} ease-out`,
         opacity: revealing ? 1 : 0,
-        transform: settled ? 'none' : revealing ? 'scale(1)' : 'scale(1.02)',
-        filter: settled ? 'blur(0px)' : revealing ? 'blur(0px)' : 'blur(6px)',
+        transform: settled ? 'none' : revealing ? 'scale(1)' : 'scale(1.01)',
       }}
     >
-      {children}
+      {revealing ? children : null}
     </div>
   );
 }

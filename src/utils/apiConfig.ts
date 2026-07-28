@@ -1,7 +1,7 @@
 /**
  * Dynamically resolves the API Base URL.
- * In development (or when served by the Express server on localhost), this returns an empty string (relative paths).
- * In production (when hosted statically on GitHub Pages or custom domains), this returns the production API server.
+ * On localhost and same-origin production hosts, returns relative paths.
+ * Falls back to Supabase edge functions for GitHub Pages or unknown hosts.
  */
 export const getApiBaseUrl = (): string => {
   if (import.meta.env.VITE_API_URL) {
@@ -17,21 +17,15 @@ export const getApiBaseUrl = (): string => {
       hostname === '127.0.0.1' ||
       hostname.startsWith('192.168.') ||
       hostname.startsWith('10.') ||
-      hostname.endsWith('.local')
+      hostname.endsWith('.local') ||
+      hostname === 'farhankabir.me' ||
+      hostname.endsWith('.vercel.app') ||
+      hostname.endsWith('.github.io')
     ) {
       return '';
     }
-
-    const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_REF || 'urhwapbyxtjaulslmfao';
-
-    if (
-      hostname === 'farhankabir.me' ||
-      hostname.endsWith('.github.io') ||
-      hostname.endsWith('.vercel.app')
-    ) {
-      return `https://${projectRef}.supabase.co/functions/v1`;
-    }
   }
 
-  return '';
+  const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_REF || 'urhwapbyxtjaulslmfao';
+  return `https://${projectRef}.supabase.co/functions/v1`;
 };
