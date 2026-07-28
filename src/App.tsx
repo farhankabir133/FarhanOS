@@ -597,7 +597,7 @@ useEffect(() => {
       {
         id: 'twin',
         title: 'Neural Core Clone',
-        text: 'This is the Ask Farhan AI Clone, trained on Farhan\'s complete portfolio. You can query clinical results, NLP models, and full-stack architecture profiles.'
+        text: 'This is FK\'s AI Assistant, trained on Farhan\'s complete portfolio. You can query clinical results, NLP models, and full-stack architecture profiles.'
       },
       {
         id: 'projects',

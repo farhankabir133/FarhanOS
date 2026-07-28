@@ -45,7 +45,7 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
     {
       id: 'welcome',
       role: 'assistant',
-      content: "Hi — I'm Farhan AI. I know everything about Farhan's work, research, and engineering journey. Recruiter, founder, or fellow engineer — ask me anything.",
+      content: "Hi — I'm FK's AI Assistant. I know everything about Farhan's work, research, and engineering journey. Recruiter, founder, or fellow engineer — ask me anything.",
       timestamp: new Date(),
     }
   ]);
@@ -227,7 +227,7 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
               </div>
               <div className="flex flex-col">
-                <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>Farhan AI</span>
+                <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>FK's AI Assistant</span>
                 <span className="text-[10px] text-emerald-400 font-mono">Online</span>
               </div>
             </div>
@@ -257,14 +257,14 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                   <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
                     <FarhanAIIcon className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} isTerminal={isTerminal} />
                   </div>
-                  <h3 className={`text-lg font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-                    Hi, I'm Farhan AI
-                  </h3>
-                  <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'}`}>
-                    I know everything about Farhan's projects, engineering journey, technical skills, research, architecture decisions, and experience.
-                    <br /><br />
-                    Whether you're a recruiter, client, founder, or engineer — ask me anything.
-                  </p>
+                    <h3 className={`text-lg font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+                      Hi, I'm FK's AI Assistant
+                    </h3>
+                    <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'}`}>
+                      I know everything about Farhan's projects, engineering journey, technical skills, research, architecture decisions, and experience.
+                      <br /><br />
+                      Whether you're a recruiter, client, founder, or engineer — ask me anything.
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2">
@@ -412,10 +412,10 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
                     <FarhanAIIcon className={`w-5 h-5 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} isTerminal={isTerminal} />
                   </div>
-                 <div className="flex flex-col">
-                   <span className="text-sm font-bold tracking-tight text-slate-100">Farhan AI</span>
-                   <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
-                 </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold tracking-tight text-slate-100">FK's AI Assistant</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
+                  </div>
                </div>
                
                {/* Close Button - Large and accessible */}
@@ -436,8 +436,8 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                       <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
                         <FarhanAIIcon className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} isTerminal={isTerminal} />
                       </div>
-                     <h3 className="text-lg font-bold mb-1 text-slate-100">Hi, I'm Farhan AI</h3>
-                     <p className="text-xs leading-relaxed text-zinc-400">Ask me anything about Farhan's work and experience.</p>
+                  <h3 className="text-lg font-bold mb-1 text-slate-100">Hi, I'm FK's AI Assistant</h3>
+                  <p className="text-xs leading-relaxed text-zinc-400">Ask me anything about Farhan's work and experience.</p>
                    </div>
                    <div className="grid grid-cols-2 gap-2">
                      {QUICK_ACTIONS.map((action) => (
@@ -573,13 +573,13 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
             {!isLandingLeft && (
               <span className="text-[10px] font-bold tracking-wide text-zinc-200 uppercase whitespace-nowrap z-10">
                 <span className="group-hover:opacity-100 opacity-0 transition-opacity duration-300 inline-block max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap">Ask </span>
-                Farhan AI
+                FK's AI Assistant
               </span>
             )}
             {isLandingLeft && (
-              <span className="text-[8px] sm:text-[9px] font-bold tracking-[0.15em] sm:tracking-[0.2em] text-zinc-200 uppercase whitespace-nowrap z-10 text-center leading-tight">
-                ASK FARHAN AI
-              </span>
+                 <span className="text-[8px] sm:text-[9px] font-bold tracking-[0.15em] sm:tracking-[0.2em] text-zinc-200 uppercase whitespace-nowrap z-10 text-center leading-tight">
+                  ASK FK'S AI ASSISTANT
+                </span>
             )}
           </motion.button>
         ) : (
