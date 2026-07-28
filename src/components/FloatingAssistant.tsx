@@ -578,7 +578,7 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
             )}
             {isLandingLeft && (
                  <span className="text-[8px] sm:text-[9px] font-bold tracking-[0.15em] sm:tracking-[0.2em] text-zinc-200 uppercase whitespace-nowrap z-10 text-center leading-tight">
-                  ASK FK'S AI ASSISTANT
+                  AI Assistant
                 </span>
             )}
           </motion.button>
