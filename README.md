@@ -4,7 +4,7 @@
 [![Framework: React 19](https://img.shields.io/badge/Framework-React_19-indigo.svg)](https://react.dev/)
 [![Styling: Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-06b6d4.svg)](https://tailwindcss.com)
 [![AI-Core: Groq Llama 3.3](https://img.shields.io/badge/AI--Core-Groq_Llama_3.3_70B-orange.svg)](https://groq.com/)
-[![Backend: Express + Supabase](https://img.shields.io/badge/Backend-Express_%2B_Supabase-green.svg)](https://supabase.com/)
+[![Backend: Vercel Serverless](https://img.shields.io/badge/Backend-Vercel_Serverless-black.svg)](https://vercel.com/)
 
 > An immersive, high-fidelity windowed operating system simulator presenting clinical NLP research, conceptual garden maps, and AI SaaS agent architectures in an interactive desktop environment.
 
@@ -21,6 +21,7 @@
 
 ## 🔗 Live Deployments
 * **Official Website (Custom Domain)**: [https://farhankabir.me/](https://farhankabir.me/)
+* **Vercel Backend**: [https://farhanos.vercel.app/](https://farhanos.vercel.app/)
 * **Alternative GitHub Pages URL**: [https://farhankabir133.github.io/FarhanOS/](https://farhankabir133.github.io/FarhanOS/)
 
 ---
@@ -86,7 +87,14 @@ The interface bridges professional NLP researcher credentials with premium front
 
 ### 6. Premium Terminal Boot Loader
 * **Animated Entry Experience**: Custom motion-powered boot sequence with scan lines, particle effects, terminal window aesthetics, and typing engine.
-* **Graceful Exit Transition**: Smooth fade-out before entering the main landing page interface.
+* **60fps Typing Engine**: Replaced per-character `setTimeout` with `requestAnimationFrame` batching for display-synced, jank-free typing on all devices.
+* **GPU-Friendly Transitions**: Removed expensive CSS `blur()` from reveal transitions; uses only `opacity` and `scale` for smooth dissolves.
+* **Reduced Particle Load**: Optimized ambient particle count for low-end devices while maintaining visual depth.
+* **React Render Optimization**: Boot components wrapped in `React.memo`; underlying app is deferred until boot completes to keep the sequence smooth.
+
+### 7. Responsive Mobile Navigation
+* **Hamburger Menu**: Professional slide-out drawer navigation on mobile devices (`md:hidden`) with smooth backdrop blur and touch-friendly targets.
+* **Landing Page + OS Mode**: Both the landing page header and the OS top bar include fully functional mobile menus with theme toggles and navigation links.
 
 ---
 
@@ -95,10 +103,10 @@ The interface bridges professional NLP researcher credentials with premium front
 * **Frontend Framework**: React 19 (Hooks, Motion transitions)
 * **Styling & HUD**: Tailwind CSS v4 + custom CSS variable CRT scans + glassmorphic filters
 * **WebGL Elements**: Vanilla Three.js (particle gravity wells, node coordinates)
-* **Server Backend**: Node.js + Express + CORS proxies + tsx runner
+* **Server Backend**: Vercel Serverless Functions (`api/index.ts`) with Express-style routing
 * **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via direct fetch calls
-* **Backendless Functions**: Supabase Edge Functions with Resend email integration
-* **Static Hosting**: GitHub Pages (`gh-pages`) + Vercel (`vercel.json`)
+* **Email Integration**: Resend API for contact form transmissions
+* **Static Hosting**: Vercel (production) + GitHub Pages (legacy)
 
 ---
 
@@ -121,8 +129,12 @@ The interface bridges professional NLP researcher credentials with premium front
 │   ├── index.css              # Main tailwind and CRT scan styles
 │   └── main.tsx               # Client entry node
 │
+├── api/                       # Vercel serverless backend
+│   ├── index.ts               # Single bundled API handler for all endpoints
+│   └── utils/                 # Backend utilities (RSS parser, etc.)
+│
 ├── dist/                      # Deployed production assets
-├── supabase/                  # Edge functions for serverless API endpoints
+├── supabase/                  # Legacy edge functions for serverless API endpoints
 ├── public/                    # Static assets (images, fonts, research SVGs)
 ├── server.ts                  # Express production server & Groq API proxy routing
 ├── vercel.json                # Vercel static deployment configuration
@@ -135,13 +147,14 @@ The interface bridges professional NLP researcher credentials with premium front
 
 ## ⚡ Performance Optimizations
 
-This repository includes a full-stack performance optimization pass based on `PERFORMANCE_OPTIMIZATION_REPORT.md`:
+This repository includes a full-stack performance optimization pass:
 
-- **React render efficiency**: `useMemo` / `useCallback` applied across `App.tsx` and `LandingPage.tsx`; drag system switched to GPU-accelerated `translate3d` with `will-change` hints.
-- **WebGL tuning**: `ThreeWormhole.tsx` now uses mobile LOD, `IntersectionObserver` visibility gating, reduced FBM octaves, and capped pixel ratio on low-end devices.
-- **CSS paint cost**: Added `.gpu-accelerated`, `.no-blur`, and mobile `backdrop-filter` reduction utilities; optimized keyframe animations with `translateZ(0)`.
-- **Backend latency**: Added `compression()` middleware, ETag/Last-Modified caching, shared RSS parser utility, and cache headers on API responses.
-- **Critical path hints**: `index.html` now includes `preconnect`/`dns-prefetch` for API domains and font preloads.
+- **Terminal Boot Loader**: 60fps typing via `requestAnimationFrame` batching, GPU-friendly transitions (`opacity`/`scale` only), reduced particle count, and deferred heavy component mounting.
+- **React Render Efficiency**: `useMemo` / `useCallback` applied across `App.tsx` and `LandingPage.tsx`; drag system switched to GPU-accelerated `translate3d` with `will-change` hints.
+- **WebGL Tuning**: `ThreeWormhole.tsx` now uses mobile LOD, `IntersectionObserver` visibility gating, reduced FBM octaves, and capped pixel ratio on low-end devices.
+- **CSS Paint Cost**: Added `.gpu-accelerated`, `.no-blur`, and mobile `backdrop-filter` reduction utilities; optimized keyframe animations with `translateZ(0)`.
+- **Backend Latency**: Single bundled Vercel serverless function with CORS headers, ETag/Last-Modified caching, shared RSS parser utility, and cache headers on API responses.
+- **Critical Path Hints**: `index.html` now includes `preconnect`/`dns-prefetch` for API domains and font preloads.
 - **Dead code removed**: Unused components, hooks, and IDE/agent config files purged from the production tree.
 
 ---
@@ -200,12 +213,18 @@ npm run deploy:domain
 ```
 *Note: The CNAME configuration is located under `public/CNAME` and will be bundled automatically during the build process.*
 
-### Vercel Static Deployment
-A `vercel.json` configuration is included for Vercel deployments:
+### Vercel Deployment
+The project is configured for Vercel deployment with serverless backend functions:
 ```bash
 vercel-build
 ```
-Deploy via the Vercel CLI or connect your Git repository for automatic deployments.
+Deploy via the Vercel CLI or connect your Git repository for automatic deployments. The Vercel backend includes:
+- `/api/ask-twin` — Groq AI chat completions
+- `/api/tts` — Text-to-speech placeholder
+- `/api/summarize-brief` — AI brief analysis
+- `/api/medium-stories` — Medium RSS feed proxy
+- `/api/github-repos` — GitHub repository telemetry
+- `/api/contact` — Contact form with Resend email integration
 
 ---
 
