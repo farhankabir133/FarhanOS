@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, PanInfo } from 'motion/react';
 import { 
   Sparkles, X, Send, ChevronRight, Copy, Check, Volume2, VolumeX, 
-  MessageSquare, RefreshCw, Minimize2, Maximize2, Loader2
+  MessageSquare, RefreshCw, Minimize2, Maximize2, Loader2, GripVertical
 } from 'lucide-react';
 import { getApiBaseUrl } from '../utils/apiConfig';
 
@@ -371,104 +371,126 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
         </motion.div>
       )}
 
-      {isOpen ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="md:hidden fixed inset-0 z-[9999]"
-        >
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="absolute bottom-0 left-0 right-0 h-[90vh] rounded-t-3xl border-t border-zinc-800 overflow-hidden flex flex-col bg-zinc-950"
-          >
-            {/* Mobile header same as desktop */}
-            <div className="flex items-center justify-between px-4 h-16 border-b border-zinc-800/60">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
-                    <Sparkles className={`w-4 h-4 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-zinc-950" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold tracking-tight text-slate-100">Farhan AI</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">Online</span>
-                </div>
-              </div>
-              <button
-                onClick={() => { stopSpeaking(); setIsExpanded(true); }}
-                className="p-2 rounded-lg text-zinc-400 hover:text-white cursor-pointer"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            </div>
-            {/* Messages and input same as desktop, using same content but full height */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {showWelcome && messages.length === 1 && (
-                <div className="space-y-4">
-                  <div className="text-center py-6">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
-                      <Sparkles className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
-                    </div>
-                    <h3 className="text-lg font-bold mb-1 text-slate-100">Hi, I'm Farhan AI</h3>
-                    <p className="text-xs leading-relaxed text-zinc-400">Ask me anything about Farhan's work and experience.</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {QUICK_ACTIONS.map((action) => (
-                      <button
-                        key={action.label}
-                        onClick={() => sendMessage(action.query)}
-                        className="flex items-center gap-2 px-3 py-3 rounded-xl text-left text-xs border border-zinc-800 bg-zinc-900/30 text-zinc-300 active:scale-95 transition-all cursor-pointer"
-                      >
-                        <span className="shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold bg-indigo-500/10 text-indigo-400">{action.label[0]}</span>
-                        <span className="flex-1 leading-tight">{action.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm ${msg.role === 'user' ? userBubble : assistantBubble}`}>
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex items-center gap-2 text-indigo-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-xs font-medium">Thinking...</span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-            <div className={`p-3 border-t border-zinc-800/60 bg-black/40`}>
-              <div className="flex items-end gap-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything..."
-                  rows={1}
-                  className="flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border border-zinc-800 focus:border-indigo-500/50 transition-all"
-                  style={{ minHeight: '44px', maxHeight: '120px' }}
-                />
-                <button
-                  onClick={() => sendMessage()}
-                  disabled={!input.trim() || isLoading}
-                  className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      ) : null}
+       {isOpen ? (
+         <motion.div
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           exit={{ opacity: 0 }}
+           className="md:hidden fixed inset-0 z-[9999]"
+         >
+           {/* Backdrop with tap-to-close */}
+           <motion.div 
+             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+             onClick={() => { setIsOpen(false); setIsExpanded(false); stopSpeaking(); }}
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+           />
+           
+           {/* Mobile Chat Sheet */}
+           <motion.div
+             initial={{ y: '100%' }}
+             animate={{ y: 0 }}
+             exit={{ y: '100%' }}
+             transition={{ type: "spring", stiffness: 350, damping: 30 }}
+             className="absolute bottom-0 left-0 right-0 h-[92vh] rounded-t-[2rem] border-t border-zinc-800/60 overflow-hidden flex flex-col bg-zinc-950 shadow-2xl"
+             style={{ 
+               paddingTop: 'env(safe-area-inset-top)',
+               paddingBottom: 'env(safe-area-inset-bottom)',
+             }}
+           >
+             {/* Drag Handle Bar */}
+             <div className="flex justify-center pt-3 pb-1">
+               <div className="w-10 h-1 rounded-full bg-zinc-700/80" />
+             </div>
+
+             {/* Mobile Header */}
+             <div className="flex items-center justify-between px-5 h-14 border-b border-zinc-800/40">
+               <div className="flex items-center gap-3">
+                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                   <Sparkles className={`w-5 h-5 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
+                 </div>
+                 <div className="flex flex-col">
+                   <span className="text-sm font-bold tracking-tight text-slate-100">Farhan AI</span>
+                   <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
+                 </div>
+               </div>
+               
+               {/* Close Button - Large and accessible */}
+               <button
+                 onClick={() => { stopSpeaking(); setIsOpen(false); setIsExpanded(false); }}
+                 className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-900/60 border border-zinc-800/60 text-zinc-300 hover:text-white hover:border-zinc-700 active:scale-95 transition-all cursor-pointer"
+                 aria-label="Close assistant"
+               >
+                 <X className="w-5 h-5" />
+               </button>
+             </div>
+
+             {/* Messages */}
+             <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+               {showWelcome && messages.length === 1 && (
+                 <div className="space-y-4">
+                   <div className="text-center py-6">
+                     <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
+                       <Sparkles className={`w-8 h-8 ${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'}`} />
+                     </div>
+                     <h3 className="text-lg font-bold mb-1 text-slate-100">Hi, I'm Farhan AI</h3>
+                     <p className="text-xs leading-relaxed text-zinc-400">Ask me anything about Farhan's work and experience.</p>
+                   </div>
+                   <div className="grid grid-cols-2 gap-2">
+                     {QUICK_ACTIONS.map((action) => (
+                       <button
+                         key={action.label}
+                         onClick={() => sendMessage(action.query)}
+                         className="flex items-center gap-2 px-3 py-3 rounded-xl text-left text-xs border border-zinc-800 bg-zinc-900/30 text-zinc-300 active:scale-95 transition-all cursor-pointer"
+                       >
+                         <span className="shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold bg-indigo-500/10 text-indigo-400">{action.label[0]}</span>
+                         <span className="flex-1 leading-tight">{action.label}</span>
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+               )}
+               {messages.map((msg) => (
+                 <div key={msg.id} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                   <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm ${msg.role === 'user' ? userBubble : assistantBubble}`}>
+                     {msg.content}
+                   </div>
+                 </div>
+               ))}
+               {isLoading && (
+                 <div className="flex items-center gap-2 text-indigo-400">
+                   <Loader2 className="w-4 h-4 animate-spin" />
+                   <span className="text-xs font-medium">Thinking...</span>
+                 </div>
+               )}
+               <div ref={messagesEndRef} />
+             </div>
+
+             {/* Input */}
+             <div className={`p-3 border-t border-zinc-800/60 bg-black/40`}>
+               <div className="flex items-end gap-2">
+                 <textarea
+                   value={input}
+                   onChange={(e) => setInput(e.target.value)}
+                   onKeyDown={handleKeyDown}
+                   placeholder="Ask me anything..."
+                   rows={1}
+                   className="flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border border-zinc-800 focus:border-indigo-500/50 transition-all"
+                   style={{ minHeight: '44px', maxHeight: '120px' }}
+                 />
+                 <button
+                   onClick={() => sendMessage()}
+                   disabled={!input.trim() || isLoading}
+                   className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                 >
+                   <Send className="w-4 h-4" />
+                 </button>
+               </div>
+             </div>
+           </motion.div>
+         </motion.div>
+       ) : null}
 
       {/* Floating Button */}
       <AnimatePresence>
