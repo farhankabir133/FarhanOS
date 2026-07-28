@@ -2232,13 +2232,13 @@ useEffect(() => {
           </div>
         </div>
         )}
-        <FloatingAssistant 
-          theme={theme} 
-          triggerSound={triggerSound} 
-          placement={viewMode === 'landing' ? 'landing-left' : 'global-bottom-left'} 
-        />
       </>
     )}
+    <FloatingAssistant 
+      theme={theme} 
+      triggerSound={triggerSound} 
+      placement={viewMode === 'landing' ? 'landing-left' : 'global-bottom-left'} 
+    />
   </div>
   );
 }

@@ -166,15 +166,54 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
 
   const isLandingLeft = placement === 'landing-left';
 
+  // Magnetic hover effect
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const [ripplePosition, setRipplePosition] = useState<{ x: number; y: number } | null>(null);
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setRipplePosition({ x, y });
+    setTimeout(() => setRipplePosition(null), 600);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!buttonRef.current || !isHovering) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const deltaX = (e.clientX - centerX) * 0.15;
+    const deltaY = (e.clientY - centerY) * 0.15;
+    setMousePosition({ x: deltaX, y: deltaY });
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setMousePosition({ x: 0, y: 0 });
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+    triggerSound?.(1200, 0.02);
+  };
+
+  const motionStyle = isHovering ? {
+    x: mousePosition.x,
+    y: mousePosition.y,
+  } : {};
+
   return (
-    <div className={`fixed z-[9999] flex items-center gap-3 ${isLandingLeft ? 'left-4 top-1/2 -translate-y-1/2 flex-col' : 'left-4 bottom-4 flex-row-reverse'}`}>
+    <div className={`fixed z-[9999] flex items-center gap-3 ${isLandingLeft ? 'left-4 bottom-4 flex-col-reverse' : 'left-4 bottom-4 flex-row-reverse'}`}>
       {isOpen && isExpanded && (
         <motion.div
-          initial={{ opacity: 0, x: -40, scale: 0.95 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: -40, scale: 0.95 }}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 20, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, mass: 0.8 }}
-          className={`${isLandingLeft ? 'hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-xl overflow-hidden' : 'hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-xl overflow-hidden'} ${bgClass}`}
+          className={`${isLandingLeft ? 'hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-xl overflow-hidden mb-3' : 'hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-xl overflow-hidden'} ${bgClass}`}
         >
           {/* Header */}
           <div className={`flex items-center justify-between px-4 h-14 border-b shrink-0 ${isLight ? 'border-slate-200 bg-white/60' : 'border-zinc-800/60 bg-black/40'}`}>
@@ -332,7 +371,7 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
         </motion.div>
       )}
 
-      {isOpen && !isExpanded ? (
+      {isOpen ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -435,50 +474,104 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
       <AnimatePresence>
         {!isOpen ? (
           <motion.button
+            ref={buttonRef}
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1, 
+              y: 0,
+              ...(isHovering ? {} : { y: [0, -4, 0] }),
+              ...motionStyle
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 20,
+              y: {
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }
+            }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { setIsOpen(true); setShowWelcome(true); triggerSound?.(800, 0.03); }}
-            className={`group flex items-center justify-center gap-2 cursor-pointer transition-all ${
+            whileHover={{ 
+              scale: 1.05,
+              transition: { type: "spring", stiffness: 400, damping: 17 }
+            }}
+            whileTap={{ scale: 0.92 }}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={(e) => { handleClick(e); setIsOpen(true); setShowWelcome(true); setIsExpanded(true); triggerSound?.(800, 0.03); }}
+            className={`group relative flex items-center justify-center gap-2 cursor-pointer transition-all ${
               isLandingLeft 
-                ? 'flex-col rounded-full py-4 px-2 w-14 h-14' 
-                : 'flex-row rounded-full pl-1.5 pr-4 py-1.5'
-            } bg-zinc-950/90 border border-zinc-800/60 shadow-xl backdrop-blur-xl hover:border-zinc-700/80`}
+                ? 'flex-col rounded-2xl pl-4 pr-4 py-3 shadow-2xl' 
+                : 'flex-row rounded-full pl-2 pr-5 py-2'
+            } bg-zinc-950/95 border border-zinc-700/60 shadow-xl backdrop-blur-xl hover:border-indigo-400/60 hover:shadow-indigo-500/20`}
           >
+            {/* Ripple effect */}
+            {ripplePosition && (
+              <span 
+                className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none"
+                style={{ borderRadius: isLandingLeft ? '1rem' : '9999px' }}
+              >
+                <span 
+                  className="absolute bg-indigo-400/30 rounded-full animate-ping"
+                  style={{
+                    left: ripplePosition.x - 10,
+                    top: ripplePosition.y - 10,
+                    width: 20,
+                    height: 20,
+                  }}
+                />
+              </span>
+            )}
+            
+            {/* Breathing glow effect */}
+            <motion.div 
+              className="absolute inset-0 rounded-2xl bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"
+              animate={{ 
+                opacity: isHovering ? [0.5, 1, 0.5] : 0,
+              }}
+              transition={{ 
+                duration: 2, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+            />
+            
             <div className="relative">
-              <div className={`flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/30' : 'bg-indigo-500/10 border border-indigo-500/20'} ${isLandingLeft ? 'w-8 h-8 rounded-full' : 'w-8 h-8 rounded-full'}`}>
-                <Sparkles className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-4 h-4' : 'w-4 h-4'}`} />
+              <div className={`flex items-center justify-center ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/30' : 'bg-indigo-500/10 border border-indigo-500/20'} ${isLandingLeft ? 'w-10 h-10 rounded-xl' : 'w-8 h-8 rounded-full'} transition-all group-hover:scale-110`}>
+                <Sparkles className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-5 h-5' : 'w-4 h-4'} transition-all group-hover:rotate-12`} />
               </div>
-              <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse ${isLandingLeft ? '-bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full' : '-bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full'}`} />
+              <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse ${isLandingLeft ? '-bottom-0.5 -right-0.5 w-3 h-3 rounded-full' : '-bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full'} shadow-lg`} />
             </div>
             {!isLandingLeft && (
-              <span className="text-[10px] font-bold tracking-wide text-zinc-200 uppercase whitespace-nowrap">
+              <span className="text-[10px] font-bold tracking-wide text-zinc-200 uppercase whitespace-nowrap z-10">
                 <span className="group-hover:opacity-100 opacity-0 transition-opacity duration-300 inline-block max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap">Ask </span>
                 Farhan AI
               </span>
             )}
             {isLandingLeft && (
-              <span className="text-[9px] font-bold tracking-widest text-zinc-200 uppercase whitespace-nowrap" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+              <span className="text-[9px] font-bold tracking-[0.2em] text-zinc-200 uppercase whitespace-nowrap z-10 text-center leading-tight">
                 ASK FARHAN AI
               </span>
             )}
           </motion.button>
         ) : (
           <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            whileHover={{ scale: 1.1 }}
+            initial={{ opacity: 0, scale: 0.8, rotate: -90 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            exit={{ opacity: 0, scale: 0.8, rotate: 90 }}
+            whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => { setIsOpen(false); setIsExpanded(false); stopSpeaking(); triggerSound?.(700, 0.04); }}
-            className={`flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer transition-all bg-zinc-950/90 border border-zinc-800/60 shadow-xl backdrop-blur-xl ${
-              isLandingLeft ? 'w-10 h-10 rounded-full' : 'w-10 h-10 rounded-full'
+            className={`flex items-center justify-center text-zinc-300 hover:text-white cursor-pointer transition-all bg-zinc-950/95 border border-zinc-700/60 shadow-xl backdrop-blur-xl hover:border-rose-400/60 hover:shadow-rose-500/20 ${
+              isLandingLeft ? 'w-12 h-12 rounded-2xl' : 'w-10 h-10 rounded-full'
             }`}
             title="Close assistant"
           >
-            <X className="w-4 h-4" />
+            <X className={`${isLandingLeft ? 'w-5 h-5' : 'w-4 h-4'} transition-all`} />
           </motion.button>
         )}
       </AnimatePresence>
