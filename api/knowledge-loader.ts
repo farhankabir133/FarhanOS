@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 export interface KnowledgeDoc {
   id: string;
@@ -38,8 +37,7 @@ export interface KnowledgeDoc {
   raw: string;
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const KNOWLEDGE_DIR = path.join(__dirname, '..', 'knowledge');
+const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 
 let docs: KnowledgeDoc[] = [];
 let indexReady = false;
