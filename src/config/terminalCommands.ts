@@ -24,28 +24,28 @@ export interface BootLine {
 
 export const BOOT_TIMING = {
   /** Hard floor so the experience never feels abrupt. */
-  minDurationMs: 2600,
+  minDurationMs: 2000,
   /** Safety cap: never block the portfolio longer than this. */
-  maxDurationMs: 9000,
+  maxDurationMs: 8000,
   /** Length of the dissolve transition into the homepage. */
-  revealMs: 900,
+  revealMs: 800,
   /** Hold time when reduced motion is enabled before revealing. */
-  reducedMotionHoldMs: 650,
+  reducedMotionHoldMs: 520,
 } as const;
 
 export const WORKSTATION_HOST = 'farhan-kabir.dev';
 
 export const BOOT_SCRIPT: BootLine[] = [
-  { kind: 'cmd', prompt: 'farhan@workstation ~ %', text: 'ssh portfolio', cps: 70, after: 180 },
-  { kind: 'out', text: `Connecting to ${WORKSTATION_HOST} …`, cps: 120, after: 120 },
-  { kind: 'out', text: 'Authenticated as "farhan" · session secured', cps: 120, after: 180 },
-  { kind: 'cmd', prompt: 'farhan@portfolio ~ %', text: 'source .env && fetch profile', cps: 70, after: 180 },
-  { kind: 'out', text: 'Resolving runtime · node 20.11 · pnpm 9 · rustc 1.78', cps: 130, after: 120 },
-  { kind: 'out', text: 'Mounting workspace modules · 14 packages', cps: 130, after: 180 },
-  { kind: 'cmd', prompt: 'farhan@portfolio ~ %', text: 'build --optimize', cps: 70, after: 160 },
-  { kind: 'ok', text: 'Compiled portfolio bundle · 0 warnings', cps: 130, after: 120 },
-  { kind: 'ok', text: 'Optimized assets · fonts + images prefetched', cps: 130, after: 180 },
-  { kind: 'out', text: 'Establishing secure session → portfolio', cps: 120, after: 160 },
-  { kind: 'cmd', prompt: 'visitor@portfolio:~$', text: 'open portfolio', cps: 68, after: 200 },
-  { kind: 'info', text: 'Launching experience…', cps: 90 },
+  { kind: 'cmd', prompt: 'farhan@workstation ~ %', text: 'ssh portfolio', cps: 80, after: 120 },
+  { kind: 'out', text: `Connecting to ${WORKSTATION_HOST} …`, cps: 140, after: 100 },
+  { kind: 'out', text: 'Authenticated as "farhan" · session secured', cps: 140, after: 120 },
+  { kind: 'cmd', prompt: 'farhan@portfolio ~ %', text: 'source .env && fetch profile', cps: 80, after: 120 },
+  { kind: 'out', text: 'Resolving runtime · node 20.11 · pnpm 9 · rustc 1.78', cps: 150, after: 100 },
+  { kind: 'out', text: 'Mounting workspace modules · 14 packages', cps: 150, after: 120 },
+  { kind: 'cmd', prompt: 'farhan@portfolio ~ %', text: 'build --optimize', cps: 80, after: 120 },
+  { kind: 'ok', text: 'Compiled portfolio bundle · 0 warnings', cps: 150, after: 100 },
+  { kind: 'ok', text: 'Optimized assets · fonts + images prefetched', cps: 150, after: 120 },
+  { kind: 'out', text: 'Establishing secure session → portfolio', cps: 140, after: 120 },
+  { kind: 'cmd', prompt: 'visitor@portfolio:~$', text: 'open portfolio', cps: 76, after: 160 },
+  { kind: 'info', text: 'Launching experience…', cps: 100 },
 ];

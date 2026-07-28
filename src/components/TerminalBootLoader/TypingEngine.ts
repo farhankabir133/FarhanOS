@@ -46,10 +46,13 @@ export class TypingEngine {
     const perChar = 1000 / Math.max(1, cps);
     el.textContent = '';
 
-    let index = 0;
     const total = text.length;
+    if (total === 0) return;
+
+    let index = 0;
     let lastTime = performance.now();
     let accumulator = 0;
+    let frameCount = 0;
 
     const tick = (now: number) => {
       if (this.cancelled) return;
@@ -57,6 +60,7 @@ export class TypingEngine {
       const delta = now - lastTime;
       lastTime = now;
       accumulator += delta;
+      frameCount++;
 
       if (accumulator >= perChar) {
         const charsToAdd = Math.min(total - index, Math.floor(accumulator / perChar));
