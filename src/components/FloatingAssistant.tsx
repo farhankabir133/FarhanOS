@@ -306,7 +306,7 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm ${msg.role === 'user' ? userBubble : assistantBubble}`}>
+                  <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? userBubble : assistantBubble}`}>
                     {msg.content}
                   </div>
                   {msg.role === 'assistant' && (
@@ -453,9 +453,9 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
                )}
                {messages.map((msg) => (
                  <div key={msg.id} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                   <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm ${msg.role === 'user' ? userBubble : assistantBubble}`}>
-                     {msg.content}
-                   </div>
+                    <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-[13px] leading-relaxed border shadow-sm whitespace-pre-wrap ${msg.role === 'user' ? userBubble : assistantBubble}`}>
+                      {msg.content}
+                    </div>
                  </div>
                ))}
                {isLoading && (
