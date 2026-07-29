@@ -69,6 +69,7 @@ export default function App() {
     whiteboard: { x: 240, y: 110, isMaximized: false },
     profTimeline: { x: 160, y: 240, isMaximized: false },
   });
+  const [windowReady, setWindowReady] = useState<Record<string, boolean>>({});
 
   const osTimelineProgressLineRef = useRef<HTMLDivElement | null>(null);
 
@@ -389,6 +390,10 @@ useEffect(() => {
     }
   }, []);
 
+  const handleAnimationEnd = useCallback((windowId: string) => {
+    setWindowReady(prev => ({ ...prev, [windowId]: true }));
+  }, []);
+
   useEffect(() => {
     if (draggedWindow) {
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -409,11 +414,17 @@ useEffect(() => {
     });
     setMinimizedWindows(prev => prev.filter(w => w !== windowId));
     setFocusedWindow(windowId);
+    setWindowReady(prev => ({ ...prev, [windowId]: false }));
   }, []);
 
   const closeWindow = useCallback((windowId: string) => {
     triggerSound(400, 0.06);
     setOpenWindows(prev => prev.filter(w => w !== windowId));
+    setWindowReady(prev => {
+      const next = { ...prev };
+      delete next[windowId];
+      return next;
+    });
   }, []);
 
   const minimizeWindow = useCallback((windowId: string) => {
@@ -1079,7 +1090,8 @@ useEffect(() => {
               id={`window-${winId}`}
               style={windowStyle}
               onClick={() => { setFocusedWindow(winId); triggerSound(400, 0.01); }}
-               className={`flex flex-col rounded-xl overflow-hidden shadow-2xl ${draggedWindow === winId ? '' : 'transition-all duration-150'} transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'} animate-window-open`}
+              onAnimationEnd={() => handleAnimationEnd(winId)}
+               className={`flex flex-col rounded-xl overflow-hidden shadow-2xl ${draggedWindow === winId ? '' : 'transition-all duration-150'} transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'} ${windowReady[winId] ? '' : 'animate-window-open'}`}
             >
               
               {/* Window Bar Header */}
