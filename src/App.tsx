@@ -347,28 +347,15 @@ useEffect(() => {
     const activeWindow = draggedWindowRef.current;
     if (!activeWindow) return;
 
-    const now = performance.now();
-    const dt = now - lastDragTimeRef.current;
+    const dx = e.movementX;
+    const dy = e.movementY;
 
-    const nx = Math.max(0, e.clientX - dragOffsetRef.current.x);
-    const ny = Math.max(0, e.clientY - dragOffsetRef.current.y);
-
-    if (dt > 0) {
-      const dx = nx - lastDragPosRef.current.x;
-      const dy = ny - lastDragPosRef.current.y;
-      dragVelocityRef.current = {
-        x: dx / dt * 16,
-        y: dy / dt * 16,
-      };
-    }
-
-    lastDragPosRef.current = { x: nx, y: ny };
-    lastDragTimeRef.current = now;
-    currentPosRef.current = { x: nx, y: ny };
+    currentPosRef.current.x = Math.max(0, currentPosRef.current.x + dx);
+    currentPosRef.current.y = Math.max(0, currentPosRef.current.y + dy);
 
     setWindowPositions(prev => ({
       ...prev,
-      [activeWindow]: { ...prev[activeWindow], x: nx, y: ny }
+      [activeWindow]: { ...prev[activeWindow], x: currentPosRef.current.x, y: currentPosRef.current.y }
     }));
   }, []);
 
