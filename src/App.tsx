@@ -275,115 +275,130 @@ useEffect(() => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
-  // Drag Window logic handlers
+  // Drag Window logic handlers - buttery smooth macOS-style dragging
   const draggedWindowRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
-  const dragRafIdRef = useRef<number | null>(null);
-  const targetPosRef = useRef({ x: 0, y: 0 });
+  const dragVelocityRef = useRef({ x: 0, y: 0 });
+  const lastDragPosRef = useRef({ x: 0, y: 0 });
+  const lastDragTimeRef = useRef(0);
   const currentPosRef = useRef({ x: 0, y: 0 });
+  const momentumRafRef = useRef<number | null>(null);
 
   const handleMouseDown = (windowId: string, e: React.MouseEvent) => {
     if (windowPositions[windowId]?.isMaximized) return;
+    e.preventDefault();
     setFocusedWindow(windowId);
-    
-    const startX = windowPositions[windowId]?.x || 0;
-    const startY = windowPositions[windowId]?.y || 0;
-    
+
+    const currentX = windowPositions[windowId]?.x || 0;
+    const currentY = windowPositions[windowId]?.y || 0;
+
     draggedWindowRef.current = windowId;
     dragOffsetRef.current = {
-      x: e.clientX - startX,
-      y: e.clientY - startY
+      x: e.clientX - currentX,
+      y: e.clientY - currentY,
     };
-    targetPosRef.current = { x: startX, y: startY };
-    currentPosRef.current = { x: startX, y: startY };
-    
-    const winEl = document.getElementById(`window-${windowId}`);
-    if (winEl) {
-      winEl.style.transition = 'none';
-      winEl.style.willChange = 'transform';
-      winEl.style.transform = 'translateZ(0)';
-    }
-    
+    lastDragPosRef.current = { x: currentX, y: currentY };
+    lastDragTimeRef.current = performance.now();
+    dragVelocityRef.current = { x: 0, y: 0 };
+    currentPosRef.current = { x: currentX, y: currentY };
+
     setDraggedWindow(windowId);
     triggerSound(500, 0.01);
+  };
 
-    if (dragRafIdRef.current) cancelAnimationFrame(dragRafIdRef.current);
-    
-    const animateDrag = () => {
-      const activeWindow = draggedWindowRef.current;
-      if (!activeWindow) return;
-      
-      const easeFactor = 0.16;
-      const dx = targetPosRef.current.x - currentPosRef.current.x;
-      const dy = targetPosRef.current.y - currentPosRef.current.y;
-      
-      currentPosRef.current.x += dx * easeFactor;
-      currentPosRef.current.y += dy * easeFactor;
-      
-      const vx = dx * easeFactor;
-      const maxTilt = 4.0;
-      const tiltAngle = Math.min(Math.max(-vx * 0.14, -maxTilt), maxTilt);
-      
-      const winEl = document.getElementById(`window-${activeWindow}`);
-      if (winEl) {
-        winEl.style.transform = `translate3d(${currentPosRef.current.x}px, ${currentPosRef.current.y}px, 0) rotateZ(${tiltAngle}deg) scale(1.025)`;
-        winEl.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.65)';
-        winEl.style.zIndex = '100';
+  const applyMomentum = useCallback(() => {
+    const activeWindow = draggedWindowRef.current;
+    if (!activeWindow) return;
+
+    let velX = dragVelocityRef.current.x;
+    let velY = dragVelocityRef.current.y;
+    let posX = currentPosRef.current.x;
+    let posY = currentPosRef.current.y;
+
+    const friction = 0.92;
+    const minVel = 0.5;
+
+    const step = () => {
+      velX *= friction;
+      velY *= friction;
+
+      if (Math.abs(velX) < minVel && Math.abs(velY) < minVel) {
+        momentumRafRef.current = null;
+        return;
       }
-      
-      dragRafIdRef.current = requestAnimationFrame(animateDrag);
+
+      posX += velX;
+      posY += velY;
+
+      setWindowPositions(prev => ({
+        ...prev,
+        [activeWindow]: { ...prev[activeWindow], x: posX, y: posY }
+      }));
+
+      currentPosRef.current = { x: posX, y: posY };
+      momentumRafRef.current = requestAnimationFrame(step);
     };
-    
-    dragRafIdRef.current = requestAnimationFrame(animateDrag);
-  };
 
-  const handleMouseMove = (e: MouseEvent) => {
+    momentumRafRef.current = requestAnimationFrame(step);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     const activeWindow = draggedWindowRef.current;
-    if (activeWindow) {
-      const nx = Math.max(0, e.clientX - dragOffsetRef.current.x);
-      const ny = Math.max(0, e.clientY - dragOffsetRef.current.y);
-      targetPosRef.current = { x: nx, y: ny };
+    if (!activeWindow) return;
+
+    const now = performance.now();
+    const dt = now - lastDragTimeRef.current;
+
+    const nx = Math.max(0, e.clientX - dragOffsetRef.current.x);
+    const ny = Math.max(0, e.clientY - dragOffsetRef.current.y);
+
+    if (dt > 0) {
+      const dx = nx - lastDragPosRef.current.x;
+      const dy = ny - lastDragPosRef.current.y;
+      dragVelocityRef.current = {
+        x: dx / dt * 16,
+        y: dy / dt * 16,
+      };
     }
-  };
 
-  const handleMouseUp = () => {
+    lastDragPosRef.current = { x: nx, y: ny };
+    lastDragTimeRef.current = now;
+    currentPosRef.current = { x: nx, y: ny };
+
+    setWindowPositions(prev => ({
+      ...prev,
+      [activeWindow]: { ...prev[activeWindow], x: nx, y: ny }
+    }));
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
     const activeWindow = draggedWindowRef.current;
     if (activeWindow) {
-      if (dragRafIdRef.current) cancelAnimationFrame(dragRafIdRef.current);
-      dragRafIdRef.current = null;
-      
+      if (momentumRafRef.current) cancelAnimationFrame(momentumRafRef.current);
+
       const finalX = currentPosRef.current.x;
       const finalY = currentPosRef.current.y;
-      
-      const winEl = document.getElementById(`window-${activeWindow}`);
-      if (winEl) {
-        winEl.style.transition = '';
-        winEl.style.transform = `translate3d(${finalX}px, ${finalY}px, 0)`;
-        winEl.style.boxShadow = '';
-        winEl.style.zIndex = '';
-        winEl.style.willChange = '';
-      }
-      
+
       setWindowPositions(prev => ({
         ...prev,
         [activeWindow]: { ...prev[activeWindow], x: finalX, y: finalY }
       }));
-      
+
       draggedWindowRef.current = null;
       setDraggedWindow(null);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (draggedWindow) {
-      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
       window.addEventListener('mouseup', handleMouseUp);
     }
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggedWindow]);
+  }, [draggedWindow, handleMouseMove, handleMouseUp]);
 
   // Opening & Focusing a window
   const openWindow = useCallback((windowId: string) => {
@@ -1064,7 +1079,7 @@ useEffect(() => {
               id={`window-${winId}`}
               style={windowStyle}
               onClick={() => { setFocusedWindow(winId); triggerSound(400, 0.01); }}
-              className={`flex flex-col rounded-xl overflow-hidden shadow-2xl transition-all duration-150 transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'} animate-window-open`}
+               className={`flex flex-col rounded-xl overflow-hidden shadow-2xl ${draggedWindow === winId ? '' : 'transition-all duration-150'} transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'} animate-window-open`}
             >
               
               {/* Window Bar Header */}
