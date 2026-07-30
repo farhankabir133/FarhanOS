@@ -3,7 +3,7 @@ id: contact-overview
 title: Contact — Transmission Directories
 category: contact
 description: Real transmission directories and verified contact channels for Farhan Kabir.
-summary: Verified contact channels and social/professional directories for Farhan Kabir, including email, GitHub, LinkedIn, Medium, X/Twitter, Instagram, Gravatar, and portfolio domain.
+summary: Verified contact channels and social/professional directories for Farhan Kabir, including phone, email, GitHub, LinkedIn, Medium, X/Twitter, Instagram, Gravatar, and portfolio domain.
 visibility: public
 priority: 9
 importance: 9
@@ -19,6 +19,7 @@ confidence: 1
 tags:
   - contact
   - email
+  - phone
   - linkedin
   - github
   - medium
@@ -30,6 +31,7 @@ tags:
   - transmission-directories
 keywords:
   - contact
+  - phone
   - email
   - linkedin
   - github
@@ -63,6 +65,7 @@ featured: true
 ## Primary Channel
 
 - **Email:** farhankabir133@gmail.com
+- **Phone:** +088-1783165726
 
 ## Professional & Social Directories
 
