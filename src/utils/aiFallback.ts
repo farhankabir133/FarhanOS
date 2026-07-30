@@ -185,7 +185,7 @@ export function getAskTwinFallback(
     q.includes('transmission')
   ) {
     return (
-      "You can contact me directly via email at farhankabir133@gmail.com or phone at +088-1783165726. " +
+      "You can contact me directly via email at farhankabir133@gmail.com or phone at +880-1783165726. " +
       "My verified transmission directories: " +
       "GitHub — https://github.com/farhankabir133, " +
       "LinkedIn — https://www.linkedin.com/in/farhankabir133/, " +

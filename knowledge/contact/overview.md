@@ -65,7 +65,7 @@ featured: true
 ## Primary Channel
 
 - **Email:** farhankabir133@gmail.com
-- **Phone:** +088-1783165726
+- **Phone:** +880-1783165726
 
 ## Professional & Social Directories
 
