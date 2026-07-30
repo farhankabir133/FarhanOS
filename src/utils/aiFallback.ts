@@ -170,7 +170,7 @@ export function getAskTwinFallback(
     );
   }
 
-  // 8. Contact / Email / Hire
+  // 8. Contact / Email / Hire / Transmission Directories
   if (
     q.includes('contact') ||
     q.includes('email') ||
@@ -178,11 +178,23 @@ export function getAskTwinFallback(
     q.includes('job') ||
     q.includes('resume') ||
     q.includes('github') ||
-    q.includes('linkedin')
+    q.includes('linkedin') ||
+    q.includes('medium') ||
+    q.includes('instagram') ||
+    q.includes('twitter') ||
+    q.includes('transmission')
   ) {
     return (
-      "You can contact me directly via email at farhankabir236@gmail.com. " +
-      "My GitHub profile is @farhankabir133 (https://github.com/farhankabir133) where you can audit the code of projects like FarhanOS, TypeRush, and The Ink Home. " +
+      "You can contact me directly via email at farhankabir133@gmail.com. " +
+      "My verified transmission directories: " +
+      "GitHub — https://github.com/farhankabir133, " +
+      "LinkedIn — https://www.linkedin.com/in/farhankabir133/, " +
+      "Medium — https://medium.com/@farhankabir133, " +
+      "X/Twitter — https://x.com/fkh_236, " +
+      "Instagram — https://www.instagram.com/_farhan_kabir/, " +
+      "Gravatar — https://gravatar.com/fk133, " +
+      "Portfolio — https://farhankabir.me. " +
+      "Location: Rajshahi, Bangladesh (UTC+6). " +
       "I am highly interested in roles related to clinical NLP, Agentic workflows, and Full-Stack AI engineering."
     );
   }
