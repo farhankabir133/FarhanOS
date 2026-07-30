@@ -875,12 +875,12 @@ export default function LandingPage({
             transition={{ type: "spring", stiffness: 300, damping: 20, staggerChildren: 0.1, delayChildren: 0.2 }}
             className="lg:col-span-5 grid grid-cols-2 gap-4"
           >
-            {[
-              { label: "EXPERIENCE", value: "4+ Years", desc: "AI & Full-Stack Architectures" },
-               { label: "NLP PAPERS", value: "6 Pubs", desc: "IEEE Journals & Conference Index" },
-              { label: "DEPLOYED SAAS", value: "12+ Apps", desc: "High-performance codebases" },
-              { label: "CERTIFICATES", value: "5+ Credentials", desc: "Deep Learning & GCP" }
-            ].map((stat, i) => (
+             {[
+               { label: "EXPERIENCE", value: "4+ Years", desc: "AI & Full-Stack Architectures" },
+                { label: "NLP PAPERS", value: "5 Pubs", desc: "IEEE Journals & Conference Index" },
+               { label: "DEPLOYED SAAS", value: "10+ Web-Apps", desc: "High-performance codebases" },
+               { label: "CERTIFICATES", value: "5+ Credentials", desc: "Deep Learning & GCP" }
+             ].map((stat, i) => (
               <motion.div
                 key={i}
                 whileHover={{ y: -4, opacity: 0.95 }}
