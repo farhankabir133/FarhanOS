@@ -120,6 +120,18 @@ Tech Stack:
 
 Certifications: 15+ including Cisco ML, DeepLearning.AI, MongoDB, Alteryx, Oracle Java, Meta Frontend Developer.
 
+Contact & Transmission Directories:
+- Email: farhankabir133@gmail.com
+- Phone: +880-1783165726
+- GitHub: https://github.com/farhankabir133
+- LinkedIn: https://www.linkedin.com/in/farhankabir133/
+- Medium: https://medium.com/@farhankabir133
+- X/Twitter: https://x.com/fkh_236
+- Instagram: https://www.instagram.com/_farhan_kabir/
+- Gravatar: https://gravatar.com/fk133
+- Portfolio: https://farhankabir.me
+- Location: Rajshahi, Bangladesh (UTC+6)
+
 Skills Graph: PyTorch (5), Large Language Models (5), Clinical NLP Pipelines (5), Hugging Face & BERT (5), React/Next.js (5), Node.js & Express (5), PostgreSQL (5), Docker (5), Git & Linux (5), Tailwind CSS v4 (5), Go (4), Redis (4), Academic Research (5), Mental Health Tech (5)`;
 
 function parseMediumRSS(xmlText: string): MediumStory[] {
