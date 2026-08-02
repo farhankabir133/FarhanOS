@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X, Send, ChevronRight, Copy, Check, Volume2, VolumeX,
-  RefreshCw, Loader2, Maximize2, Minimize2
+  RefreshCw, Loader2, Maximize2, Minimize2, Sparkles, Zap,
+  Brain, MessageCircle, Search, HelpCircle
 } from 'lucide-react';
 import { getApiBaseUrl } from '../utils/apiConfig';
 import MarkdownRenderer from './MarkdownRenderer';
@@ -23,10 +24,10 @@ interface Message {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Research', query: "Tell me about Farhan's research papers and clinical NLP work" },
-  { label: 'Projects', query: 'What are Farhan\'s main SaaS products and open source projects?' },
-  { label: 'Skills', query: 'What is Farhan\'s technical stack and AI/ML expertise?' },
-  { label: 'Contact', query: 'How can I contact or hire Farhan Kabir?' },
+  { label: 'Research', query: "Tell me about Farhan's research papers and clinical NLP work", icon: Search },
+  { label: 'Projects', query: 'What are Farhan\'s main SaaS products and open source projects?', icon: Sparkles },
+  { label: 'Skills', query: 'What is Farhan\'s technical stack and AI/ML expertise?', icon: Brain },
+  { label: 'Contact', query: 'How can I contact or hire Farhan Kabir?', icon: MessageCircle },
 ];
 
 export default function AssistantLauncher({
@@ -52,6 +53,8 @@ export default function AssistantLauncher({
   const [aiState, setAiState] = useState<'idle' | 'thinking' | 'responding' | 'success' | 'error'>('idle');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [sheetHeight, setSheetHeight] = useState(0);
 
   const isLight = theme === 'light';
   const isTerminal = theme === 'terminal';
@@ -63,6 +66,17 @@ export default function AssistantLauncher({
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    if (isOpen && sheetRef.current) {
+      const updateHeight = () => {
+        setSheetHeight(window.innerHeight);
+      };
+      updateHeight();
+      window.addEventListener('resize', updateHeight);
+      return () => window.removeEventListener('resize', updateHeight);
+    }
+  }, [isOpen]);
 
   const sendMessage = useCallback(
     async (text?: string) => {
@@ -134,6 +148,13 @@ export default function AssistantLauncher({
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+  };
+
   const speakText = (text: string) => {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
@@ -160,7 +181,6 @@ export default function AssistantLauncher({
 
   const [isPressed, setIsPressed] = useState(false);
 
-  // Magnetic hover effect
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -200,9 +220,14 @@ export default function AssistantLauncher({
     triggerSound?.(800, 0.03);
   };
 
+  const handleClose = () => {
+    stopSpeaking();
+    setIsOpen(false);
+  };
+
   const glassClass = isLight
-    ? 'bg-white/80 border-slate-200/80 shadow-xl shadow-slate-900/10'
-    : 'bg-zinc-950/90 border-zinc-800/70 shadow-2xl shadow-black/60';
+    ? 'bg-white/85 border-slate-200/80 shadow-xl shadow-slate-900/10'
+    : 'bg-zinc-950/92 border-zinc-800/70 shadow-2xl shadow-black/60';
 
   const inputGlass = isLight
     ? 'bg-slate-50/80 border-slate-200 focus:border-indigo-400'
@@ -216,401 +241,316 @@ export default function AssistantLauncher({
     ? 'bg-slate-50 border-slate-200 text-slate-700'
     : 'bg-zinc-900/50 border-zinc-800 text-zinc-200';
 
+  const renderMessages = () => (
+    <>
+      {messages.length === 1 && (
+        <div className="space-y-5">
+          <div className="text-center py-8 px-4">
+            <div
+              className={`w-20 h-20 mx-auto rounded-2xl flex items-center justify-center mb-5 transition-colors ${
+                isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
+              }`}
+            >
+              <AssistantGlyph
+                state={aiState}
+                className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-9 h-9`}
+              />
+            </div>
+            <h3 className={`text-xl font-bold mb-2 tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+              Neural Assistant
+            </h3>
+            <p className={`text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'} max-w-xs mx-auto`}>
+              Query research, architecture, or engineering profiles. All responses derive from verified portfolio intelligence.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5 px-2">
+            {QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => sendMessage(action.query)}
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm transition-all cursor-pointer border ${
+                  isLight
+                    ? 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/60 text-slate-700 hover:shadow-sm'
+                    : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60 text-zinc-300 hover:text-slate-200 hover:shadow-sm'
+                }`}
+              >
+                <span
+                  className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                    isLight ? 'bg-indigo-100 text-indigo-600' : 'bg-indigo-500/10 text-indigo-400'
+                  }`}
+                >
+                  {action.label[0]}
+                </span>
+                <span className="flex-1 font-medium">{action.label}</span>
+                <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {messages.map(
+          (msg) =>
+            messages.length > 1 && (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+              >
+                <div
+                  className={`px-4 py-3 rounded-2xl max-w-[88%] border shadow-sm ${
+                    msg.role === 'user' ? userBubble : assistantBubble
+                  }`}
+                >
+                  {msg.role === 'assistant' ? (
+                    <MarkdownRenderer content={msg.content} />
+                  ) : (
+                    <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                </div>
+                {msg.role === 'assistant' && (
+                  <div className="flex items-center gap-2 pl-1">
+                    <button
+                      onClick={() => {
+                        if (isSpeaking) {
+                          stopSpeaking();
+                        } else {
+                          speakText(msg.content);
+                        }
+                      }}
+                      className="text-zinc-500 hover:text-indigo-400 transition-colors cursor-pointer p-1"
+                      title={isSpeaking ? 'Stop speaking' : 'Read aloud'}
+                      aria-label={isSpeaking ? 'Stop speaking' : 'Read aloud'}
+                    >
+                      {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(msg.content, msg.id)}
+                      className="text-zinc-500 hover:text-indigo-400 transition-colors cursor-pointer p-1"
+                      title="Copy"
+                      aria-label="Copy message"
+                    >
+                      {copiedId === msg.id ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            )
+        )}
+      </AnimatePresence>
+
+      {isLoading && (
+        <div className="flex items-center gap-2 text-indigo-400 px-1">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-xs font-medium">
+            {aiState === 'thinking' ? 'Processing neural pathways...' : 'Synthesizing response...'}
+          </span>
+        </div>
+      )}
+      <div ref={messagesEndRef} />
+    </>
+  );
+
+  const chatWindowContent = (
+    <>
+      {/* Header */}
+      <div
+        className={`flex items-center justify-between px-4 h-12 border-b shrink-0 ${
+          isLight ? 'border-slate-200 bg-white/70 backdrop-blur-md' : 'border-zinc-800/60 bg-black/50 backdrop-blur-md'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div
+              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
+              }`}
+            >
+              <AssistantGlyph
+                state={aiState}
+                className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-4 h-4`}
+              />
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
+          </div>
+          <div className="flex flex-col">
+            <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+              Neural Assistant
+            </span>
+            <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => setMessages([])}
+            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-all cursor-pointer"
+            title="New chat"
+            aria-label="New chat"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleClose}
+            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-all cursor-pointer"
+            title="Close"
+            aria-label="Close assistant"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+        {renderMessages()}
+      </div>
+
+      {/* Input */}
+      <div
+        className={`p-3 border-t shrink-0 ${
+          isLight ? 'border-slate-200 bg-white/60 backdrop-blur-md' : 'border-zinc-800/60 bg-black/40 backdrop-blur-md'
+        }`}
+      >
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Query neural core..."
+            rows={1}
+            className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
+            style={{ minHeight: '44px', maxHeight: '120px' }}
+            aria-label="Chat input"
+          />
+          <button
+            onClick={() => sendMessage()}
+            disabled={!input.trim() || isLoading}
+            className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+            aria-label="Send message"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </>
+  );
+
   return (
     <div
-      className={`fixed z-[9999] flex items-center gap-3 ${
+      className={`fixed z-[9999] flex items-end gap-3 ${
         isLandingLeft
           ? 'left-3 bottom-3 sm:left-4 sm:bottom-4 flex-col-reverse'
           : 'left-3 bottom-3 sm:left-4 sm:bottom-4 flex-row-reverse'
       }`}
     >
       <AnimatePresence>
-        {isOpen ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
-            className={`${
-              isLandingLeft
-                ? 'hidden md:flex w-[calc(100vw-1.5rem)] sm:w-[380px] max-h-[70vh] sm:max-h-[560px] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden mb-2 sm:mb-3'
-                : 'hidden md:flex w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden'
-            } ${glassClass}`}
-          >
-            {/* Header */}
-            <div
-              className={`flex items-center justify-between px-4 h-14 border-b shrink-0 ${
-                isLight ? 'border-slate-200 bg-white/70' : 'border-zinc-800/60 bg-black/50'
-              }`}
+        {isOpen && (
+          <>
+            {/* Desktop & Tablet Chat Window */}
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
+              className="hidden md:flex assistant-chat-window w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
             >
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                      isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
-                    }`}
-                  >
-                    <AssistantGlyph
-                      state={aiState}
-                      className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-5 h-5`}
-                    />
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
-                </div>
-                <div className="flex flex-col">
-                  <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-                    Neural Assistant
-                  </span>
-                  <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setMessages([])}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-all cursor-pointer"
-                  title="New chat"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    stopSpeaking();
-                    setIsOpen(false);
-                  }}
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-all cursor-pointer"
-                  title="Close"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+              {chatWindowContent}
+            </motion.div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-              {messages.length === 1 && (
-                <div className="space-y-4">
-                  <div className="text-center py-6">
-                    <div
-                      className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors ${
-                        isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
-                      }`}
-                    >
-                      <AssistantGlyph
-                        state={aiState}
-                        className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-8 h-8`}
-                      />
-                    </div>
-                    <h3 className={`text-lg font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-                      Neural Assistant Active
-                    </h3>
-                    <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'}`}>
-                      Query research, architecture, or engineering profiles. All responses derive from verified portfolio intelligence.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2">
-                    {QUICK_ACTIONS.map((action) => (
-                      <button
-                        key={action.label}
-                        onClick={() => sendMessage(action.query)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer border ${
-                          isLight
-                            ? 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50 text-slate-700'
-                            : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50 text-zinc-300 hover:text-slate-200'
-                        }`}
-                      >
-                        <span
-                          className={`shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold ${
-                            isLight ? 'bg-indigo-100 text-indigo-600' : 'bg-indigo-500/10 text-indigo-400'
-                          }`}
-                        >
-                          {action.label[0]}
-                        </span>
-                        <span className="flex-1">{action.label}</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <AnimatePresence>
-                {messages.map(
-                  (msg) =>
-                    messages.length > 1 && (
-                      <motion.div
-                        key={msg.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-                      >
-                        <div
-                          className={`px-4 py-3 rounded-2xl max-w-[90%] border shadow-sm ${
-                            msg.role === 'user' ? userBubble : assistantBubble
-                          }`}
-                        >
-                          {msg.role === 'assistant' ? (
-                            <MarkdownRenderer content={msg.content} />
-                          ) : (
-                            <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                          )}
-                        </div>
-                        {msg.role === 'assistant' && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                if (isSpeaking) {
-                                  stopSpeaking();
-                                } else {
-                                  speakText(msg.content);
-                                }
-                              }}
-                              className="text-zinc-500 hover:text-indigo-400 transition-colors cursor-pointer"
-                              title={isSpeaking ? 'Stop speaking' : 'Read aloud'}
-                            >
-                              {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                            </button>
-                            <button
-                              onClick={() => copyToClipboard(msg.content, msg.id)}
-                              className="text-zinc-500 hover:text-indigo-400 transition-colors cursor-pointer"
-                              title="Copy"
-                            >
-                              {copiedId === msg.id ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        )}
-                      </motion.div>
-                    )
-                )}
-              </AnimatePresence>
-
-              {isLoading && (
-                <div className="flex items-center gap-2 text-indigo-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-xs font-medium">
-                    {aiState === 'thinking' ? 'Processing neural pathways...' : 'Synthesizing response...'}
-                  </span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div
-              className={`p-3 border-t shrink-0 ${
-                isLight ? 'border-slate-200 bg-white/60' : 'border-zinc-800/60 bg-black/40'
-              }`}
+            {/* Mobile Fullscreen Sheet */}
+            <motion.div
+              ref={sheetRef}
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+              className="md:hidden fixed inset-0 z-[9998] bg-zinc-950/97 border-t border-zinc-800/60 overflow-hidden flex flex-col"
+              style={{
+                paddingTop: 'env(safe-area-inset-top)',
+                paddingBottom: 'env(safe-area-inset-bottom)',
+              }}
             >
-              <div className="flex items-end gap-2">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Query neural core..."
-                  rows={1}
-                  className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
-                  style={{ minHeight: '44px', maxHeight: '120px' }}
-                />
-                <button
-                  onClick={() => sendMessage()}
-                  disabled={!input.trim() || isLoading}
-                  className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
-      {/* Mobile fullscreen sheet */}
-      <AnimatePresence>
-        {isOpen ? (
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-            className="md:hidden fixed inset-0 z-[9998] bg-zinc-950/95 border-t border-zinc-800/60 overflow-hidden flex flex-col"
-            style={{
-              paddingTop: 'env(safe-area-inset-top)',
-              paddingBottom: 'env(safe-area-inset-bottom)',
-            }}
-          >
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-zinc-700/80" />
-            </div>
-            <div className="flex items-center justify-between px-5 h-14 border-b border-zinc-800/40">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                    isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
-                  }`}
-                >
-                  <AssistantGlyph
-                    state={aiState}
-                    className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-5 h-5`}
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-                    Neural Assistant
-                  </span>
-                  <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  stopSpeaking();
-                  setIsOpen(false);
-                }}
-                className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-900/60 border border-zinc-800/60 text-zinc-300 hover:text-white hover:border-zinc-700 active:scale-95 transition-all cursor-pointer"
-                aria-label="Close assistant"
+              {/* Mobile Header */}
+              <div
+                className={`flex items-center justify-between px-4 h-12 border-b shrink-0 ${
+                  isLight ? 'border-slate-200 bg-white/70 backdrop-blur-md' : 'border-zinc-800/60 bg-black/50 backdrop-blur-md'
+                }`}
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-              {messages.length === 1 && (
-                <div className="space-y-4">
-                  <div className="text-center py-6">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
                     <div
-                      className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 transition-colors ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                         isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
                       }`}
                     >
                       <AssistantGlyph
                         state={aiState}
-                        className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-8 h-8`}
+                        className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-4 h-4`}
                       />
                     </div>
-                    <h3 className={`text-lg font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-                      Neural Assistant Active
-                    </h3>
-                    <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'}`}>
-                      Query research, architecture, or engineering profiles. All responses derive from verified portfolio intelligence.
-                    </p>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {QUICK_ACTIONS.map((action) => (
-                      <button
-                        key={action.label}
-                        onClick={() => sendMessage(action.query)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs transition-all cursor-pointer border ${
-                          isLight
-                            ? 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50 text-slate-700'
-                            : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/50 text-zinc-300 hover:text-slate-200'
-                        }`}
-                      >
-                        <span
-                          className={`shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-bold ${
-                            isLight ? 'bg-indigo-100 text-indigo-600' : 'bg-indigo-500/10 text-indigo-400'
-                          }`}
-                        >
-                          {action.label[0]}
-                        </span>
-                        <span className="flex-1">{action.label}</span>
-                        <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
-                      </button>
-                    ))}
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+                      Neural Assistant
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
                   </div>
                 </div>
-              )}
-              <AnimatePresence>
-                {messages.map(
-                  (msg) =>
-                    messages.length > 1 && (
-                      <motion.div
-                        key={msg.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-                      >
-                        <div
-                          className={`px-4 py-3 rounded-2xl max-w-[90%] border shadow-sm ${
-                            msg.role === 'user' ? userBubble : assistantBubble
-                          }`}
-                        >
-                          {msg.role === 'assistant' ? (
-                            <MarkdownRenderer content={msg.content} />
-                          ) : (
-                            <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                          )}
-                        </div>
-                        {msg.role === 'assistant' && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                if (isSpeaking) {
-                                  stopSpeaking();
-                                } else {
-                                  speakText(msg.content);
-                                }
-                              }}
-                              className="text-zinc-500 hover:text-indigo-400 transition-colors cursor-pointer"
-                              title={isSpeaking ? 'Stop speaking' : 'Read aloud'}
-                            >
-                              {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                            </button>
-                            <button
-                              onClick={() => copyToClipboard(msg.content, msg.id)}
-                              className="text-zinc-500 hover:text-indigo-400 transition-colors cursor-pointer"
-                              title="Copy"
-                            >
-                              {copiedId === msg.id ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-                        )}
-                      </motion.div>
-                    )
-                )}
-              </AnimatePresence>
-              {isLoading && (
-                <div className="flex items-center gap-2 text-indigo-400">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-xs font-medium">
-                    {aiState === 'thinking' ? 'Processing neural pathways...' : 'Synthesizing response...'}
-                  </span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-            <div
-              className={`p-3 border-t shrink-0 ${
-                isLight ? 'border-slate-200 bg-white/60' : 'border-zinc-800/60 bg-black/40'
-              }`}
-            >
-              <div className="flex items-end gap-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Query neural core..."
-                  rows={1}
-                  className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
-                  style={{ minHeight: '44px', maxHeight: '120px' }}
-                />
                 <button
-                  onClick={() => sendMessage()}
-                  disabled={!input.trim() || isLoading}
-                  className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                  onClick={handleClose}
+                  className="flex items-center justify-center w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/60 text-zinc-300 hover:text-white hover:border-zinc-700 active:scale-95 transition-all cursor-pointer"
+                  aria-label="Close assistant"
                 >
-                  <Send className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
-          </motion.div>
-        ) : null}
+
+              {/* Mobile Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+                {renderMessages()}
+              </div>
+
+              {/* Mobile Input */}
+              <div
+                className={`p-3 border-t shrink-0 ${
+                  isLight ? 'border-slate-200 bg-white/60 backdrop-blur-md' : 'border-zinc-800/60 bg-black/40 backdrop-blur-md'
+                }`}
+                style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+              >
+                <div className="flex items-end gap-2">
+                  <textarea
+                    value={input}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Query neural core..."
+                    rows={1}
+                    className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
+                    style={{ minHeight: '44px', maxHeight: '120px' }}
+                    aria-label="Chat input"
+                  />
+                  <button
+                    onClick={() => sendMessage()}
+                    disabled={!input.trim() || isLoading}
+                    className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                    aria-label="Send message"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
       </AnimatePresence>
 
       {/* Floating Launcher Button */}
@@ -634,6 +574,7 @@ export default function AssistantLauncher({
           focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black
           touch-manipulation
           will-change-transform
+          active:scale-90
         `}
         aria-label="Open Neural Assistant"
         aria-expanded={isOpen}
@@ -674,14 +615,14 @@ export default function AssistantLauncher({
         >
           {/* Breathing glow */}
           <motion.div
-            className="absolute inset-0 rounded-2xl bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"
+            className="absolute inset-0 rounded-2xl bg-indigo-500/10 opacity-0"
             animate={{ opacity: isHovering ? [0.4, 0.8, 0.4] : 0 }}
             transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
           />
 
           {/* Halo ring */}
           <motion.div
-            className="absolute inset-[-6px] rounded-3xl border border-indigo-400/0 group-hover:border-indigo-400/30 transition-colors duration-500"
+            className="absolute inset-[-6px] rounded-3xl border border-indigo-400/0"
             animate={{
               scale: isHovering ? [1, 1.08, 1] : 1,
               opacity: isHovering ? [0.3, 0.7, 0.3] : 0,
