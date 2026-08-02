@@ -536,11 +536,11 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             onClick={(e) => { handleClick(e); setIsOpen(true); setShowWelcome(true); setIsExpanded(true); triggerSound?.(800, 0.03); }}
-            className={`group relative flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all ${
-              isLandingLeft 
-                ? 'flex-col rounded-xl sm:rounded-2xl pl-3 sm:pl-4 pr-3 sm:pr-4 py-2 sm:py-3 shadow-2xl' 
-                : 'flex-row rounded-full pl-1.5 pr-3 sm:pr-5 py-1.5 sm:py-2'
-            } bg-zinc-950/95 border border-zinc-700/60 shadow-xl backdrop-blur-xl hover:border-indigo-400/60 hover:shadow-indigo-500/20`}
+className={`group relative flex items-center justify-center cursor-pointer transition-all ${
+               isLandingLeft 
+                 ? 'flex-col rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-2xl' 
+                 : 'flex-row rounded-full p-1.5 sm:p-2'
+             } bg-zinc-950/95 border border-zinc-700/60 shadow-xl backdrop-blur-xl hover:border-indigo-400/60 hover:shadow-indigo-500/20`}
           >
             {/* Ripple effect */}
             {ripplePosition && (
@@ -574,22 +574,9 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
             />
             
               <div className="relative">
-                <div className={`flex items-center justify-center transition-colors ${isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/30' : 'bg-indigo-500/10 border border-indigo-500/20'} ${isLandingLeft ? 'w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl' : 'w-9 h-9 sm:w-10 sm:h-10 rounded-full'} transition-all group-hover:scale-110`}>
-                  <FarhanAIIcon className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-6 h-6 sm:w-7 sm:h-7' : 'w-5 h-5 sm:w-6 sm:h-6'} transition-all group-hover:rotate-12`} isTerminal={isTerminal} />
-                </div>
-              <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse ${isLandingLeft ? '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full' : '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full'} shadow-lg`} />
-            </div>
-            {!isLandingLeft && (
-              <span className="text-[10px] font-bold tracking-wide text-zinc-200 uppercase whitespace-nowrap z-10">
-                <span className="group-hover:opacity-100 opacity-0 transition-opacity duration-300 inline-block max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap">Ask </span>
-                FK's AI Assistant
-              </span>
-            )}
-            {isLandingLeft && (
-                 <span className="text-[8px] sm:text-[9px] font-bold tracking-[0.15em] sm:tracking-[0.2em] text-zinc-200 uppercase whitespace-nowrap z-10 text-center leading-tight">
-                  AI Assistant
-                </span>
-            )}
+                <FarhanAIIcon className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-7 h-7 sm:w-8 sm:h-8'} transition-all group-hover:rotate-12`} isTerminal={isTerminal} />
+                <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse ${isLandingLeft ? '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full' : '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full'} shadow-lg`} />
+              </div>
           </motion.button>
         ) : (
           <motion.button
