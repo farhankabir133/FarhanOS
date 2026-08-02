@@ -8,7 +8,8 @@ export function FarhanAIIcon({ className = '', width = 64, height = 64, isTermin
   return (
     <svg
       viewBox="0 0 1000 1000"
-      fill="none"
+      preserveAspectRatio="xMidYMid meet"
+      overflow="visible"
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={height}
