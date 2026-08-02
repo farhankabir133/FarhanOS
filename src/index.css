@@ -243,6 +243,11 @@ p, li, blockquote, .text-justify {
   transform: translateZ(0);
 }
 
+/* Mobile touch optimization */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
 /* Avoid heavy backdrop-filter usage on mobile devices. */
 @media (max-width: 768px) {
   .backdrop-blur-mobile-reduced {

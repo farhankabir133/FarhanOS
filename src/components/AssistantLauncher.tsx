@@ -158,6 +158,8 @@ export default function AssistantLauncher({
 
   const isLandingLeft = placement === 'landing-left';
 
+  const [isPressed, setIsPressed] = useState(false);
+
   // Magnetic hover effect
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -181,6 +183,14 @@ export default function AssistantLauncher({
   const handleMouseLeave = () => {
     setIsHovering(false);
     setMousePosition({ x: 0, y: 0 });
+  };
+
+  const handleTouchStart = () => {
+    setIsPressed(true);
+  };
+
+  const handleTouchEnd = () => {
+    setIsPressed(false);
   };
 
   const motionStyle = isHovering ? { x: mousePosition.x, y: mousePosition.y } : {};
@@ -420,7 +430,7 @@ export default function AssistantLauncher({
         initial={{ opacity: 0, scale: 0.8, y: 20 }}
         animate={{
           opacity: 1,
-          scale: 1,
+          scale: isPressed ? 0.92 : 1,
           y: 0,
           ...motionStyle,
         }}
@@ -433,13 +443,18 @@ export default function AssistantLauncher({
             repeat: Infinity,
             ease: 'easeInOut',
           },
+          scale: {
+            type: 'spring',
+            stiffness: 400,
+            damping: 17,
+          },
         }}
         exit={{ opacity: 0, scale: 0.8, y: 20 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.92 }}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         onClick={() => {
           setIsOpen(true);
           triggerSound?.(800, 0.03);
@@ -447,10 +462,12 @@ export default function AssistantLauncher({
         className={`
           group relative flex items-center justify-center cursor-pointer
           rounded-2xl p-0 w-12 h-12
-          bg-zinc-950/95 border border-zinc-700/60 shadow-xl backdrop-blur-xl
+          bg-zinc-950/95 border border-zinc-700/60 shadow-xl md:backdrop-blur-xl
           hover:border-indigo-400/60 hover:shadow-indigo-500/20
           transition-all outline-none
           focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black
+          touch-manipulation
+          will-change-transform
         `}
         aria-label="Open Neural Assistant"
         aria-expanded={isOpen}
