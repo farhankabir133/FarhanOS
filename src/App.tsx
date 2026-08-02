@@ -10,7 +10,7 @@ import {
 import { FarhanAIIcon } from './components/FarhanAIIcon';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import { portfolioData } from './data/portfolioData';
-import FloatingAssistant from './components/FloatingAssistant';
+import AssistantLauncher from './components/AssistantLauncher';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
 import LandingPage from './components/LandingPage';
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
@@ -2268,10 +2268,10 @@ useEffect(() => {
         )}
       </>
     )}
-    <FloatingAssistant 
-      theme={theme} 
-      triggerSound={triggerSound} 
-      placement={viewMode === 'landing' ? 'landing-left' : 'global-bottom-left'} 
+    <AssistantLauncher
+      theme={theme}
+      triggerSound={triggerSound}
+      placement={viewMode === 'landing' ? 'landing-left' : 'global-bottom-left'}
     />
   </div>
   );

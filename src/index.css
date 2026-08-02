@@ -258,6 +258,84 @@ p, li, blockquote, .text-justify {
   }
 }
 
+/* Glyph state animations */
+.glyph-thinking .glyph-node {
+  animation: glyph-pulse 1.2s ease-in-out infinite;
+}
+.glyph-thinking .glyph-node-inner {
+  animation: glyph-pulse 1.2s ease-in-out infinite 0.3s;
+}
+.glyph-thinking .glyph-core {
+  animation: glyph-core-pulse 0.8s ease-in-out infinite;
+}
+
+.glyph-responding .glyph-node {
+  animation: glyph-wave 1.6s ease-in-out infinite;
+}
+.glyph-responding .glyph-node-inner {
+  animation: glyph-wave 1.6s ease-in-out infinite 0.2s;
+}
+.glyph-responding .glyph-core {
+  animation: glyph-core-wave 1.2s ease-in-out infinite;
+}
+
+.glyph-success .glyph-node,
+.glyph-success .glyph-node-inner,
+.glyph-success .glyph-core {
+  animation: glyph-shimmer 0.6s ease-out;
+}
+
+.glyph-error .glyph-node,
+.glyph-error .glyph-node-inner,
+.glyph-error .glyph-core {
+  animation: glyph-amber-pulse 1s ease-in-out infinite;
+}
+
+@keyframes glyph-pulse {
+  0%, 100% { opacity: 0.4; r: 1.4; }
+  50% { opacity: 1; r: 2.2; }
+}
+
+@keyframes glyph-core-pulse {
+  0%, 100% { opacity: 0.6; r: 1.8; }
+  50% { opacity: 1; r: 2.8; }
+}
+
+@keyframes glyph-wave {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+@keyframes glyph-core-wave {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; filter: drop-shadow(0 0 3px currentColor); }
+}
+
+@keyframes glyph-shimmer {
+  0% { opacity: 1; filter: drop-shadow(0 0 4px #00E5FF); }
+  100% { opacity: 0.8; filter: drop-shadow(0 0 0px transparent); }
+}
+
+@keyframes glyph-amber-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; filter: drop-shadow(0 0 3px #F59E0B); }
+}
+
+/* Reduced motion for glyph */
+@media (prefers-reduced-motion: reduce) {
+  .glyph-thinking .glyph-node,
+  .glyph-thinking .glyph-node-inner,
+  .glyph-thinking .glyph-core,
+  .glyph-responding .glyph-node,
+  .glyph-responding .glyph-node-inner,
+  .glyph-responding .glyph-core,
+  .glyph-error .glyph-node,
+  .glyph-error .glyph-node-inner,
+  .glyph-error .glyph-core {
+    animation: none !important;
+  }
+}
+
 /* Subtle pulse animation for background elements. */
 @keyframes pulse-subtle {
   0%, 100% { opacity: 0.25; }
