@@ -537,17 +537,17 @@ export default function FloatingAssistant({ theme, triggerSound, placement = 'gl
             onMouseLeave={handleMouseLeave}
             onClick={(e) => { handleClick(e); setIsOpen(true); setShowWelcome(true); setIsExpanded(true); triggerSound?.(800, 0.03); }}
 className={`group relative flex items-center justify-center cursor-pointer transition-all ${
-               isLandingLeft 
-                 ? 'flex-col rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-2xl' 
-                 : 'flex-row rounded-full p-1.5 sm:p-2'
-             } bg-zinc-950/95 border border-zinc-700/60 shadow-xl backdrop-blur-xl hover:border-indigo-400/60 hover:shadow-indigo-500/20`}
+                isLandingLeft 
+                  ? 'rounded-xl sm:rounded-2xl p-0 w-10 h-10 sm:w-12 sm:h-12 shadow-2xl' 
+                  : 'rounded-xl sm:rounded-2xl p-0 w-10 h-10 sm:w-12 sm:h-12'
+              } bg-zinc-950/95 border border-zinc-700/60 shadow-xl backdrop-blur-xl hover:border-indigo-400/60 hover:shadow-indigo-500/20`}
           >
             {/* Ripple effect */}
-            {ripplePosition && (
-              <span 
-                className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none"
-                style={{ borderRadius: isLandingLeft ? '1rem' : '9999px' }}
-              >
+             {ripplePosition && (
+               <span 
+                 className="absolute inset-0 overflow-hidden pointer-events-none"
+                 style={{ borderRadius: isLandingLeft ? '1rem' : '1rem' }}
+               >
                 <span 
                   className="absolute bg-indigo-400/30 rounded-full animate-ping"
                   style={{
@@ -562,7 +562,7 @@ className={`group relative flex items-center justify-center cursor-pointer trans
             
             {/* Breathing glow effect */}
             <motion.div 
-              className="absolute inset-0 rounded-2xl bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"
+              className="absolute inset-0 rounded-xl sm:rounded-2xl bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-xl"
               animate={{ 
                 opacity: isHovering ? [0.5, 1, 0.5] : 0,
               }}
@@ -573,9 +573,9 @@ className={`group relative flex items-center justify-center cursor-pointer trans
               }}
             />
             
-              <div className="relative">
-                <FarhanAIIcon className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} ${isLandingLeft ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-7 h-7 sm:w-8 sm:h-8'} transition-all group-hover:rotate-12`} isTerminal={isTerminal} />
-                <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse ${isLandingLeft ? '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full' : '-bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full'} shadow-lg`} />
+              <div className="relative w-full h-full">
+                <FarhanAIIcon className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-full h-full transition-all group-hover:rotate-12`} isTerminal={isTerminal} />
+                <span className={`absolute bg-emerald-400 border-2 border-zinc-950 animate-pulse -bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shadow-lg`} />
               </div>
           </motion.button>
         ) : (
