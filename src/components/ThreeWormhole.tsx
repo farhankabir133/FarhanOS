@@ -491,13 +491,18 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     }, { threshold: 0 });
     visibilityObserver.observe(container);
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) isVisible = false;
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // ── Animation state ───────────────────────────────────────────────────────
     let speed=0.25, rotationSpeed=0.0015, warpProgressVal=0.0, timeAccumulator=0.0;
     let animationFrameId: number;
 
     const animate = () => {
-      if (!isVisible) {
-        animationFrameId = requestAnimationFrame(animate);
+      if (!isVisible || document.hidden) {
+        setTimeout(() => { animationFrameId = requestAnimationFrame(animate); }, 500);
         return;
       }
       const warping = isWarpingRef.current;
@@ -780,6 +785,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       window.removeEventListener('mousemove', handleMouseMove);
       resizeObserver.disconnect();
       visibilityObserver.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       renderer.dispose();
       // Geometry/material disposal
       [innerGeom,warpGeom,outerGeom].forEach(g=>g.dispose());

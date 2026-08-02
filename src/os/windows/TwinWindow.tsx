@@ -1,0 +1,139 @@
+import { Send, Cpu, Volume2, VolumeX } from 'lucide-react';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
+import { StyleSet } from '../../types';
+
+interface TwinMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface TwinWindowProps {
+  twinMessages: TwinMessage[];
+  twinLoading: boolean;
+  twinInput: string;
+  setTwinInput: (val: string) => void;
+  handleSendTwinMessage: () => void;
+  playingMessageIndex: number | null;
+  speakText: (text: string, index: number) => void;
+  stopSpeaking: () => void;
+  styleSet: StyleSet;
+}
+
+export default function TwinWindow({
+  twinMessages,
+  twinLoading,
+  twinInput,
+  setTwinInput,
+  handleSendTwinMessage,
+  playingMessageIndex,
+  speakText,
+  stopSpeaking,
+  styleSet
+}: TwinWindowProps) {
+  return (
+    <div className="flex flex-col h-full gap-3">
+      <div className="border-b border-zinc-800/60 pb-2 mb-1">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 text-indigo-400">
+            <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
+              <path d="M22 20L22 44L36 44L36 34L44 34L44 44L52 44" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="22" cy="20" r="3" fill="#34d399" />
+              <circle cx="22" cy="44" r="2.5" fill="currentColor" />
+              <circle cx="36" cy="44" r="2.5" fill="currentColor" />
+              <circle cx="36" cy="34" r="2.5" fill="currentColor" />
+              <circle cx="44" cy="34" r="2.5" fill="currentColor" />
+              <circle cx="52" cy="44" r="2.5" fill="currentColor" />
+            </svg>
+          </div>
+          <span className="font-bold text-slate-100 tracking-tight">Interactive Ask Twin Engine</span>
+        </div>
+        <p className="text-zinc-400 text-[10px] mt-0.5 leading-relaxed font-normal">
+          Enter any prompt below. The model responds based on Farhan's publications, NLP methodologies, and complete career achievements.
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-3 p-1 scrollbar-none text-[11px] leading-relaxed select-text font-normal max-h-[220px]">
+        {twinMessages.map((m, idx) => (
+          <div key={idx} className={`flex flex-col gap-1 w-full ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div className={`p-3 rounded-xl max-w-[90%] select-text border shadow-xs ${m.role === 'user' ? 'bg-sky-500/10 border-sky-500/20 text-slate-100' : 'bg-zinc-950/40 border-zinc-900 text-slate-300'}`}>
+              {m.role === 'assistant' ? (
+                <MarkdownRenderer content={m.content} />
+              ) : (
+                <p className="whitespace-pre-wrap text-[11px]">{m.content}</p>
+              )}
+            </div>
+
+            {/* Synth TTS play button for model messages */}
+            {m.role === 'assistant' && (
+              <button
+                onClick={() => {
+                  if (playingMessageIndex === idx) {
+                    stopSpeaking();
+                  } else {
+                    speakText(m.content, idx);
+                  }
+                }}
+                className="text-[9px] text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer font-semibold"
+              >
+                {playingMessageIndex === idx ? (
+                  <>
+                    <VolumeX className="w-3 h-3 text-rose-400 animate-pulse" />
+                    <span className="text-rose-400">Silence Audio Narrator</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-3 h-3 text-purple-400" />
+                    <span>Speak Response Model</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        ))}
+        {twinLoading && (
+          <div className="flex items-center gap-2 text-purple-400 animate-pulse font-mono text-[10px]">
+            <Cpu className="w-3.5 h-3.5 animate-spin" />
+            <span>FarhanTwin thinking processes synchronized...</span>
+          </div>
+        )}
+      </div>
+
+      {/* Chat Suggestion Prompt Chips */}
+      <div className="border-t border-zinc-800/40 pt-2 grid grid-cols-2 gap-1.5 z-10">
+        {[
+          "Explain depression text research",
+          "What bimodal stack is in use?",
+          "What SaaS packages did Farhan build?",
+          "Give brief overview of Farhan"
+        ].map((chip) => (
+          <button
+            key={chip}
+            onClick={() => { setTwinInput(chip); }}
+            className="text-[10px] text-left p-1.5 rounded-lg bg-zinc-950/30 hover:bg-zinc-950/80 border border-zinc-900 text-zinc-400 hover:text-slate-200 truncate cursor-pointer transition-colors"
+          >
+            → {chip}
+          </button>
+        ))}
+      </div>
+
+      {/* Chat Input deck */}
+      <div className="flex items-center gap-2 mt-auto border-t border-zinc-800/40 pt-2 select-none">
+        <input
+          type="text"
+          value={twinInput}
+          onChange={(e) => setTwinInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSendTwinMessage()}
+          placeholder="Inquire about clinical studies, model performance parameters..."
+          className="flex-1 scroll-p-2 bg-black/60 border border-zinc-800 rounded-lg py-2 px-3 focus:outline-hidden focus:border-purple-500/50 text-[11px] text-slate-100 placeholder-zinc-500"
+        />
+        <button
+          onClick={handleSendTwinMessage}
+          disabled={!twinInput.trim() || twinLoading}
+          className={`p-2.5 rounded-lg cursor-pointer ${styleSet.btnPrimary}`}
+        >
+          <Send className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}

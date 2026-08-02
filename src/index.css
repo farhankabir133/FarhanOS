@@ -349,3 +349,30 @@ p, li, blockquote, .text-justify {
 .animate-pulse-subtle {
   animation: pulse-subtle 5s ease-in-out infinite;
 }
+
+/* Spring-like hover transitions to replace Framer Motion whileHover */
+.spring-hover {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s ease-out;
+}
+.hover-scale-105:hover { transform: scale(1.05); }
+.hover-scale-103:hover { transform: scale(1.03); }
+.hover-scale-110:hover { transform: scale(1.10); }
+.hover-scale-115:hover { transform: scale(1.15); }
+.hover-scale-120:hover { transform: scale(1.20); }
+.hover-scale-130:hover { transform: scale(1.30); }
+.hover-y-2:hover { transform: translateY(-2px); }
+.hover-y-4:hover { transform: translateY(-4px); }
+.hover-y-8:hover { transform: translateY(-8px); }
+.hover-rotate-5:hover { transform: rotate(5deg); }
+.hover-rotate-15:hover { transform: rotate(15deg); }
+.hover-rotate--2:hover { transform: rotate(-2deg); }
+.hover-rotate--5:hover { transform: rotate(-5deg); }
+.hover-scale-102:hover { transform: scale(1.02); }
+.hover-scale-101:hover { transform: scale(1.01); }
+.hover-opacity-95:hover { opacity: 0.95; }
+.hover-scale-105-y-2:hover { transform: scale(1.05) translateY(-2px); }
+.hover-scale-102-y-4:hover { transform: scale(1.02) translateY(-4px); }
+.hover-scale-102-y-8:hover { transform: scale(1.02) translateY(-8px); }
+.hover-y-2-scale-105:hover { transform: scale(1.05) translateY(-2px); }
+.hover-y-4-scale-110:hover { transform: scale(1.10) translateY(-4px); }
+.hover-y-2-scale-110:hover { transform: scale(1.10) translateY(-2px); }

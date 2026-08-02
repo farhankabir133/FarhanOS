@@ -17,6 +17,12 @@ import avatar112 from '../../assets/avatar-112.png';
 import avatar144 from '../../assets/avatar-144.png';
 import avatar224 from '../../assets/avatar-224.png';
 import avatar288 from '../../assets/avatar-288.png';
+import avatarImgWebp from '../../assets/avatar.webp';
+import avatar144Webp from '../../assets/avatar-144.webp';
+import avatar288Webp from '../../assets/avatar-288.webp';
+import avatarImgAvif from '../../assets/avatar.avif';
+import avatar144Avif from '../../assets/avatar-144.avif';
+import avatar288Avif from '../../assets/avatar-288.avif';
 import { getApiBaseUrl } from '../utils/apiConfig';
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -618,25 +624,28 @@ export default function LandingPage({
           <div className="absolute w-40 h-40 md:w-48 md:h-48 rounded-full border border-indigo-500/10 animate-spin-reverse pointer-events-none" />
           <div className="absolute -inset-4 bg-indigo-500/5 rounded-full filter blur-2xl animate-pulse pointer-events-none" />
 
-          {/* Portrait Image Container */}
-          <motion.div 
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="relative w-28 h-28 md:w-36 md:h-36 rounded-full bg-zinc-950/80 border-2 border-indigo-500/35 overflow-hidden group shadow-2xl transition-all duration-300 hover:border-[#00ffcc]"
-          >
-            <img 
-              src={avatarImg}
-              srcSet={`${avatar112} 112w, ${avatar144} 144w, ${avatar224} 224w, ${avatar288} 288w, ${avatarImg} 329w`}
-              sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, (max-width: 1536px) 224px, 288px"
-              alt="Farhan Kabir portrait" 
-              width="288"
-              height="288"
-              fetchpriority="high"
-              decoding="async"
-              className="w-full h-full object-cover grayscale-30 group-hover:grayscale-0 transition-all duration-500"
-            />
+           {/* Portrait Image Container */}
+           <div 
+             className="relative w-28 h-28 md:w-36 md:h-36 rounded-full bg-zinc-950/80 border-2 border-indigo-500/35 overflow-hidden group shadow-2xl spring-hover hover-scale-105 hover:border-[#00ffcc]"
+           >
+             <picture>
+               <source type="image/avif" srcSet={`${avatarImgAvif} 329w`} sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, (max-width: 1536px) 224px, 288px" />
+               <source type="image/webp" srcSet={`${avatarImgWebp} 329w`} sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, (max-width: 1536px) 224px, 288px" />
+               <img 
+                 src={avatarImg}
+                 srcSet={`${avatar288} 288w, ${avatarImg} 329w`}
+                 sizes="(max-width: 768px) 112px, (max-width: 1024px) 144px, (max-width: 1536px) 224px, 288px"
+                 alt="Farhan Kabir portrait" 
+                 width="288"
+                 height="288"
+                 fetchPriority="high"
+                 loading="eager"
+                 decoding="async"
+                 className="w-full h-full object-cover grayscale-30 group-hover:grayscale-0 transition-all duration-500"
+                />
+            </picture>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-          </motion.div>
+            </div>
         </motion.div>
 
 {/* Text Area */}

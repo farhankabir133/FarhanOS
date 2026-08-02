@@ -60,7 +60,7 @@ export function TerminalBootLoader({ children, onComplete }: TerminalBootLoaderP
         </div>
 
         <div className="sr-only" role="status" aria-live="polite">
-          {phase === 'done' ? 'Portfolio ready' : 'Connecting to development workstation'}
+          {'Connecting to development workstation'}
         </div>
       </Overlay>
     </>

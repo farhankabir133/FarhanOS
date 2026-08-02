@@ -123,3 +123,25 @@ export interface GitHubRepo {
   topics: string[];
   homepage: string | null;
 }
+
+export interface StyleSet {
+  bg: string;
+  glass: string;
+  windowHeader: string;
+  btnPrimary: string;
+  btnSecondary: string;
+  accentColor: string;
+  accentBorder: string;
+  indicator: string;
+  panelHeader: string;
+  badge: string;
+}
+
+export interface BriefForm {
+  projectType: string;
+  budget: string;
+  timeline: string;
+  goals: string;
+  comments: string;
+  email: string;
+}
