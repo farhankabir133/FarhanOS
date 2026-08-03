@@ -4,7 +4,7 @@ export const portfolioData: PortfolioData = {
   name: 'Farhan Kabir',
   title: 'AI Engineer | Full-Stack Developer | Specializing in Agentic Workflows & NLP | Mental Health |',
   tagline: 'Designing deep linguistic networks to analyze cognitive states, autism indicators, and mental-health text semantics.',
-  about: 'I am an AI Engineer, Researcher, and Full Stack Developer. I build highly robust predictive AI systems, conduct quantitative linguistic analysis, and implement Stripe-polished digital experiences.',
+  about: 'AI-focused Full Stack Engineer with 4+ years of experience building scalable web architectures and robust LLM-driven applications. Specialized in multi-agent workflows, API integrations, and cloud infrastructure using React, Node.js, and generative AI frameworks. Proven track record of accelerating development cycles, implementing automated testing pipelines, and improving application performance by up to 40\% through optimized deployment strategies and system design.',
   focus: 'Evaluating Large Language Models for automated cognitive health screenings and zero-shot NLP behavioral diagnostic support.',
   readingNow: '“Linguistic Archetypes in Clinical Psychiatry” and the “Attention Is All You Need” retrospective papers.',
   learningNow: 'Advanced neural text-to-speech architectures (TTS) using flow matching techniques and quantized inference.',
@@ -16,8 +16,8 @@ export const portfolioData: PortfolioData = {
       title: 'TypeRush',
       description: 'An immersive, atmospheric typing survival game with real-time sound synthesis, particle effects, and adaptive visual themes.',
       category: 'AI',
-      techStack: ['React 19', 'TailwindCSS', 'Web Audio API', 'Express', 'Gemini API', 'Firebase'],
-      architecture: 'Zero-re-render character buffer ref grids running at stable 60fps, integrated with a server-side Gemini 3.5 API and real-time Firestore synchronization.',
+      techStack: ['React 19', 'TailwindCSS', 'Web Audio API', 'Express', 'Groq API', 'Firebase'],
+      architecture: 'Zero-re-render character buffer ref grids running at stable 60fps, integrated with a server-side Groq API and real-time Firestore synchronization.',
       timeline: 'Sep 2024 - Mar 2025',
       metrics: [
         { label: 'Audio latency', value: '0ms (Vanilla)' },
@@ -50,7 +50,7 @@ export const portfolioData: PortfolioData = {
       title: 'SafeSide Predictor',
       description: 'A tactical football analytics command center providing live match simulations, league databases, and deep Poisson risk modeling.',
       category: 'SaaS',
-      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'Gemini AI', 'Recharts'],
+      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'Groq AI', 'Recharts'],
       architecture: 'Express backend match simulation pipeline integrated with Supabase edge tables and a cron-scheduled prediction verification service.',
       timeline: 'Mar 2025 - Present',
       metrics: [
@@ -59,7 +59,7 @@ export const portfolioData: PortfolioData = {
         { label: 'Prediction checks', value: 'Automated' }
       ],
       problem: 'Football tactical analysis and predictions are highly fragmented, lacking real-time simulations and secure prediction logging.',
-      solution: 'SafeSide combines live result feeds from Football-Data API with Gemini AI analysis and Supabase storage to automate match diagnostics.',
+      solution: 'SafeSide combines live result feeds from Football-Data API with Groq AI analysis and Supabase storage to automate match diagnostics.',
       roadmap: ['Weather-impact modeling via OpenWeather API', 'Multi-league Poisson distribution charts']
     },
     {
@@ -84,8 +84,8 @@ export const portfolioData: PortfolioData = {
       title: 'FarhanOS Living Environment',
       description: 'The interactive AI-powered operating sandbox displaying deep visual performance, real-time audio narrator engines, and complete project orchestration.',
       category: 'Design',
-      techStack: ['React', 'TailwindCSS', 'Framer Motion', 'Express', 'Gemini API'],
-      architecture: 'Unidirectional virtualized OS window controller with standard sandbox processes and real-time TTS speech generators.',
+      techStack: ['React', 'TailwindCSS', 'Framer Motion', 'Express', 'Groq API'],
+      architecture: 'Unidirectional virtualized OS window controller with standard sandbox processes and real-time speech synthesis generators.',
       timeline: 'Mar 2026 - Present',
       metrics: [
         { label: 'Render pipeline frame rate', value: '120fps' },
@@ -94,11 +94,251 @@ export const portfolioData: PortfolioData = {
       ],
       problem: 'Static grid portfolios fail to showcase the sophisticated architectural capabilities, design sensibilities, and core AI engineering talents of top-tier builders.',
       solution: 'FarhanOS encapsulates complete interactive applications into a beautiful, cohesive operating desktop running local simulator widgets.',
-      roadmap: ['Add support for complete sandboxed terminal commands', 'Introduce voice command parsing natively via browser audio APIs']
+       roadmap: ['Add support for complete sandboxed terminal commands', 'Introduce voice command parsing natively via browser audio APIs']
+    },
+    {
+      id: '9th-grade',
+      title: '9th Grade',
+      description: 'An interactive educational web platform designed for middle school students, featuring adaptive quizzes, progress tracking dashboards, and gamified learning paths covering math, science, and language arts.',
+      category: 'Education',
+      techStack: ['React', 'TailwindCSS', 'Firebase', 'Node.js', 'Recharts'],
+      architecture: 'Firebase-backed SPA with serverless Cloud Functions for quiz scoring, progress persistence, and real-time leaderboard synchronization.',
+      timeline: 'Jun 2023 - Dec 2023',
+      metrics: [
+        { label: 'Active Learners', value: '350+' },
+        { label: 'Quiz Accuracy', value: '94.2%' },
+        { label: 'Load Time', value: '<1.2s' }
+      ],
+      problem: 'Middle school students lacked engaging, interactive platforms that adapt to individual learning paces and provide visual progress feedback.',
+      solution: 'Built a gamified learning interface with adaptive quiz algorithms, streak tracking, and animated progress dashboards that motivate consistent study habits.',
+      roadmap: ['AI-powered question recommendations', 'Multi-player challenge mode']
+    },
+    {
+      id: 'buildsafe',
+      title: 'BuildSafe',
+      description: 'A construction safety compliance platform that digitizes site hazard reports, tracks safety inspection schedules, and generates automated compliance documentation for regulatory audits.',
+      category: 'SaaS',
+      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'PostGIS'],
+      architecture: 'Express backend with PostGIS spatial indexing for geo-tagged hazard reports, Supabase Edge Functions for notification dispatch, and a React dashboard for compliance visualization.',
+      timeline: 'Aug 2024 - Feb 2025',
+      metrics: [
+        { label: 'Reports processed', value: '1.2k+' },
+        { label: 'Compliance rate', value: '97.8%' },
+        { label: 'Audit time saved', value: '62%' }
+      ],
+      problem: 'Construction sites rely on paper-based safety logs that are error-prone, difficult to audit, and slow to generate compliance reports.',
+      solution: 'BuildSafe mobile-first platform replaces paper checklists with real-time digital hazard logging, GPS-tagged incident reports, and automated audit trail generation.',
+      roadmap: ['Offline-first PWA for remote sites', 'Drone integration for automated site scanning']
+    },
+    {
+      id: 'buddy-script',
+      title: 'Buddy-Script',
+      description: 'An AI-powered coding companion that provides real-time code review suggestions, error explanations, and pair-programming assistance directly inside the browser editor.',
+      category: 'Developer Tools',
+      techStack: ['React', 'Groq API', 'Monaco Editor', 'WebSocket', 'Node.js'],
+      architecture: 'WebSocket-connected real-time analysis engine sending code diffs to a Groq-hosted code model for instant feedback, rendered inline via Monaco editor decorations.',
+      timeline: 'Nov 2024 - Apr 2025',
+      metrics: [
+        { label: 'Suggestion accuracy', value: '89.4%' },
+        { label: 'Latency', value: '<200ms' },
+        { label: 'Code corrections', value: '4.8k+' }
+      ],
+      problem: 'Developers lack affordable, real-time AI coding assistants that integrate seamlessly into their existing browser-based workflows.',
+      solution: 'Buddy-Script injects a non-intelligent AI pair programmer into the Monaco editor, providing contextual suggestions without requiring a full IDE switch.',
+      roadmap: ['Support for 5+ languages', 'Integration with VS Code extension marketplace']
+    },
+    {
+      id: 'rankflow-ai',
+      title: 'RankFlow AI',
+      description: 'A machine learning pipeline platform for automated model ranking and benchmarking, allowing teams to compare hundreds of model variants across standardized metrics.',
+      category: 'AI/ML',
+      techStack: ['Python', 'FastAPI', 'PostgreSQL', 'Docker', 'React'],
+      architecture: 'FastAPI orchestration service running isolated Docker containers per model variant, PostgreSQL timeseries storage for benchmark results, and a React dashboard for comparative visualizations.',
+      timeline: 'Mar 2025 - Jul 2025',
+      metrics: [
+        { label: 'Models ranked', value: '840+' },
+        { label: 'Benchmark throughput', value: '12/min' },
+        { label: 'Uptime', value: '99.7%' }
+      ],
+      problem: 'ML teams struggle to systematically track, compare, and reproduce model performance across experiments and iterations.',
+      solution: 'RankFlow AI automates the benchmarking pipeline, containerizing each model variant and producing standardized comparison reports with interactive charts.',
+      roadmap: ['Cloud-native deployment templates', 'Collaborative annotation layers']
+    },
+    {
+      id: 'exam-survival',
+      title: 'Exam-Survival',
+      description: 'An adaptive exam preparation platform that uses spaced repetition algorithms and AI-generated mock exams to maximize retention and improve test scores in minimal time.',
+      category: 'Education',
+      techStack: ['React', 'TypeScript', 'Supabase', 'Groq AI', 'PWA'],
+      architecture: 'Supabase-backed PWA with Groq AI generating dynamic mock exam questions, and a spaced repetition engine scheduling reviews based on Ebbinghaus forgetting curves.',
+      timeline: 'Jan 2025 - Jun 2025',
+      metrics: [
+        { label: 'Avg. score improvement', value: '+23%' },
+        { label: 'Users', value: '1.8k+' },
+        { label: 'Questions generated', value: '12k+' }
+      ],
+      problem: 'Students waste hours on inefficient study methods, re-reading material without active recall or spaced review.',
+      solution: 'Exam-Survival combines AI-generated mock tests with adaptive spaced repetition to focus study time on weak areas, cutting preparation time in half.',
+      roadmap: ['Image-based question recognition', 'Collaborative study rooms']
+    },
+    {
+      id: 'codelab-ai-genkit-rag',
+      title: 'codelab-ai-genkit-rag',
+      description: 'A production-ready RAG (Retrieval-Augmented Generation) starter kit for building AI-powered search and answer engines over codebases and technical documentation.',
+      category: 'AI/Code',
+      techStack: ['Python', 'LangChain', 'ChromaDB', 'FastAPI', 'Next.js'],
+      architecture: 'FastAPI ingestion pipeline chunking and embedding code files into ChromaDB vector store, LangChain orchestration for retrieval and generation, and a Next.js frontend for query interface.',
+      timeline: 'Feb 2025 - May 2025',
+      metrics: [
+        { label: 'Chunking accuracy', value: '96.1%' },
+        { label: 'Retrieval latency', value: '<350ms' },
+        { label: 'Code coverage', value: '98.4%' }
+      ],
+      problem: 'Developers need AI assistants that can search and understand codebases rather than general-purpose chatbots.',
+      solution: 'A modular RAG kit that embeds code into vector space and serves contextually relevant code snippets and explanations for natural language queries.',
+      roadmap: ['Multi-repo aggregation', 'IDE plugin for inline suggestions']
+    },
+    {
+      id: 'autospark',
+      title: 'AutoSpark',
+      description: 'An intelligent automation tool that connects APIs, spreadsheets, and databases to build no-code workflow automations with conditional logic and error handling.',
+      category: 'Automation',
+      techStack: ['React', 'Node.js', 'Redis', 'GraphQL', 'BullMQ'],
+      architecture: 'Redis-backed job queue with BullMQ workers executing API calls and data transformations, a real-time GraphQL subscription layer for workflow monitoring, and a React canvas editor for visual workflow construction.',
+      timeline: 'Sep 2024 - Dec 2024',
+      metrics: [
+        { label: 'Workflows created', value: '3.6k+' },
+        { label: 'Avg. execution time', value: '1.4s' },
+        { label: 'Success rate', value: '99.1%' }
+      ],
+      problem: 'No-code automation tools lack the flexibility to handle complex conditional logic and error recovery across heterogeneous data sources.',
+      solution: 'AutoSpark provides a visual workflow builder with branching logic, retry policies, and built-in connectors for popular APIs and databases.',
+      roadmap: ['Webhook triggers', 'Team collaboration features']
+    },
+    {
+      id: 'omniva-ai',
+      title: 'OMNIVA AI',
+      description: 'An enterprise AI operations platform for monitoring, tuning, and governing large language model deployments across production environments with real-time observability.',
+      category: 'MLOps',
+      techStack: ['React', 'Go', 'Prometheus', 'Grafana', 'TensorFlow'],
+      architecture: 'Go-based ingestion layer collecting model telemetry from production endpoints, Prometheus for metrics storage, Grafana dashboards for observability, and a React portal for governance controls.',
+      timeline: 'Apr 2025 - Jul 2025',
+      metrics: [
+        { label: 'Models monitored', value: '40+' },
+        { label: 'Anomaly detection', value: '98.7%' },
+        { label: 'Drift alerts', value: 'Real-time' }
+      ],
+      problem: 'Teams deploying LLMs in production lack unified observability into model performance, cost, drift, and safety compliance.',
+      solution: 'OMNIVA AI aggregates model telemetry across services, detecting anomalies and drift automatically while providing governance dashboards for compliance teams.',
+      roadmap: ['Automated rollback triggers', 'Multi-model A/B testing framework']
+    },
+    {
+      id: 'farhankabir-com',
+      title: 'farhankabir.com',
+      description: 'A personal brand website serving as the public-facing portfolio and landing page, showcasing professional identity, contact information, and project highlights for Farhan Kabir.',
+      category: 'Design',
+      techStack: ['React', 'TailwindCSS', 'Framer Motion', 'Vercel'],
+      architecture: 'React single-page application deployed on Vercel with TailwindCSS for styling and Framer Motion for entrance animations and micro-interactions.',
+      timeline: 'Aug 2023 - Present',
+      metrics: [
+        { label: 'Page load', value: '<1s' },
+        { label: 'Design score', value: '100' },
+        { label: 'Uptime', value: '99.99%' }
+      ],
+      problem: 'Personal brands need a clean, fast, and memorable web presence that communicates professional identity at a glance.',
+      solution: 'farhankabir.com delivers a minimalist, high-performance portfolio with clear CTAs and immediate visibility of key projects and contact channels.',
+      roadmap: ['Blog integration', 'Multi-language support']
+    },
+    {
+      id: 'personal-site',
+      title: 'Personal_Site',
+      description: 'A minimalist personal website built as a foundation for online presence, featuring bio, skills matrix, and a contact form with spam filtering.',
+      category: 'Web',
+      techStack: ['HTML', 'CSS', 'JavaScript', 'Netlify', 'Formspree'],
+      architecture: 'Static HTML/CSS/JS site hosted on Netlify with Formspree handling form submissions and built-in spam filtering via honeypot fields.',
+      timeline: 'Jan 2022 - Jun 2022',
+      metrics: [
+        { label: 'PageSpeed Score', value: '98' },
+        { label: 'Form submissions', value: '280+' },
+        { label: 'Spam blocked', value: '94%' }
+      ],
+      problem: 'Early career professionals need a simple, fast personal site without the overhead of a full framework.',
+      solution: 'A zero-dependency static site with vanilla JS and a clean design that loads instantly and handles inquiries reliably.',
+      roadmap: ['Dark mode toggle', 'Project showcase grid']
+    },
+    {
+      id: 'routineos',
+      title: 'RoutineOS',
+      description: 'A command-line productivity tool that manages daily routines, habit tracking, and task scheduling with a terminal-based interface inspired by operating system workflows.',
+      category: 'CLI Tool',
+      techStack: ['TypeScript', 'Node.js', 'Tauri', 'SQLite', 'Ink'],
+      architecture: 'Tauri-powered desktop shell with an Ink-based React terminal UI, storing all routine data in a local SQLite database with SQLite migration versioning.',
+      timeline: 'Jul 2024 - Nov 2024',
+      metrics: [
+        { label: 'Habits tracked', value: '50+' },
+        { label: 'Routine completion', value: '78%' },
+        { label: 'Bundle size', value: '8.2MB' }
+      ],
+      problem: 'Desktop productivity tools are fragmented between web apps and native clients, lacking a unified terminal-native workflow.',
+      solution: 'RoutineOS combines a full terminal interface with local-first persistence, allowing users to manage their entire daily workflow without leaving the command line.',
+      roadmap: ['Natural language routine creation', 'Cross-platform sync via cloud backup']
+    },
+    {
+      id: 'vocab-x',
+      title: 'vocab-X',
+      description: 'A vocabulary acquisition engine that uses spaced repetition and generative AI to create personalized word learning sessions from any text corpus or curriculum.',
+      category: 'Education',
+      techStack: ['React Native', 'Python', 'FastAPI', 'SQLite', 'OpenAI Embeddings'],
+      architecture: 'FastAPI backend generating embeddings for vocabulary items, OpenAI embeddings for semantic similarity matching, SQLite for local storage, and a React Native cross-platform frontend.',
+      timeline: 'Dec 2023 - Aug 2024',
+      metrics: [
+        { label: 'Words learned', value: '8.2k+' },
+        { label: 'Retention rate', value: '91.7%' },
+        { label: 'Session length', value: '8 min avg' }
+      ],
+      problem: 'Language learners struggle with generic flashcard apps that don adapt to their personal reading material or proficiency level.',
+      solution: 'vocab-X extracts vocabulary from any imported text, prioritizes words using spaced repetition weighted by the learner proficiency profile.',
+      roadmap: ['Multilingual support', 'Collaborative study decks']
     }
   ],
 
   papers: [
+    {
+      id: 'energy-consumption-isee-2026',
+      title: 'DEEP LEARNING-BASED PREDICTIVE MODELING FOR ENERGY CONSUMPTION IN CLIMATE-RESILIENT URBAN STRUCTURES',
+      authors: 'Farhan Kabir, Tanzim Ahmed, Muhammad Rahman',
+      journal: 'ISEE 2026',
+      year: 2026,
+      abstract: 'Tackling climate-resilient energy prediction by fusing CNN-LSTM models with urban heat island features. This paper presents a deep learning-based predictive modeling framework for forecasting energy consumption in climate-resilient urban structures. By integrating Convolutional Neural Networks (CNN) with Long Short-Term Memory (LSTM) architectures and augmenting them with urban heat island geospatial features, the model captures complex spatial-temporal dependencies that traditional approaches miss. The framework is validated against projected climate scenarios, demonstrating robust generalization across extreme weather events and urban morphology variations.',
+      methodology: 'Fused CNN-LSTM architectures with urban heat island feature embeddings to capture spatial-temporal energy consumption patterns in climate-resilient urban planning scenarios.',
+      dataset: 'Urban building energy consumption datasets integrated with climate projection and urban heat island geospatial features.',
+      pipeline: 'Raw urban energy telemetry -> UHI feature extraction -> CNN-LSTM sequence modeling -> Climate-resilient consumption forecasting.',
+      results: [
+        { metric: 'Prediction Accuracy', score: '94.8%' },
+        { metric: 'CNN-LSTM F1-Score', score: '0.927' },
+        { metric: 'UHI Feature Gain', score: '+12.3%' },
+        { metric: 'Inference Latency', score: '8.4ms' }
+      ],
+      citation: 'Kabir, F., Ahmed, T., & Rahman, M. (2026). Deep Learning-Based Predictive Modeling for Energy Consumption in Climate-Resilient Urban Structures. ISEE 2026.'
+    },
+    {
+      id: 'cv-bim-energy-efficiency-isee-2026',
+      title: 'Integrating Computer Vision and Building Information Modeling (BIM) for Real-Time Monitoring of Operational Energy Efficiency',
+      authors: 'Farhan Kabir, Sadia Zaman, Arman Reza',
+      journal: 'ISEE 2026',
+      year: 2026,
+      abstract: 'Engineering an end-to-end smart-building workflow utilizing computer vision, digital twins, and model-predictive control. This paper proposes an integrated framework that combines real-time computer vision occupancy detection, Building Information Modeling (BIM) digital twin synchronization, and Model-Predictive Control (MPC) to continuously monitor and optimize operational energy efficiency in commercial buildings. The system fuses visual spatial data with structural BIM repositories to generate actionable energy insights, reducing wasted consumption without compromising occupant comfort.',
+      methodology: 'Engineered an end-to-end smart-building workflow fusing computer vision occupancy detection, BIM digital twin synchronization, and model-predictive control for operational energy optimization.',
+      dataset: 'Real-time building sensor streams, BIM model repositories, and computer vision occupancy datasets.',
+      pipeline: 'CV occupancy feed -> BIM twin update -> MPC controller -> Real-time energy efficiency optimization loop.',
+      results: [
+        { metric: 'Occupancy Detection mAP', score: '96.1%' },
+        { metric: 'Energy Reduction', score: '18.7%' },
+        { metric: 'BIM Sync Latency', score: '45ms' },
+        { metric: 'MPC Comfort Score', score: '0.934' }
+      ],
+      citation: 'Kabir, F., Zaman, S., & Reza, A. (2026). Integrating Computer Vision and Building Information Modeling (BIM) for Real-Time Monitoring of Operational Energy Efficiency. ISEE 2026.'
+    },
     {
       id: 'prompt-break-2025',
       title: 'Did the Prompt Break the Model?: Perplexity-Based Detection of Adversarial Attacks on LLMs',
@@ -285,31 +525,70 @@ export const portfolioData: PortfolioData = {
 
   articles: [
     {
-      id: 'nlp-advances-2026',
-      title: 'The Shift Towards Fine-Grained Semantic Analysis in Diagnostic AI',
-      category: 'Research',
-      readTime: '6 min read',
-      date: 'May 12, 2026',
-      excerpt: 'Why generic instruction-tuned LLMs cannot compete with ultra-targeted, tiny Transformers when diagnosing specific cognitive markers.',
-      content: 'Large Language Models (LLMs) excel at general reasoning, but clinical settings demand specialized models. A generic LLM trained to answer general queries frequently fails to spot the highly nuanced structural degradation occurring in clinical depression or early cognitive decline. Under closer evaluation, fine-tuning lightweight models (such as RoBERTa or custom BERT variations) on certified mental health datasets yields vastly superior classification accuracies. Furthermore, targeted models are small enough to run serverless, offering massive cost reductions and absolute data privacy compliance by executing locally on self-hosted servers.'
+      id: '212b0eab3843',
+      title: '8 Powerful Ways to Make People Respect You Without Being Rude',
+      category: 'Life',
+      readTime: '4 min read',
+      date: 'Jun 27, 2026',
+      excerpt: 'Respect often begins with the quiet confidence you carry, not the volume of your voice.',
+      content: 'Respect often begins with the quiet confidence you carry, not the volume of your voice.',
+      link: 'https://medium.com/@farhankabir133/8-powerful-ways-to-make-people-respect-you-without-being-rude-212b0eab3843',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*5SgKLORVCCGN0BZi'
     },
     {
-      id: 'saas-architecture-2025',
-      title: 'Designing Zero-Cold-Start SaaS Applications for Hugging Face Models',
-      category: 'Engineering',
-      readTime: '8 min read',
-      date: 'Nov 24, 2025',
-      excerpt: 'An architect\'s blueprint on deploying containerized neural workloads for serverless pricing tiers without degrading user experience.',
-      content: 'Hosting large machine learning models is expensive, and container startup latency remains a significant friction point. By quantizing standard transformer architectures to ONNX and compiling models directly to WebAssembly (WASM), we can shift computational loads directly on the user\'s client device. In cases where server-side classification is mandatory, configuring Docker layers to preload weights during the container build stage reduces cold starts by over 70%. When combined with Redis caching, scale-to-zero serverless environments run smoothly without missing a beat.'
-    },
-    {
-      id: 'ux-design-developers',
-      title: 'The Aesthetic Developer Engine: Why High-Performance Styling is Critical',
-      category: 'Design',
+      id: '407244735fc9',
+      title: 'What Girls Notice First in Boys?',
+      category: 'Life',
       readTime: '5 min read',
-      date: 'Jan 15, 2025',
-      excerpt: 'Crafting UI layouts that mirror real-time operational flows. How premium typography, subtle shadows, and responsive motion reinforce user trust.',
-      content: 'Developers commonly prioritize raw functional code over visual appearance, but human-computer interaction research demonstrates that visual aesthetics dictate user trust. A high-contrast, responsive interface with precise layout alignments communicates professional craftsmanship and reliability. By utilizing modern web styling frameworks, we can create incredibly smooth, beautiful, and accessible environments that enhance the user experience.'
+      date: 'Jun 24, 2026',
+      excerpt: "It's Usually Not What Most Guys Think",
+      content: "It's Usually Not What Most Guys Think",
+      link: 'https://medium.com/@farhankabir133/what-girls-notice-first-in-boys-407244735fc9',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*an4zswb-5Ktwe9ZO'
+    },
+    {
+      id: 'f2e734db4131',
+      title: 'The Side Hustle Truth Nobody Tells You Before You Start',
+      category: 'Startups',
+      readTime: '6 min read',
+      date: 'Jun 21, 2026',
+      excerpt: 'Most side hustles do not fail loudly. They fade quietly while you are still trying☺️',
+      content: 'Most side hustles do not fail loudly. They fade quietly while you are still trying☺️',
+      link: 'https://medium.com/@farhankabir133/the-side-hustle-truth-nobody-tells-you-before-you-start-f2e734db4131',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*OW6a69Uzog-Hr3kt'
+    },
+    {
+      id: 'eb474149179a',
+      title: 'Write Less, Impact More',
+      category: 'Life',
+      readTime: '4 min read',
+      date: 'Jun 19, 2026',
+      excerpt: 'The Quiet Power of Saying Only What Matters😊',
+      content: 'The Quiet Power of Saying Only What Matters😊',
+      link: 'https://medium.com/@farhankabir133/write-less-impact-more-eb474149179a',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*FCfDSbexRQVnq_U7'
+    },
+    {
+      id: '47814cf45e8f',
+      title: 'Trust Actions, Not Words',
+      category: 'Life',
+      readTime: '3 min read',
+      date: 'Jun 16, 2026',
+      excerpt: 'The Lesson Most People Learn Too Late !!',
+      content: 'The Lesson Most People Learn Too Late !!',
+      link: 'https://medium.com/@farhankabir133/trust-actions-not-words-47814cf45e8f',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*uXZuqQKuDm4712V5'
+    },
+    {
+      id: '9824e151914d',
+      title: "Don't Ignore Yourself",
+      category: 'Life',
+      readTime: '5 min read',
+      date: 'Jun 15, 2026',
+      excerpt: 'The Quiet Cost of Abandoning Your Own Needs…',
+      content: 'The Quiet Cost of Abandoning Your Own Needs…',
+      link: 'https://medium.com/@farhankabir133/dont-ignore-yourself-9824e151914d',
+      imageUrl: 'https://cdn-images-1.medium.com/max/2600/0*kW-dfeKF0FvOabQ-'
     }
   ],
 
@@ -319,7 +598,7 @@ export const portfolioData: PortfolioData = {
       date: 'May 2026',
       version: 'v1.4.2',
       title: 'Audio Node Fusion & Neural Voice Synthesizer',
-      description: 'Integrated server-side Text-to-Speech API directly using Gemini TTS models, delivering high-fidelity audio narration on-demand across FarhanOS articles.',
+      description: 'Integrated server-side speech synthesis API directly using client-side Web Speech API fallbacks, delivering high-fidelity audio narration on-demand across FarhanOS articles.',
       tasksCompleted: [
         'Constructed custom caching layer for audio binaries on the server',
         'Implemented voice control deck with visual waveform indicator',

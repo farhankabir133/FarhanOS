@@ -6,3 +6,18 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local tooling configs
+.cursor/
+.jetro/
+.mcp.json
+.windsurfrules
+.agents/
+CLAUDE.md
+AGENT.md
+metadata.json
+.vercel
+.kilo/
+.claude/
+lighthouse.pdf
+supabase/.temp/

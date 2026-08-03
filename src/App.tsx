@@ -1,25 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback } from 'react';
+const AssistantLauncher = lazy(() => import('./components/AssistantLauncher'));
 import { 
   Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText, 
   Calendar, Award, Activity, Search, Briefcase, Volume2, VolumeX, 
-  Maximize2, Minimize2, X, Send, Sparkles, Code, Workflow, User, 
+  Maximize2, Minimize2, X, Menu, Send, Sparkles, Code, Workflow, User, 
   Folder, Map, Settings, Play, Pause, HelpCircle, Check, Copy, 
   Download, ExternalLink, Rocket, Compass, PhoneCall, RefreshCw,
   Clock, CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
+import { FarhanAIIcon } from './components/FarhanAIIcon';
+import MarkdownRenderer from './components/MarkdownRenderer';
 import { portfolioData } from './data/portfolioData';
-import { playRawPcm, playSynthTick } from './utils/audioPlay';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
 import LandingPage from './components/LandingPage';
-import Whiteboard from './components/Whiteboard';
+const Whiteboard = lazy(() => import('./components/Whiteboard'));
+const BuildsWindow = lazy(() => import('./os/windows/BuildsWindow'));
+const TimelineWindow = lazy(() => import('./os/windows/TimelineWindow'));
+const ResumeWindow = lazy(() => import('./os/windows/ResumeWindow'));
+const GithubWindow = lazy(() => import('./os/windows/GithubWindow'));
+const GardenWindow = lazy(() => import('./os/windows/GardenWindow'));
+const SkillsWindow = lazy(() => import('./os/windows/SkillsWindow'));
+const ProjectsWindow = lazy(() => import('./os/windows/ProjectsWindow'));
+const ResearchWindow = lazy(() => import('./os/windows/ResearchWindow'));
+const WritingWindow = lazy(() => import('./os/windows/WritingWindow'));
+const TwinWindow = lazy(() => import('./os/windows/TwinWindow'));
+const BriefWindow = lazy(() => import('./os/windows/BriefWindow'));
+const ProfTimelineWindow = lazy(() => import('./os/windows/ProfTimelineWindow'));
 import DecryptText from './components/DecryptText';
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
+import { getApiBaseUrl } from './utils/apiConfig';
 
 
 export default function App() {
   // Navigation View Modes
   const [viewMode, setViewMode] = useState<'landing' | 'os'>('landing');
   const [isWarping, setIsWarping] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (viewMode === 'os') {
@@ -39,13 +55,11 @@ export default function App() {
   const [selectedResearchPaper, setSelectedResearchPaper] = useState<any>(null); // For a popup reader on landing page
 
   // OS System States
+  const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
+  const [currentTime, setCurrentTime] = useState('');
   const [isBooted, setIsBooted] = useState(false);
   const [bootProgress, setBootProgress] = useState(0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
-  const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
-  const [soundOn, setSoundOn] = useState(true);
-  const [voiceOn, setVoiceOn] = useState(true);
-  const [currentTime, setCurrentTime] = useState('');
   
   // Window Management States
   // Each open window is represented by its unique id
@@ -67,6 +81,7 @@ export default function App() {
     whiteboard: { x: 240, y: 110, isMaximized: false },
     profTimeline: { x: 160, y: 240, isMaximized: false },
   });
+  const [windowReady, setWindowReady] = useState<Record<string, boolean>>({});
 
   const osTimelineProgressLineRef = useRef<HTMLDivElement | null>(null);
 
@@ -95,33 +110,34 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const cycleTheme = () => {
+  const cycleTheme = useCallback(() => {
     const themes: Array<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'> = ['dark', 'cyberpunk', 'ai', 'terminal', 'light'];
     const nextIdx = (themes.indexOf(theme) + 1) % themes.length;
     setTheme(themes[nextIdx]);
     triggerSound(750, 0.03);
-  };
+  }, [theme]);
 
   // Quick Action OS Bypass Helpers
-  const handleOpenWindowDirectly = (winId: string) => {
+  const handleOpenWindowDirectly = useCallback((winId: string) => {
     setViewMode('os');
     setIsBooted(true);
-    if (!openWindows.includes(winId)) {
-      setOpenWindows([...openWindows, winId]);
-    }
+    setOpenWindows(prev => {
+      if (prev.includes(winId)) return prev;
+      return [...prev, winId];
+    });
     setFocusedWindow(winId);
     triggerSound(900, 0.05);
-  };
+  }, []);
 
-  const handleOpenProjectDirectly = (project: Project) => {
+  const handleOpenProjectDirectly = useCallback((project: Project) => {
     setSelectedProject(project);
     handleOpenWindowDirectly('projects');
-  };
+  }, [handleOpenWindowDirectly]);
 
-  const handleOpenArticleDirectly = (article: Article) => {
+  const handleOpenArticleDirectly = useCallback((article: Article) => {
     setSelectedArticle(article);
     handleOpenWindowDirectly('writing');
-  };
+  }, [handleOpenWindowDirectly]);
 
   // UI Interactive States
   const [selectedProject, setSelectedProject] = useState<Project>(portfolioData.projects[0]);
@@ -130,7 +146,7 @@ export default function App() {
   const [selectedArticle, setSelectedArticle] = useState<Article>(portfolioData.articles[0]);
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineEvent>(portfolioData.timeline[0]);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchMediumStories = async () => {
       try {
         const res = await fetch('/api/medium-stories');
@@ -143,87 +159,11 @@ export default function App() {
           }
         }
       } catch (err) {
-        console.warn('Backend Medium stories endpoint unavailable, trying client fallback:', err);
+        console.warn('Medium stories endpoint unavailable, using static articles:', err);
       }
 
-      // Client-side fallback using public rss2json converter for static host environments (GitHub Pages)
-      try {
-        const rssRes = await fetch('https://api.rss2json.com/v1/api.json?rss_url=https://medium.com/feed/@farhankabir133');
-        if (rssRes.ok) {
-          const feedData = await rssRes.json();
-          if (feedData.status === 'ok' && Array.isArray(feedData.items)) {
-            const mapped = feedData.items.slice(0, 6).map((item: any, idx: number) => {
-              const descHtml = item.description || '';
-              const imgMatch = descHtml.match(/<img[^>]+src=["']([^"']+)["']/);
-              const imageUrl = imgMatch ? imgMatch[1] : '';
-              
-              const snippetMatch = descHtml.match(/<p class="medium-feed-snippet">([\s\S]*?)<\/p>/);
-              let snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]+>/g, '').trim() : '';
-              
-              const cleanContent = descHtml.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-              if (!snippet) {
-                snippet = cleanContent.slice(0, 150) + (cleanContent.length > 150 ? '...' : '');
-              }
-
-              let category: 'AI' | 'Engineering' | 'Productivity' | 'Research' | 'Life' | 'Startups' | 'Design' | 'Philosophy' = 'Life';
-              const lowercaseCategories = (item.categories || []).map((c: string) => c.toLowerCase());
-              if (lowercaseCategories.some((c: string) => c.includes('ai') || c.includes('artificial') || c.includes('gpt') || c.includes('llm'))) {
-                category = 'AI';
-              } else if (lowercaseCategories.some((c: string) => c.includes('dev') || c.includes('coding') || c.includes('program') || c.includes('software') || c.includes('architecture') || c.includes('engineering'))) {
-                category = 'Engineering';
-              } else if (lowercaseCategories.some((c: string) => c.includes('productiv') || c.includes('work') || c.includes('career') || c.includes('growth'))) {
-                category = 'Productivity';
-              } else if (lowercaseCategories.some((c: string) => c.includes('research') || c.includes('science') || c.includes('clinic'))) {
-                category = 'Research';
-              } else if (lowercaseCategories.some((c: string) => c.includes('design') || c.includes('ux') || c.includes('ui'))) {
-                category = 'Design';
-              } else if (lowercaseCategories.some((c: string) => c.includes('startup') || c.includes('business') || c.includes('saas'))) {
-                category = 'Startups';
-              } else if (lowercaseCategories.some((c: string) => c.includes('philosoph') || c.includes('think'))) {
-                category = 'Philosophy';
-              }
-
-              let formattedDate = item.pubDate;
-              try {
-                const d = new Date(item.pubDate);
-                if (!isNaN(d.getTime())) {
-                  formattedDate = d.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  });
-                }
-              } catch (e) {}
-
-              const wordCount = cleanContent.split(/\s+/).length;
-              const readTimeMins = Math.max(1, Math.ceil(wordCount / 225));
-              const readTime = `${readTimeMins} min read`;
-
-              const guidIdMatch = (item.guid || '').match(/\/p\/([a-f0-9]+)$/) || (item.link || '').match(/-([a-f0-9]+)$/);
-              const id = guidIdMatch ? guidIdMatch[1] : `medium-${idx}`;
-
-              return {
-                id,
-                title: item.title,
-                category,
-                readTime,
-                date: formattedDate,
-                excerpt: snippet,
-                content: cleanContent || snippet || item.title,
-                link: item.link,
-                imageUrl
-              };
-            });
-
-            if (mapped.length > 0) {
-              setArticles(mapped);
-              setSelectedArticle(mapped[0]);
-            }
-          }
-        }
-      } catch (clientErr) {
-        console.warn('Client-side rss2json fallback failed:', clientErr);
-      }
+      setArticles(portfolioData.articles);
+      setSelectedArticle(portfolioData.articles[0]);
     };
     fetchMediumStories();
   }, []);
@@ -249,10 +189,12 @@ export default function App() {
     budget: '$5,000 - $10,000',
     timeline: '1-3 Months',
     goals: '',
-    comments: ''
+    comments: '',
+    email: ''
   });
   const [briefSummary, setBriefSummary] = useState<string | null>(null);
   const [briefLoading, setBriefLoading] = useState(false);
+  const [briefDispatchLoading, setBriefDispatchLoading] = useState(false);
 
   // AI Guided Tour States
   const [isTourActive, setIsTourActive] = useState(false);
@@ -266,12 +208,7 @@ export default function App() {
   // Draggable State Management (Simple manual drag handler to avoid external libraries complexity)
   const [draggedWindow, setDraggedWindow] = useState<string | null>(null);
 
-  // System Sound Effect player wrap
-  const triggerSound = (freq: number = 800, dur: number = 0.03) => {
-    if (soundOn) {
-      playSynthTick(freq, dur);
-    }
-  };
+  const triggerSound = (_freq: number = 800, _dur: number = 0.03) => {};
 
   // Clock Ticker
   useEffect(() => {
@@ -284,47 +221,7 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // System Boot Sequence Sim
-  useEffect(() => {
-    if (!isBooted) {
-      const logs = [
-        'INIT: Booting FarhanOS Kernel v2.4.6...',
-        'SYS: Loading digital neural parameters...',
-        'SYS: Grounding publications corpus index...',
-        'NETWORK: Establishing proxy connection secure rails...',
-        'AI: Initializing Gemini bimodal model instances...',
-        'GRAPH: Parsing topological clinical coordinates...',
-        'SYS: Systems compiled. Ready for operational execution.'
-      ];
-      
-      let step = 0;
-      const progressInterval = setInterval(() => {
-        setBootProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            setTimeout(() => {
-              setIsBooted(true);
-              triggerSound(1000, 0.15);
-            }, 600);
-            return 100;
-          }
-          const add = Math.floor(Math.random() * 15) + 5;
-          const next = Math.min(prev + add, 100);
-          
-          if (next > step * 15 && step < logs.length) {
-            setBootLogs(prevLogs => [...prevLogs, logs[step]]);
-            step++;
-            triggerSound(600 + step * 50, 0.02);
-          }
-          return next;
-        });
-      }, 120);
-
-      return () => clearInterval(progressInterval);
-    }
-  }, [isBooted]);
-
-  const handleWarpAndEnter = () => {
+  const handleWarpAndEnter = useCallback(() => {
     if (isWarping) return;
     triggerSound(1200, 0.4);
     setIsWarping(true);
@@ -343,10 +240,10 @@ export default function App() {
       setViewMode('os');
       setBootProgress(0);
       setBootLogs([]);
-      setIsBooted(false); // Trigger OS Boot sequence
+      setIsBooted(false);
       setIsWarping(false);
     }, 1800);
-  };
+  }, [isWarping]);
 
   const handleSendLandingChat = async () => {
     if (!landingQuery.trim() || landingChatLoading) return;
@@ -356,7 +253,7 @@ export default function App() {
     setLandingChatLoading(true);
     triggerSound(1050, 0.03);
     try {
-      const res = await fetch('/api/ask-twin', {
+      const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: q, history: [] })
@@ -389,179 +286,184 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [soundOn]);
+  });
 
-  // Drag Window logic handlers
+  // Drag Window logic handlers - buttery smooth macOS-style dragging
   const draggedWindowRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
-  const dragRafIdRef = useRef<number | null>(null);
-  const targetPosRef = useRef({ x: 0, y: 0 });
+  const dragVelocityRef = useRef({ x: 0, y: 0 });
+  const lastDragPosRef = useRef({ x: 0, y: 0 });
+  const lastDragTimeRef = useRef(0);
   const currentPosRef = useRef({ x: 0, y: 0 });
+  const momentumRafRef = useRef<number | null>(null);
 
   const handleMouseDown = (windowId: string, e: React.MouseEvent) => {
     if (windowPositions[windowId]?.isMaximized) return;
+    e.preventDefault();
     setFocusedWindow(windowId);
-    
-    const startX = windowPositions[windowId]?.x || 0;
-    const startY = windowPositions[windowId]?.y || 0;
-    
+
+    const currentX = windowPositions[windowId]?.x || 0;
+    const currentY = windowPositions[windowId]?.y || 0;
+
     draggedWindowRef.current = windowId;
     dragOffsetRef.current = {
-      x: e.clientX - startX,
-      y: e.clientY - startY
+      x: e.clientX - currentX,
+      y: e.clientY - currentY,
     };
-    targetPosRef.current = { x: startX, y: startY };
-    currentPosRef.current = { x: startX, y: startY };
-    
-    const winEl = document.getElementById(`window-${windowId}`);
-    if (winEl) {
-      winEl.style.transition = 'none';
-    }
-    
+    lastDragPosRef.current = { x: currentX, y: currentY };
+    lastDragTimeRef.current = performance.now();
+    dragVelocityRef.current = { x: 0, y: 0 };
+    currentPosRef.current = { x: currentX, y: currentY };
+
     setDraggedWindow(windowId);
     triggerSound(500, 0.01);
+  };
 
-    if (dragRafIdRef.current) cancelAnimationFrame(dragRafIdRef.current);
-    
-    const animateDrag = () => {
-      const activeWindow = draggedWindowRef.current;
-      if (!activeWindow) return;
-      
-      const easeFactor = 0.16; // Buttery smooth spring factor
-      const dx = targetPosRef.current.x - currentPosRef.current.x;
-      const dy = targetPosRef.current.y - currentPosRef.current.y;
-      
-      currentPosRef.current.x += dx * easeFactor;
-      currentPosRef.current.y += dy * easeFactor;
-      
-      const vx = dx * easeFactor;
-      
-      // Calculate inertial Z-tilt based on velocity
-      const maxTilt = 4.0; // max angle in degrees
-      const tiltAngle = Math.min(Math.max(-vx * 0.14, -maxTilt), maxTilt);
-      
-      const winEl = document.getElementById(`window-${activeWindow}`);
-      if (winEl) {
-        winEl.style.left = `${currentPosRef.current.x}px`;
-        winEl.style.top = `${currentPosRef.current.y}px`;
-        winEl.style.transform = `rotateZ(${tiltAngle}deg) scale(1.025)`;
-        winEl.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.65)';
-        winEl.style.zIndex = '100';
+  const applyMomentum = useCallback(() => {
+    const activeWindow = draggedWindowRef.current;
+    if (!activeWindow) return;
+
+    let velX = dragVelocityRef.current.x;
+    let velY = dragVelocityRef.current.y;
+    let posX = currentPosRef.current.x;
+    let posY = currentPosRef.current.y;
+
+    const friction = 0.92;
+    const minVel = 0.5;
+
+    const step = () => {
+      velX *= friction;
+      velY *= friction;
+
+      if (Math.abs(velX) < minVel && Math.abs(velY) < minVel) {
+        momentumRafRef.current = null;
+        return;
       }
-      
-      dragRafIdRef.current = requestAnimationFrame(animateDrag);
+
+      posX += velX;
+      posY += velY;
+
+      setWindowPositions(prev => ({
+        ...prev,
+        [activeWindow]: { ...prev[activeWindow], x: posX, y: posY }
+      }));
+
+      currentPosRef.current = { x: posX, y: posY };
+      momentumRafRef.current = requestAnimationFrame(step);
     };
-    
-    dragRafIdRef.current = requestAnimationFrame(animateDrag);
-  };
 
-  const handleMouseMove = (e: MouseEvent) => {
+    momentumRafRef.current = requestAnimationFrame(step);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    const activeWindow = draggedWindowRef.current;
+    if (!activeWindow) return;
+
+    const dx = e.movementX;
+    const dy = e.movementY;
+
+    currentPosRef.current.x = Math.max(0, currentPosRef.current.x + dx);
+    currentPosRef.current.y = Math.max(0, currentPosRef.current.y + dy);
+
+    setWindowPositions(prev => ({
+      ...prev,
+      [activeWindow]: { ...prev[activeWindow], x: currentPosRef.current.x, y: currentPosRef.current.y }
+    }));
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
     const activeWindow = draggedWindowRef.current;
     if (activeWindow) {
-      const nx = Math.max(0, e.clientX - dragOffsetRef.current.x);
-      const ny = Math.max(0, e.clientY - dragOffsetRef.current.y);
-      targetPosRef.current = { x: nx, y: ny };
-    }
-  };
+      if (momentumRafRef.current) cancelAnimationFrame(momentumRafRef.current);
 
-  const handleMouseUp = () => {
-    const activeWindow = draggedWindowRef.current;
-    if (activeWindow) {
-      if (dragRafIdRef.current) cancelAnimationFrame(dragRafIdRef.current);
-      dragRafIdRef.current = null;
-      
       const finalX = currentPosRef.current.x;
       const finalY = currentPosRef.current.y;
-      
-      const winEl = document.getElementById(`window-${activeWindow}`);
-      if (winEl) {
-        winEl.style.transition = '';
-        winEl.style.transform = '';
-        winEl.style.boxShadow = '';
-        winEl.style.zIndex = '';
-      }
-      
+
       setWindowPositions(prev => ({
         ...prev,
         [activeWindow]: { ...prev[activeWindow], x: finalX, y: finalY }
       }));
-      
+
       draggedWindowRef.current = null;
       setDraggedWindow(null);
     }
-  };
+  }, []);
+
+  const handleAnimationEnd = useCallback((windowId: string) => {
+    setWindowReady(prev => ({ ...prev, [windowId]: true }));
+  }, []);
 
   useEffect(() => {
     if (draggedWindow) {
-      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
       window.addEventListener('mouseup', handleMouseUp);
     }
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggedWindow]);
+  }, [draggedWindow, handleMouseMove, handleMouseUp]);
 
   // Opening & Focusing a window
-  const openWindow = (windowId: string) => {
+  const openWindow = useCallback((windowId: string) => {
     triggerSound(700, 0.05);
-    if (!openWindows.includes(windowId)) {
-      setOpenWindows(prev => [...prev, windowId]);
-    }
-    // Remove from minimized if there
+    setOpenWindows(prev => {
+      if (prev.includes(windowId)) return prev;
+      return [...prev, windowId];
+    });
     setMinimizedWindows(prev => prev.filter(w => w !== windowId));
     setFocusedWindow(windowId);
-  };
+    setWindowReady(prev => ({ ...prev, [windowId]: false }));
+  }, []);
 
-  const closeWindow = (windowId: string) => {
+  const closeWindow = useCallback((windowId: string) => {
     triggerSound(400, 0.06);
     setOpenWindows(prev => prev.filter(w => w !== windowId));
-  };
+    setWindowReady(prev => {
+      const next = { ...prev };
+      delete next[windowId];
+      return next;
+    });
+  }, []);
 
-  const minimizeWindow = (windowId: string) => {
+  const minimizeWindow = useCallback((windowId: string) => {
     triggerSound(450, 0.04);
-    if (!minimizedWindows.includes(windowId)) {
-      setMinimizedWindows(prev => [...prev, windowId]);
-    }
-    // Set focus to some other window if available
-    const rest = openWindows.filter(w => w !== windowId && !minimizedWindows.includes(w));
-    if (rest.length > 0) {
-      setFocusedWindow(rest[rest.length - 1]);
-    }
-  };
+    setMinimizedWindows(prev => {
+      if (prev.includes(windowId)) return prev;
+      return [...prev, windowId];
+    });
+    setFocusedWindow(prev => {
+      const rest = openWindows.filter(w => w !== windowId && !minimizedWindows.includes(w));
+      return rest.length > 0 ? rest[rest.length - 1] : prev;
+    });
+  }, [openWindows, minimizedWindows]);
 
-  const toggleMaximize = (windowId: string) => {
+  const toggleMaximize = useCallback((windowId: string) => {
     triggerSound(800, 0.04);
     setWindowPositions(prev => ({
       ...prev,
       [windowId]: { ...prev[windowId], isMaximized: !prev[windowId]?.isMaximized }
     }));
-  };
+  }, []);
 
   // TTS Speech Player
-  const speakText = async (text: string, index: number | null = null, mode: 'tour' | 'narrate' = 'narrate') => {
-    if (!voiceOn) return;
+  const speakText = useCallback(async (text: string, index: number | null = null, mode: 'tour' | 'narrate' = 'narrate') => {
     try {
       if (currentTTSAudio) {
         currentTTSAudio.stop();
         setCurrentTTSAudio(null);
       }
       setPlayingMessageIndex(index);
-      const res = await fetch('/api/tts', {
+      const res = await fetch(`${getApiBaseUrl()}/api/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, type: mode })
       });
       const data = await res.json();
       if (data.audio) {
-        const audioControl = await playRawPcm(data.audio);
-        setCurrentTTSAudio(audioControl);
-        
-        // Listen for standard completion to reset indicators
-        const playTimeSec = (data.audio.length * 0.75) / 24000; // rough estimation
         setTimeout(() => {
           setPlayingMessageIndex(null);
-        }, playTimeSec * 1000);
+        }, 2000);
       }
     } catch (err) {
       console.error('Narrator service unreachable, falling back to client voice:', err);
@@ -579,18 +481,17 @@ export default function App() {
         setPlayingMessageIndex(null);
       }
     }
-  };
+  }, [currentTTSAudio]);
 
-  const stopSpeaking = () => {
+  const stopSpeaking = useCallback(() => {
     if (currentTTSAudio) {
       currentTTSAudio.stop();
       setCurrentTTSAudio(null);
     }
     setPlayingMessageIndex(null);
-  };
+  }, [currentTTSAudio]);
 
-  // Chat Twin API caller
-  const handleSendTwinMessage = async () => {
+  const handleSendTwinMessage = useCallback(async () => {
     if (!twinInput.trim()) return;
     const userMsg = twinInput.trim();
     setTwinInput('');
@@ -599,13 +500,12 @@ export default function App() {
     triggerSound(1100, 0.03);
 
     try {
-      // Gather historical context
       const historyPayload = twinMessages.map(m => ({
         role: m.role === 'user' ? 'user' : 'assistant',
         content: m.content
       }));
 
-      const res = await fetch('/api/ask-twin', {
+      const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMsg, history: historyPayload })
@@ -615,10 +515,7 @@ export default function App() {
       if (data.reply) {
         setTwinMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
         setTwinLoading(false);
-        // Play response automatically via Voice Synthesizer if switched on
-        if (voiceOn) {
-          speakText(data.reply, twinMessages.length + 1);
-        }
+        speakText(data.reply, twinMessages.length + 1);
       } else {
         throw new Error(data.error || 'General twin system fault.');
       }
@@ -631,22 +528,25 @@ export default function App() {
       const fallbackReply = getAskTwinFallback(userMsg, historyPayload);
       setTwinMessages(prev => [...prev, { role: 'assistant', content: fallbackReply }]);
       setTwinLoading(false);
-      if (voiceOn) {
-        speakText(fallbackReply, twinMessages.length + 1);
-      }
+      speakText(fallbackReply, twinMessages.length + 1);
     }
-  };
+  }, [twinInput, twinMessages, speakText]);
 
-  // Submit Mission Brief for analysis
-  const handleSendBrief = async () => {
+  const handleSendBrief = useCallback(async () => {
     if (!briefForm.goals.trim()) return;
     setBriefLoading(true);
     triggerSound(950, 0.05);
     try {
-      const res = await fetch('/api/summarize-brief', {
+      const res = await fetch(`${getApiBaseUrl()}/api/summarize-brief`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(briefForm)
+        body: JSON.stringify({
+          projectType: briefForm.projectType,
+          budget: briefForm.budget,
+          timeline: briefForm.timeline,
+          goals: briefForm.goals,
+          comments: briefForm.comments
+        })
       });
       const data = await res.json();
       if (data.summary) {
@@ -659,10 +559,61 @@ export default function App() {
     } finally {
       setBriefLoading(false);
     }
-  };
+  }, [briefForm]);
 
-  // Interactive AI Site Tour Guided cycle
-  const runTourCycle = async () => {
+  const handleDispatchBrief = useCallback(async () => {
+    if (!briefForm.email.trim()) {
+      alert("Please provide a valid transmission email address before dispatching.");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(briefForm.email)) {
+      alert("Please provide a valid email structure.");
+      return;
+    }
+    setBriefDispatchLoading(true);
+    triggerSound(1100, 0.05);
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'OS Mission Collaborator',
+          email: briefForm.email,
+          subject: `Mission Brief: ${briefForm.projectType}`,
+          message: `Strategic Brief Parameters:\n- Venture Domain: ${briefForm.projectType}\n- Financial Bounds: ${briefForm.budget}\n- Timeline Profile: ${briefForm.timeline}\n- Strategic Goals: ${briefForm.goals}\n- Operational Directives: ${briefForm.comments || 'None'}\n\nGenerated Assessment Architecture:\n${briefSummary}`,
+          metadata: {
+            source: 'OS_MISSION_BRIEF',
+            projectType: briefForm.projectType,
+            budget: briefForm.budget,
+            timeline: briefForm.timeline,
+            comments: briefForm.comments
+          }
+        })
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to dispatch brief.');
+      }
+      
+      alert("Handshake confirmed. Strategy Brief successfully transmitted to Farhan's secure channel.");
+      setBriefSummary(null);
+      
+      setBriefForm(prev => ({
+        ...prev,
+        goals: '',
+        comments: '',
+        email: ''
+      }));
+    } catch (err) {
+      console.warn('Real dispatch failed, falling back to simulation:', err);
+      alert("Handshake completed. Strategy Brief successfully recorded (simulated delivery).");
+      setBriefSummary(null);
+    } finally {
+      setBriefDispatchLoading(false);
+    }
+  }, [briefForm, briefSummary]);
+
+  const runTourCycle = useCallback(async () => {
     triggerSound(1200, 0.1);
     setIsTourActive(true);
     setTourLoading(true);
@@ -672,7 +623,7 @@ export default function App() {
       {
         id: 'twin',
         title: 'Neural Core Clone',
-        text: 'This is the Ask Farhan AI Clone, trained on Farhan\'s complete portfolio. You can query clinical results, NLP models, and full-stack architecture profiles.'
+        text: 'This is FK\'s AI Assistant, trained on Farhan\'s complete portfolio. You can query clinical results, NLP models, and full-stack architecture profiles.'
       },
       {
         id: 'projects',
@@ -692,7 +643,7 @@ export default function App() {
       {
         id: 'brief',
         title: 'Mission Collaboration Brief',
-        text: 'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Gemini reasoning framework.'
+          text: 'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Groq reasoning framework.'
       }
     ];
 
@@ -708,16 +659,14 @@ export default function App() {
       openWindow(cur.id);
       setTourLoading(true);
 
-      if (voiceOn) {
-        await speakText(cur.text, null, 'tour');
-      }
+      await speakText(cur.text, null, 'tour');
       setTourLoading(false);
     };
 
     await startStep(1);
-  };
+  }, [openWindow, speakText]);
 
-  const nextTourStep = () => {
+  const nextTourStep = useCallback(() => {
     if (tourStep < 5) {
       const next = tourStep + 1;
       setTourStep(next);
@@ -727,24 +676,21 @@ export default function App() {
         'Review the high-precision mission panels showing fine-tuned Transformers, custom Go microservices, and metrics-driven SaaS applications.',
         'Inspect peer-reviewed NLP models, specialized Reddit depression classifiers, topological architectures, and citation modules.',
         'Explore interactive visual expertise nodes across deep ML, distributed scalable systems, and fully secure client UI architectures.',
-        'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Gemini reasoning framework.'
+        'Submit custom initiatives to initiate automated feasibility evaluations driven directly by the Groq reasoning framework.'
       ];
       const winIds = ['projects', 'research', 'skills', 'brief'];
       openWindow(winIds[next - 1]);
       setTourMsg(tourStepsText[next - 2]);
-      if (voiceOn) {
-        speakText(tourStepsText[next - 2], null, 'tour');
-      }
+      speakText(tourStepsText[next - 2], null, 'tour');
     } else {
       setIsTourActive(false);
       setTourStep(0);
       stopSpeaking();
       triggerSound(1300, 0.05);
     }
-  };
+  }, [tourStep, openWindow, speakText, stopSpeaking]);
 
-  // Filter skills based on Category select
-  const filteredSkills = portfolioData.skills.filter(s => {
+  const filteredSkills = useMemo(() => portfolioData.skills.filter(s => {
     if (skillFilter === 'all') return true;
     if (skillFilter === 'AI/ML' && s.category === 'AI/ML') return true;
     if (skillFilter === 'Frontend' && s.category === 'Frontend') return true;
@@ -752,10 +698,10 @@ export default function App() {
     if (skillFilter === 'Research' && s.category === 'Research & Science') return true;
     if (skillFilter === 'Systems' && s.category === 'Systems & Devops') return true;
     return false;
-  });
+  }), [skillFilter]);
 
   // Global Command Palette matching items
-  const getSearchItems = () => {
+  const getSearchItems = useCallback(() => {
     const term = searchQuery.toLowerCase().trim();
     if (!term) return [];
     
@@ -786,12 +732,12 @@ export default function App() {
     }
 
     return results;
-  };
+  }, [searchQuery, articles, openWindow, setSelectedProject, setSelectedPaper, setSelectedArticle, setSkillFilter, setCommandPaletteOpen]);
 
-  const systemSearchResults = getSearchItems();
+  const systemSearchResults = useMemo(() => getSearchItems(), [getSearchItems]);
 
   // Desktop Icons Configuration for ease of access
-  const desktopIcons = [
+  const desktopIcons = useMemo(() => [
     { id: 'twin', label: 'Ask Twin AI', icon: Sparkles, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
     { id: 'projects', label: 'Mission Control', icon: Cpu, color: 'text-sky-400 bg-sky-500/10 border-sky-500/20' },
     { id: 'research', label: 'Research Lab', icon: BookOpen, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
@@ -805,10 +751,10 @@ export default function App() {
     { id: 'brief', label: 'Mission Brief', icon: Rocket, color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
     { id: 'builds', label: 'Release Logs', icon: Layers, color: 'text-teal-400 bg-teal-500/10 border-teal-500/20' },
     { id: 'whiteboard', label: 'Ideation Pad', icon: Palette, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-  ];
+  ], []);
 
   // Theme styling definitions mapping
-  const getThemeStyles = () => {
+  const getThemeStyles = useCallback(() => {
     switch (theme) {
       case 'cyberpunk':
         return {
@@ -876,9 +822,9 @@ export default function App() {
           badge: 'bg-sky-500/10 border border-sky-500/20 text-sky-300'
         };
     }
-  };
+  }, [theme]);
 
-  const styleSet = getThemeStyles();
+  const styleSet = useMemo(() => getThemeStyles(), [getThemeStyles]);
 
   return (
     <div className={`w-full ${viewMode === 'os' ? 'h-full overflow-hidden select-none' : 'min-h-screen'} ${styleSet.bg} transition-colors duration-500 flex flex-col relative`}>
@@ -886,8 +832,6 @@ export default function App() {
         <LandingPage
           isWarping={isWarping}
           theme={theme}
-          soundOn={soundOn}
-          triggerSound={triggerSound}
           onLaunchOS={handleWarpAndEnter}
           onOpenWindowDirectly={handleOpenWindowDirectly}
           articles={articles}
@@ -895,47 +839,9 @@ export default function App() {
         />
       ) : (
         <>
-          {/* 1. INITIAL SYSTEM BOOT SCREEN */}
-          {!isBooted && (
-            <div className="absolute inset-0 bg-[#020308] z-[9999] flex flex-col items-center justify-center font-mono text-xs px-6">
-              <div className="w-full max-w-lg bg-[#080b15]/90 border border-zinc-800 p-6 rounded-lg shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500" style={{ width: `${bootProgress}%` }} />
-                
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 animate-ping" />
-                    <span className="text-zinc-400 font-bold tracking-wider">FARHAN KABIR CORE OS v2.4</span>
-                  </div>
-                  <span className="text-zinc-500 tracking-wider">BOOT: {bootProgress}%</span>
-                </div>
-
-                <div className="space-y-1.5 h-48 overflow-y-auto mb-4 scrollbar-none pr-1">
-                  {bootLogs.map((log, i) => (
-                    <div key={i} className="text-[#33ff33] opacity-90 font-mono text-[11px] leading-relaxed select-text flex items-start gap-1 justify-between">
-                      <span className="flex-1 whitespace-pre-wrap">{log}</span>
-                      <span className="text-zinc-600 text-[9px]">[SUCCESS]</span>
-                    </div>
-                  ))}
-                  {bootProgress < 100 && (
-                    <div className="text-white animate-pulse font-mono text-[11px]">⏳ Orchestrating linguistic vectors, please standby...</div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between border-t border-zinc-800 pt-3 text-[10px] text-zinc-500">
-                  <span>SYSTEM HOST: OOS LOCAL HOST INSTANCE</span>
-                  <span>PORT: 3001 ACTIVE</span>
-                </div>
-              </div>
-              
-              <div className="mt-8 text-zinc-600 text-center text-[10px] uppercase tracking-widest max-w-xs font-mono">
-                Designed for low-latency cognitive linguistics analysis with fully responsive modular desktop client matrices.
-              </div>
-            </div>
-          )}
-
           {/* 2. TOP MENU NAVIGATION BAR */}
           <header className="h-10 bg-black/40 backdrop-blur-md border-b border-zinc-800/40 flex items-center justify-between px-4 z-[99] select-none text-xs font-mono">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 cursor-pointer font-bold tracking-tight text-white hover:opacity-85" onClick={() => triggerSound(900, 0.05)}>
                 <span className="w-2 h-2 rounded bg-sky-400 opacity-90 shadow-[0_0_6px_#38bdf8]" />
                 <span>FarhanOS</span>
@@ -949,76 +855,127 @@ export default function App() {
                 title="Return to Cosmos Portal"
               >
                 <Compass className="w-3.5 h-3.5 text-indigo-400 animate-spin-slow" />
-                <span>Return to Cosmos</span>
+                <span className="hidden sm:inline">Return to Cosmos</span>
               </button>
-
-          <nav className="hidden md:flex items-center gap-4 text-zinc-400 font-medium select-none">
-            <button onClick={() => { setCommandPaletteOpen(true); triggerSound(800, 0.03); }} className="hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer">
-              <Search className="w-3.5 h-3.5" />
-              <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-0.5">Cmd+K</kbd></span>
-            </button>
-            <button onClick={runTourCycle} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer text-purple-400 hover:text-purple-300">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Site Tour</span>
-            </button>
-            <button onClick={() => openWindow('brief')} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
-              <PhoneCall className="w-3.5 h-3.5" />
-              <span>Mission Brief</span>
-            </button>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-4 select-none">
-          {/* Quick theme toggles - hidden on mobile/tablet */}
-          <div className="hidden md:flex items-center gap-1 bg-zinc-950/60 border border-zinc-800/40 rounded px-1.5 py-0.5">
-            <span className="text-[10px] text-zinc-500 font-medium mr-1.5">Mood Theme:</span>
-            {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
-              <button 
-                key={t}
-                onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
-                className={`text-[10px] px-1.5 py-0.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300'}`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* Single cycle button - visible ONLY on mobile/tablet */}
-          <button 
-            onClick={cycleTheme}
-            className="md:hidden flex items-center gap-1.5 bg-zinc-950/60 border border-zinc-800/40 rounded px-2 py-1 text-[10px] text-zinc-300 hover:text-white capitalize cursor-pointer active:scale-95 transition-all"
-            title="Cycle Theme"
-          >
-            <Palette className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
-            <span>Theme: {theme}</span>
-          </button>
-
-          {/* Sound, Voice, Time indicators */}
-          <div className="flex items-center gap-3 border-l border-zinc-800/60 pl-3">
-            <button 
-              onClick={() => { setSoundOn(!soundOn); playSynthTick(1000, 0.02); }}
-              className={`p-1 rounded cursor-pointer hover:bg-zinc-900 ${soundOn ? 'text-zinc-300' : 'text-zinc-600'}`}
-              title="Toggle Audio Feedback"
-            >
-              {soundOn ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-            </button>
-            
-            <button 
-              onClick={() => { setVoiceOn(!voiceOn); if (playingMessageIndex !== null) stopSpeaking(); }}
-              className={`text-[10px] font-semibold flex items-center gap-1.5 px-1.5 py-0.5 rounded cursor-pointer select-none ${voiceOn ? 'text-purple-400 border border-purple-500/20 bg-purple-500/5' : 'text-zinc-600 border border-zinc-800'}`}
-              title="Toggle Voice synthesizer narration output"
-            >
-              <Cpu className="w-3 h-3 text-purple-400" />
-              <span className="hidden sm:inline">OS Voice</span>
-            </button>
-
-            <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
-              <Clock className="w-3.5 h-3.5 text-sky-400" />
-              <span>{currentTime || '14:37:33'} (UTC)</span>
             </div>
-          </div>
-        </div>
-      </header>
+
+            {/* Hamburger button - mobile only */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+
+            <nav className="hidden md:flex items-center gap-4 text-zinc-400 font-medium select-none">
+              <button onClick={() => { setCommandPaletteOpen(true); triggerSound(800, 0.03); }} className="hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer">
+                <Search className="w-3.5 h-3.5" />
+                <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-0.5">Cmd+K</kbd></span>
+              </button>
+              <button onClick={runTourCycle} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer text-purple-400 hover:text-purple-300">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>AI Site Tour</span>
+              </button>
+              <button onClick={() => openWindow('brief')} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer">
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>Mission Brief</span>
+              </button>
+            </nav>
+
+          <div className="flex items-center gap-4 select-none">
+            {/* Quick theme toggles - hidden on mobile/tablet */}
+            <div className="hidden md:flex items-center gap-1 bg-zinc-950/60 border border-zinc-800/40 rounded px-1.5 py-0.5">
+              <span className="text-[10px] text-zinc-500 font-medium mr-1.5">Mood Theme:</span>
+              {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
+                <button 
+                  key={t}
+                  onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
+                  className={`text-[10px] px-1.5 py-0.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {/* Single cycle button - visible ONLY on mobile/tablet */}
+            <button 
+              onClick={cycleTheme}
+              className="md:hidden flex items-center gap-1.5 bg-zinc-950/60 border border-zinc-800/40 rounded px-2 py-1 text-[10px] text-zinc-300 hover:text-white capitalize cursor-pointer active:scale-95 transition-all"
+              title="Cycle Theme"
+            >
+              <Palette className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
+              <span>Theme: {theme}</span>
+            </button>
+
+              <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
+                <Clock className="w-3.5 h-3.5 text-sky-400" />
+                <span>{currentTime || '14:37:33'} (UTC)</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Mobile Menu Overlay */}
+          {mobileMenuOpen && (
+            <div className="fixed inset-0 z-[9999] md:hidden">
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
+              <div className="absolute right-0 top-0 h-full w-72 bg-zinc-950/95 border-l border-zinc-800/60 shadow-2xl flex flex-col">
+                <div className="flex items-center justify-between px-4 h-10 border-b border-zinc-800/40">
+                  <span className="text-xs font-mono font-bold text-white tracking-tight">MENU</span>
+                  <button
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center w-8 h-8 rounded text-zinc-400 hover:text-white cursor-pointer"
+                    aria-label="Close menu"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  <button
+                    onClick={() => { setCommandPaletteOpen(true); setMobileMenuOpen(false); triggerSound(800, 0.03); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer text-sm"
+                  >
+                    <Search className="w-4 h-4" />
+                    <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-1">Cmd+K</kbd></span>
+                  </button>
+                  <button
+                    onClick={() => { runTourCycle(); setMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-zinc-900/60 transition-all cursor-pointer text-sm"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>AI Site Tour</span>
+                  </button>
+                  <button
+                    onClick={() => { openWindow('brief'); setMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900/60 transition-all cursor-pointer text-sm"
+                  >
+                    <PhoneCall className="w-4 h-4" />
+                    <span>Mission Brief</span>
+                  </button>
+                  <div className="pt-4 border-t border-zinc-800/40">
+                    <p className="text-[10px] text-zinc-500 font-medium mb-2 px-3">MOOD THEME</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
+                          className={`text-[11px] px-2 py-1.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300 bg-zinc-900/40'}`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-zinc-800/40">
+                    <div className="flex items-center gap-2 px-3 text-zinc-400 font-mono text-[11px]">
+                      <Clock className="w-3.5 h-3.5 text-sky-400" />
+                      <span>{currentTime || '14:37:33'} (UTC)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
       {/* 3. AI SITE GUIDED TOUR STATUS ALERTER */}
       {isTourActive && (
@@ -1074,8 +1031,12 @@ export default function App() {
                 style={{ animationDelay: `${idx * 45}ms` }}
                 className={`flex flex-col items-center justify-center p-2.5 rounded-xl border border-transparent hover:border-zinc-800/40 hover:bg-zinc-950/25 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] cursor-pointer transition-all duration-300 active:scale-95 group text-center relative animate-fade-in opacity-0 ${isOpen ? 'bg-zinc-950/15' : ''}`}
               >
-                <div className={`p-4 rounded-2xl ${ico.color} transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200 relative`}>
-                  <ActiveIcon className="w-6 h-6" />
+                 <div className={`p-4 rounded-2xl ${ico.color} transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200 relative`}>
+                  {ico.id === 'twin' ? (
+                    <FarhanAIIcon className="w-6 h-6" isTerminal={theme === 'terminal'} />
+                  ) : (
+                    <ActiveIcon className="w-6 h-6" />
+                  )}
                   {isOpen && (
                     <span className="absolute bottom-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900 shadow-[0_0_6px_#10b981]" />
                   )}
@@ -1115,8 +1076,7 @@ export default function App() {
               }
             : {
                 position: 'absolute',
-                left: `${pos.x}px`,
-                top: `${pos.y}px`,
+                transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
                 width: winId === 'twin' || winId === 'garden' || winId === 'skills' ? '540px' : '720px',
                 height: winId === 'twin' ? '480px' : '550px',
                 maxHeight: '85vh',
@@ -1129,7 +1089,8 @@ export default function App() {
               id={`window-${winId}`}
               style={windowStyle}
               onClick={() => { setFocusedWindow(winId); triggerSound(400, 0.01); }}
-              className={`flex flex-col rounded-xl overflow-hidden shadow-2xl transition-all duration-150 transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'} animate-window-open`}
+              onAnimationEnd={() => handleAnimationEnd(winId)}
+               className={`flex flex-col rounded-xl overflow-hidden shadow-2xl ${draggedWindow === winId ? '' : 'transition-all duration-150'} transform ${styleSet.glass} ${isFocused ? 'ring-2 ring-sky-500/35 scale-[1.002]' : 'opacity-90'} ${windowReady[winId] ? '' : 'animate-window-open'}`}
             >
               
               {/* Window Bar Header */}
@@ -1186,944 +1147,163 @@ export default function App() {
                 
                 {/* A. DIGITAL TWIN AI ASSISTANT PANEL */}
                 {winId === 'twin' && (
-                  <div className="flex flex-col h-full gap-3">
-                    <div className="border-b border-zinc-800/60 pb-2 mb-1">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-purple-400" />
-                        <span className="font-bold text-slate-100 tracking-tight">Interactive Ask Twin Engine</span>
-                      </div>
-                      <p className="text-zinc-400 text-[10px] mt-0.5 leading-relaxed font-normal">
-                        Enter any prompt below. The model responds based on Farhan's publications, NLP methodologies, and complete career achievements.
-                      </p>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto space-y-3 p-1 scrollbar-none text-[11px] leading-relaxed select-text font-normal max-h-[220px]">
-                      {twinMessages.map((m, idx) => (
-                        <div key={idx} className={`flex flex-col gap-1 w-full ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div className={`p-3 rounded-xl max-w-[90%] whitespace-pre-wrap select-text border shadow-xs ${m.role === 'user' ? 'bg-sky-500/10 border-sky-500/20 text-slate-100' : 'bg-zinc-950/40 border-zinc-900 text-slate-300'}`}>
-                            {m.content}
-                          </div>
-                          
-                          {/* Synth TTS play button for model messages */}
-                          {m.role === 'assistant' && (
-                            <button 
-                              onClick={() => {
-                                if (playingMessageIndex === idx) {
-                                  stopSpeaking();
-                                } else {
-                                  speakText(m.content, idx);
-                                }
-                              }}
-                              className="text-[9px] text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer font-semibold"
-                            >
-                              {playingMessageIndex === idx ? (
-                                <>
-                                  <VolumeX className="w-3 h-3 text-rose-400 animate-pulse" />
-                                  <span className="text-rose-400">Silence Audio Narrator</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 className="w-3 h-3 text-purple-400" />
-                                  <span>Speak Response Model</span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      {twinLoading && (
-                        <div className="flex items-center gap-2 text-purple-400 animate-pulse font-mono text-[10px]">
-                          <Cpu className="w-3.5 h-3.5 animate-spin" />
-                          <span>FarhanTwin thinking processes synchronized...</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Chat Suggestion Prompt Chips */}
-                    <div className="border-t border-zinc-800/40 pt-2 grid grid-cols-2 gap-1.5 z-10">
-                      {[
-                        "Explain depression text research",
-                        "What bimodal stack is in use?",
-                        "What SaaS packages did Farhan build?",
-                        "Give brief overview of Farhan"
-                      ].map((chip) => (
-                        <button 
-                          key={chip} 
-                          onClick={() => { setTwinInput(chip); triggerSound(900, 0.02); }}
-                          className="text-[10px] text-left p-1.5 rounded-lg bg-zinc-950/30 hover:bg-zinc-950/80 border border-zinc-900 text-zinc-400 hover:text-slate-200 truncate cursor-pointer transition-colors"
-                        >
-                          → {chip}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Chat Input deck */}
-                    <div className="flex items-center gap-2 mt-auto border-t border-zinc-800/40 pt-2 select-none">
-                      <input 
-                        type="text"
-                        value={twinInput}
-                        onChange={(e) => setTwinInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSendTwinMessage()}
-                        placeholder="Inquire about clinical studies, model performance parameters..."
-                        className="flex-1 scroll-p-2 bg-black/60 border border-zinc-800 rounded-lg py-2 px-3 focus:outline-hidden focus:border-purple-500/50 text-[11px] text-slate-100 placeholder-zinc-500"
-                      />
-                      <button 
-                        onClick={handleSendTwinMessage}
-                        disabled={!twinInput.trim() || twinLoading}
-                        className={`p-2.5 rounded-lg cursor-pointer ${styleSet.btnPrimary}`}
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading twin engine...</div>}>
+                    <TwinWindow
+                      twinMessages={twinMessages}
+                      twinLoading={twinLoading}
+                      twinInput={twinInput}
+                      setTwinInput={setTwinInput}
+                      handleSendTwinMessage={handleSendTwinMessage}
+                      playingMessageIndex={playingMessageIndex}
+                      speakText={speakText}
+                      stopSpeaking={stopSpeaking}
+                      styleSet={styleSet}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* B. PROJECT GALAXY COMMAND PANEL */}
                 {winId === 'projects' && (
-                  <div className="flex flex-col md:flex-row h-full gap-4">
-                    
-                    {/* LHS Filter & Lists */}
-                    <div className="w-full md:w-52 border-r border-zinc-800/60 pr-4 flex flex-col gap-2">
-                      <span className={styleSet.panelHeader}>CATEGORIES</span>
-                      <div className="flex flex-wrap md:flex-col gap-1 select-none mb-3">
-                        {['AI', 'NLP', 'SaaS', 'Open Source', 'Research', 'Productivity', 'Design'].map((cat) => (
-                          <button 
-                            key={cat}
-                            onClick={() => { setSelectedProject(portfolioData.projects.find(p => p.category === cat) || portfolioData.projects[0]); triggerSound(800, 0.02); }}
-                            className={`text-[10px] text-left px-2 py-1.5 rounded-md capitalize transition-all cursor-pointer ${selectedProject.category === cat ? 'bg-zinc-950 text-sky-400 border border-zinc-800 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
-                          >
-                            🎨 {cat}
-                          </button>
-                        ))}
-                      </div>
-
-                      <span className={styleSet.panelHeader}>ACTIVE PLATFORMS</span>
-                      <div className="space-y-1 overflow-y-auto max-h-[160px] scrollbar-none select-none">
-                        {portfolioData.projects.map((p) => (
-                          <button 
-                            key={p.id}
-                            onClick={() => { setSelectedProject(p); triggerSound(800, 0.03); }}
-                            className={`w-full text-[10px] text-left p-2 rounded-md border flex flex-col gap-0.5 transition-colors cursor-pointer ${selectedProject.id === p.id ? 'bg-sky-500/10 border-sky-500/30 text-sky-300' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
-                          >
-                            <span className="font-bold truncate">{p.title}</span>
-                            <span className="text-[9px] opacity-75">{p.category}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* RHS Rich Details Panel */}
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-start justify-between border-b border-zinc-800/40 pb-2">
-                        <div>
-                          <span className={styleSet.badge}>{selectedProject.category} PROJECT</span>
-                          <h3 className="text-sm font-extrabold text-white mt-1">{selectedProject.title}</h3>
-                          <span className="text-[10px] text-zinc-500 font-mono tracking-wide">TIMELINE: {selectedProject.timeline}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 select-none">
-                          <button onClick={() => triggerSound(1000, 0.05)} className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1">
-                            <GitBranch className="w-3 h-3" />
-                            <span>Code</span>
-                          </button>
-                          <button onClick={() => { triggerSound(1100, 0.05); openWindow('brief'); }} className="p-1 px-2.5 rounded bg-sky-500/10 border border-sky-500/20 text-[10px] text-sky-300 hover:text-sky-200 flex items-center gap-1">
-                            <Rocket className="w-3 h-3" />
-                            <span>Deploy</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="text-zinc-300 leading-relaxed font-sans mt-1 text-[11px] select-text">{selectedProject.description}</p>
-
-                      {/* Technical Key Metrics Grid Row */}
-                      <div className="grid grid-cols-3 gap-2.5">
-                        {selectedProject.metrics.map((m, idx) => (
-                          <div key={idx} className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-2.5 text-center relative overflow-hidden">
-                            <div className="absolute top-0 left-0 right-0 h-0.5 bg-sky-400/20" />
-                            <div className="text-[10px] text-zinc-500 capitalize">{m.label}</div>
-                            <div className="text-xs font-black text-sky-300 mt-1">{m.value}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="space-y-3 mt-4 text-[11px]">
-                        <div className="bg-zinc-950/20 border border-zinc-900 rounded-lg p-3 select-text">
-                          <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wide mb-1">Architecture Pipeline:</span>
-                          <span className="text-slate-400 leading-relaxed font-sans">{selectedProject.architecture}</span>
-                        </div>
-
-                        <div className="bg-zinc-950/20 border border-zinc-900 rounded-lg p-3 select-text">
-                          <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wide mb-1">Design Problem:</span>
-                          <span className="text-slate-400 leading-relaxed font-sans">{selectedProject.problem}</span>
-                        </div>
-
-                        <div className="bg-zinc-950/20 border border-zinc-900 rounded-lg p-3 select-text">
-                          <span className="font-bold text-zinc-200 block text-[10px] uppercase tracking-wide mb-1">Integrated Tech-Stack Matrix:</span>
-                          <div className="flex flex-wrap gap-1.5 mt-1 select-none">
-                            {selectedProject.techStack.map((tech) => (
-                              <span key={tech} className="bg-zinc-900 text-slate-300 border border-zinc-800 rounded px-1.5 py-0.5 text-[9px] font-mono leading-tight">{tech}</span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading project galaxy...</div>}>
+                    <ProjectsWindow
+                      styleSet={styleSet}
+                      selectedProject={selectedProject}
+                      setSelectedProject={setSelectedProject}
+                      triggerSound={triggerSound}
+                      openWindow={openWindow}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* C. LINGUISTIC RESEARCH LAB PANEL */}
                 {winId === 'research' && (
-                  <div className="flex flex-col md:flex-row h-full gap-4">
-                    
-                    {/* LHS Switcher */}
-                    <div className="w-full md:w-56 border-r border-[#2d2f3d] pr-4 flex flex-col gap-2">
-                      <span className={styleSet.panelHeader}>PUBLICATIONS CATALOG</span>
-                      <div className="space-y-1 select-none">
-                        {portfolioData.papers.map((p) => (
-                          <button 
-                            key={p.id}
-                            onClick={() => { setSelectedPaper(p); triggerSound(800, 0.03); }}
-                            className={`w-full text-left p-2 rounded-lg border flex flex-col gap-1 transition-all cursor-pointer ${selectedPaper.id === p.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
-                          >
-                            <span className="font-bold text-[10px] line-clamp-2 leading-snug">{p.title}</span>
-                            <span className="text-[9px] opacity-75 font-mono">{p.journal} ({p.year})</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg mt-auto text-[10px] select-text">
-                        <span className="font-bold text-emerald-300">Clinician Alerts</span>
-                        <p className="text-zinc-500 leading-normal font-sans mt-1">Automatic alert pipeline triggers clinical assessment support metrics on exceeding distress metrics threshold.</p>
-                      </div>
-                    </div>
-
-                    {/* RHS Contents */}
-                    <div className="flex-1 space-y-4">
-                      <div className="border-b border-zinc-800/40 pb-2 flex-col gap-0.5 justify-start">
-                        <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded px-2 py-0.5 text-[9.5px]">PEER-REVIEWED JOURNAL</span>
-                        <h3 className="text-xs font-black text-slate-100 tracking-tight leading-relaxed select-text mt-1.5">{selectedPaper.title}</h3>
-                        <div className="text-[9.5px] text-zinc-500 italic mt-0.5 select-text">Authors: {selectedPaper.authors} · Published in {selectedPaper.journal} ({selectedPaper.year})</div>
-                      </div>
-
-                      {/* Paper Abstract Tabbed panel */}
-                      <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-3 relative select-text">
-                        <span className="font-bold text-zinc-300 text-[10px] block uppercase tracking-wide mb-1">Anatomical Abstract:</span>
-                        <p className="text-slate-400 font-sans leading-normal text-[10px]">{selectedPaper.abstract}</p>
-                      </div>
-
-                      {/* Interactive block representing high level engineering classification pipelines */}
-                      <div>
-                        <span className={styleSet.panelHeader}>CLASSIFIER PIPELINE DATAFLOW</span>
-                        <div className="flex items-center gap-1 mt-1.5 select-none text-[9px] bg-zinc-950/30 p-2 border border-zinc-900 rounded-lg justify-around overflow-x-auto text-center font-mono">
-                          <div className="bg-zinc-900 border border-zinc-800 p-1 px-1.5 rounded text-slate-400">Ingestion</div>
-                          <span className="text-zinc-600">→</span>
-                          <div className="bg-zinc-900 border border-zinc-800 p-1 px-1.5 rounded text-slate-400">POS normalise</div>
-                          <span className="text-[#33ff33]">→</span>
-                          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 p-1 px-1.5 rounded animate-pulse">RoBERTa Tensor Matrix</span>
-                          <span className="text-[#33ff33]">→</span>
-                          <div className="bg-red-500/20 text-red-300 border border-red-500/30 p-1 px-1.5 rounded">Clinician Alert</div>
-                        </div>
-                      </div>
-
-                      {/* Metrics Performance Comparison Table */}
-                      <div>
-                        <span className={styleSet.panelHeader}>EVALUATION ACCURACY STATISTICS</span>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-1.5 font-mono text-[10px]">
-                          {selectedPaper.results.map((r, idx) => (
-                            <div key={idx} className="bg-zinc-950 p-2 border border-zinc-900 rounded-md text-center">
-                              <div className="text-zinc-500 text-[9px] truncate" title={r.metric}>{r.metric}</div>
-                              <div className="font-bold text-emerald-400 text-xs mt-0.5">{r.score}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* BibTeX citation block Copy/Paste */}
-                      <div className="border border-zinc-900 bg-zinc-950/60 p-2.5 rounded-lg">
-                        <div className="flex items-center justify-between pointer-events-auto select-none mb-1">
-                          <span className="text-[10px] text-zinc-500 font-bold block">BIBTEX CITATION RESOURCE</span>
-                          <button 
-                            onClick={() => {
-                              navigator.clipboard.writeText(selectedPaper.citation);
-                              triggerSound(1200, 0.05);
-                            }}
-                            className="bg-zinc-900 text-zinc-400 hover:text-white px-1.5 py-0.5 rounded text-[9.5px] border border-zinc-850 flex items-center gap-0.5 cursor-pointer"
-                          >
-                            <Copy className="w-2.5 h-2.5" />
-                            <span>Copy Citation</span>
-                          </button>
-                        </div>
-                        <code className="text-[9.5px] text-zinc-400 font-mono select-all block leading-tight">{selectedPaper.citation}</code>
-                      </div>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading research lab...</div>}>
+                    <ResearchWindow
+                      styleSet={styleSet}
+                      selectedPaper={selectedPaper}
+                      setSelectedPaper={setSelectedPaper}
+                      triggerSound={triggerSound}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* D. GITHUB INTELLIGENCE MONITOR PANEL */}
                 {winId === 'github' && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2c2d3a] pb-2">
-                      <div>
-                        <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">VIRTUALIZED TELEMETRY STREAM</span>
-                        <h3 className="text-sm font-extrabold text-white mt-1">Linguistic & Engineering Pipelines Stream</h3>
-                      </div>
-                      <span className="text-[11px] text-stone-400 font-mono bg-zinc-950/60 px-2 py-0.5 border border-zinc-850 rounded">STREAK: 142 DAYS</span>
-                    </div>
-
-                    {/* Interactive Commits Calendar mock-up representing dynamic workloads */}
-                    <div>
-                      <span className={styleSet.panelHeader}>CODE INTEL CLASSIFIER CALENDAR (MOCK-GRID)</span>
-                      <div className="grid grid-cols-12 lg:grid-cols-24 gap-1 mt-1.5 bg-zinc-950 p-3 border border-zinc-900 rounded-lg">
-                        {Array.from({ length: 48 }).map((_, i) => {
-                          const level = i % 7 === 0 ? 'bg-green-500 shadow-[0_0_4px_#22c55e]' : i % 5 === 0 ? 'bg-green-600' : i % 3 === 0 ? 'bg-green-800' : 'bg-zinc-900';
-                          return (
-                            <div 
-                              key={i} 
-                              onClick={() => triggerSound(900 + (i % 5) * 100, 0.02)}
-                              className={`w-3.5 h-3.5 rounded-xs transition-colors hover:scale-110 cursor-pointer ${level}`}
-                              title={`Telemetry day ${i + 1}: Commits verified`}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-[11px]">
-                      
-                      {/* Active Repositories List */}
-                      <div className="bg-zinc-950/30 p-3 border border-[#2d2f3d] rounded-lg">
-                        <span className="font-bold text-zinc-300 block text-[10px] uppercase tracking-wide mb-2">INTELLIGENT SYSTEMS</span>
-                        <div className="space-y-2 font-mono">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sky-300">typerush-cockpit</span>
-                            <span className="text-zinc-500 text-[10px]">Stars: 184</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sky-300">the-ink-home-portal</span>
-                            <span className="text-zinc-500 text-[10px]">Stars: 142</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sky-300">safeside-predictor</span>
-                            <span className="text-zinc-500 text-[10px]">Stars: 211</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Mock activity feeds */}
-                      <div className="bg-zinc-950/30 p-3 border border-[#2d2f3d] rounded-lg">
-                        <span className="font-bold text-zinc-300 block text-[10px] uppercase tracking-wide mb-2">LIVE COMPILING ACTIONS FEED</span>
-                        <div className="space-y-2 leading-relaxed text-[10.5px]">
-                          <div className="flex items-start gap-1">
-                            <span className="text-emerald-400">●</span>
-                            <p className="text-zinc-400">Pushed update to <code className="text-[#33ff33] font-mono">typerush</code>: Configured Web Audio procedural oscillators & dynamic BPM heartbeats.</p>
-                          </div>
-                          <div className="flex items-start gap-1">
-                            <span className="text-amber-400">●</span>
-                            <p className="text-zinc-400">Released version 1.4.2 containing live Audio Synthesis narrated profiles.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading telemetry stream...</div>}>
+                    <GithubWindow styleSet={styleSet} triggerSound={triggerSound} />
+                  </Suspense>
                 )}
 
 
                 {/* E. WRITING UNIVERSE / BLOG PANEL WITH AUDIO TTS NARRATOR */}
                 {winId === 'writing' && (
-                  <div className="flex flex-col md:flex-row h-full gap-4">
-                    
-                    {/* LHS Index Switcher */}
-                    <div className="w-full md:w-56 border-r border-[#2d2f3d] pr-4 flex flex-col gap-2 select-none">
-                      <span className={styleSet.panelHeader}>NARRATIVE CHRONICLES</span>
-                      <div className="space-y-1">
-                        {articles.map((a) => (
-                          <button 
-                            key={a.id}
-                            onClick={() => { setSelectedArticle(a); triggerSound(800, 0.03); }}
-                            className={`w-full text-left p-2 rounded-lg border flex flex-col gap-0.5 transition-all cursor-pointer ${selectedArticle.id === a.id ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
-                          >
-                            <span className="font-extrabold text-[10.5px] line-clamp-1 truncate">{a.title}</span>
-                            <div className="flex items-center justify-between text-[8.5px] text-zinc-500 mt-0.5 font-mono">
-                              <span>{a.category}</span>
-                              <span>{a.readTime}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-lg mt-auto text-[10px]">
-                        <span className="font-bold text-amber-300 block mb-0.5">Medium Syndicate</span>
-                        <p className="text-zinc-500 leading-normal font-sans">Curated articles focus on the overlapping spheres of diagnostic ML architectures and UX.</p>
-                      </div>
-                    </div>
-
-                    {/* RHS Story Detail */}
-                    <div className="flex-1 space-y-3 relative">
-                      
-                      {/* Audio Narrator Control Panel using `/api/tts` */}
-                      <div className="bg-zinc-950/60 border border-zinc-900 p-3 rounded-lg flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
-                          <div>
-                            <span className="text-[10px] text-zinc-400 uppercase font-mono border-zinc-800 pr-1 select-none">SYSTÉME NARRATOR</span>
-                            <p className="text-[11px] text-white font-bold select-text">Read aloud with synthesized clinical AI speech?</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          {playingMessageIndex === 999 ? (
-                            <button 
-                              onClick={stopSpeaking}
-                              className="bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 px-3 py-1 text-[10px] rounded flex items-center gap-1 cursor-pointer font-bold"
-                            >
-                              <VolumeX className="w-3.5 h-3.5" />
-                              <span>Stop Narration</span>
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => speakText(selectedArticle.content, 999)}
-                              className="bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 px-3 py-1 text-[10px] rounded flex items-center gap-1 cursor-pointer font-bold"
-                            >
-                              <Play className="w-3.5 h-3.5" />
-                              <span>Play Voiceover</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="border-b border-zinc-850 pb-2 flex items-start justify-between">
-                        <div>
-                          <span className="text-[9.5px] bg-amber-500/20 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded uppercase font-mono">{selectedArticle.category} COLUMN</span>
-                          <h3 className="text-xs font-black text-white tracking-snug mt-1.5 leading-relaxed select-text">{selectedArticle.title}</h3>
-                          <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block mt-1">Written on {selectedArticle.date} · {selectedArticle.readTime}</span>
-                        </div>
-                        {selectedArticle.link && (
-                          <a 
-                            href={selectedArticle.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => triggerSound(900, 0.02)}
-                            className="text-[10px] text-amber-400 hover:underline flex items-center gap-1 font-mono uppercase tracking-wider ml-2"
-                          >
-                            <span>Read on Medium ↗</span>
-                          </a>
-                        )}
-                      </div>
-
-                      <div className="text-[10.5px] leading-relaxed text-slate-300 font-sans select-all font-normal space-y-2 mt-2 max-h-[180px] overflow-y-auto pr-1">
-                        <p>{selectedArticle.content}</p>
-                      </div>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading narrative chronicles...</div>}>
+                    <WritingWindow
+                      articles={articles}
+                      selectedArticle={selectedArticle}
+                      setSelectedArticle={setSelectedArticle}
+                      styleSet={styleSet}
+                      triggerSound={triggerSound}
+                      playingMessageIndex={playingMessageIndex}
+                      speakText={speakText}
+                      stopSpeaking={stopSpeaking}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* F. DIGITAL GARDEN KNOWLEDGE GRAPH PANEL */}
                 {winId === 'garden' && (
-                  <div className="space-y-4">
-                    <div className="border-b border-[#2c2d3a] pb-2">
-                      <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">Topological Semantics Mapping</span>
-                      <h3 className="text-xs font-black text-white mt-1">Interconnected Semantic Knowledge Field</h3>
-                    </div>
-
-                    {/* Explorable interactive coordinate point array */}
-                    <div>
-                      <span className={styleSet.panelHeader}>INTERACTIVE CONCEPT NODES</span>
-                      <div className="relative h-44 bg-zinc-950 p-2 border border-zinc-900 rounded-lg overflow-hidden flex items-center justify-center">
-                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] bg-[size:1rem_1rem] opacity-35" />
-                        
-                        {/* Render simple coordinate mapping nodes */}
-                        <div className="relative w-full h-full">
-                          {portfolioData.gardenNodes.map((gn, idx) => {
-                            const posX = (idx * 11) % 80 + 10;
-                            const posY = (idx * 7) % 65 + 15;
-                            const isNodeHovered = hoveredGardenNode === gn.id;
-
-                            return (
-                              <button 
-                                key={gn.id}
-                                onMouseEnter={() => { setHoveredGardenNode(gn.id); triggerSound(1100, 0.01); }}
-                                onMouseLeave={() => setHoveredGardenNode(null)}
-                                style={{ left: `${posX}%`, top: `${posY}%` }}
-                                className={`absolute -translate-x-1/2 -translate-y-1/2 p-1.5 py-0.5 rounded border text-[9px] transition-all cursor-pointer font-mono ${isNodeHovered ? 'bg-[#00ffcc] text-black border-[#00ffcc] scale-110 shadow-[0_0_8px_#00ffcc] z-50' : 'bg-zinc-900/60 border-zinc-800 text-zinc-400'}`}
-                              >
-                                {gn.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Explanatory Node Card */}
-                    <div className="bg-zinc-950 p-3 border border-zinc-900 rounded-lg min-h-[50px] select-text">
-                      <span className="font-bold text-cyan-300 block text-[9.5px] uppercase font-mono tracking-widest mb-1">
-                        Active Node Spectrum Details:
-                      </span>
-                      {hoveredGardenNode ? (
-                        <p className="text-[10px] text-zinc-400 leading-normal font-sans">
-                          {hoveredGardenNode === 'nlp' && "Clinical NLP: Integrates semantic transformers explicitly tuned on Reddit discourse corpus mapping mental distress."}
-                          {hoveredGardenNode === 'transformers' && "Transformers: Multi-attention neural architectures providing topological weights maps."}
-                          {hoveredGardenNode === 'depression' && "Depression Dialectics: Analysis of negation markers and cognitive distortions."}
-                          {hoveredGardenNode === 'ethics' && "Research Ethics: Strict patient confidentiality controls verified against strict healthcare safety parameters."}
-                          {hoveredGardenNode === 'saas' && "AI SaaS: Low-latency scale-to-zero container workloads deployed across GCP Kubernetes mesh integrations."}
-                          {!['nlp', 'transformers', 'depression', 'ethics', 'saas'].includes(hoveredGardenNode) && `Semantic connection active on ${hoveredGardenNode}. High performance clustering coefficient evaluated.`}
-                        </p>
-                      ) : (
-                        <p className="text-[10px] text-zinc-500 font-sans">Hover on any interactive concept node above to evaluate corresponding diagnostic dependencies...</p>
-                      )}
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading garden...</div>}>
+                    <GardenWindow
+                      styleSet={styleSet}
+                      hoveredGardenNode={hoveredGardenNode}
+                      setHoveredGardenNode={setHoveredGardenNode}
+                      triggerSound={triggerSound}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* G. AI TAILORED RESUME GENERATOR */}
                 {winId === 'resume' && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2c2d3a] pb-2">
-                      <div>
-                        <span className="bg-pink-500/10 text-pink-400 border border-pink-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">VIRTUAL RESUME ARCHITECT</span>
-                        <h3 className="text-sm font-extrabold text-white mt-1">Interactively Tailored Professional Profile</h3>
-                      </div>
-                      
-                      <button 
-                        onClick={() => { window.print(); triggerSound(1100, 0.05); }}
-                        className="bg-zinc-950 text-zinc-300 border border-zinc-800 hover:text-white px-2.5 py-1 rounded text-[10px] flex items-center gap-1 cursor-pointer font-bold mt-2 sm:mt-0"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Print Resume Draft</span>
-                      </button>
-                    </div>
-
-                    {/* Selector of Target Audience */}
-                    <div className="bg-zinc-950 p-2.5 border border-zinc-900 rounded-lg select-none">
-                      <span className="text-[10px] text-zinc-500 font-bold block mb-1">CONFIGURE AUDIENCE TAILORING SYSTEM:</span>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 text-center">
-                        {[
-                          { id: 'recruiter', label: 'HR / Recruiter', text: 'Stresses full-stack frameworks, production scale parameters, and GCP deployment latency F1 scores.' },
-                          { id: 'investor', label: 'Venture Capital', text: 'Emphasizes SaaS monetization indices, model scaling cost reductions, and architectural automation.' },
-                          { id: 'founder', label: 'Startups / Founder', text: 'Highlights rapid zero-to-one product engineering, Docker stacks, and low-latency API integration.' },
-                          { id: 'researcher', label: 'Clinical Academics', text: 'Focuses on linguistic models, peer-reviewed indices, topological sentiment classification levels, and statistical dataset weights.' }
-                        ].map((aud) => (
-                          <button 
-                            key={aud.id}
-                            onClick={() => { setResumeAudience(aud.id as any); triggerSound(800, 0.02); }}
-                            className={`p-2 rounded-lg border text-[10px] text-left flex flex-col gap-0.5 capitalize transition-all cursor-pointer ${resumeAudience === aud.id ? 'bg-pink-500/10 border-pink-500/30 text-pink-300 font-bold' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
-                          >
-                            <span>👤 {aud.label}</span>
-                            <span className="text-[8px] opacity-70 font-normal leading-normal">{aud.text}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Responsive Resume Paper sheet */}
-                    <div className="bg-zinc-950 p-4 border border-zinc-900 rounded-lg text-[10.5px] leading-relaxed max-h-[220px] overflow-y-auto font-sans text-slate-300 pr-1 select-text">
-                      <div className="border-b border-zinc-850 pb-2 mb-2 text-center select-text">
-                        <h4 className="text-xs font-black text-white uppercase tracking-wider">{portfolioData.name}</h4>
-                        <span className="text-[9px] text-[#00ffcc] font-mono tracking-widest">{portfolioData.title}</span>
-                      </div>
-
-                      {resumeAudience === 'recruiter' && (
-                        <div className="space-y-3">
-                          <div>
-                            <span className="font-extrabold text-[#00ffcc] block text-[9.5px] uppercase font-mono">EXECUTIVE SUMMARY (RECRUITER ALIGNED)</span>
-                            <p>Result-oriented AI engineer possessing over 6 years of contiguous development building fast-response classification models and robust, horizontally-scaled TypeScript SaaS applications with absolute type-safety protocols.</p>
-                          </div>
-                          <div>
-                            <span className="font-extrabold text-[#00ffcc] block text-[9.5px] uppercase font-mono">CORE TECHNICAL SPECIFICATIONS</span>
-                            <p>React/Next.js, Tailwind v4, Node.js, Go microservices, Python PyTorch matrix operations, PostgreSQL schemas, Redis caches, and Docker container orchestration.</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {resumeAudience === 'investor' && (
-                        <div className="space-y-3">
-                          <div>
-                            <span className="font-extrabold text-[#ebd8fb] block text-[9.5px] uppercase font-mono">STRATEGIC SYNOPSIS (VENTURE CAPITAL ALIGNED)</span>
-                            <p>Product developer specializing in compiling scalable business models. Highly skilled at engineering zero-cold-start ML SaaS containers, driving serverless scale-to-zero GCP costs, and structuring predictive customer diagnostics panels decreasing friction indices by up to 42%.</p>
-                          </div>
-                          <div>
-                            <span className="font-extrabold text-[#ebd8fb] block text-[9.5px] uppercase font-mono">PROVEN MONETIZATION HIGHLIGHTS</span>
-                            <p>Built SafeSide prediction engines processing live football simulation data in real-time, executing Poisson risk evaluation algorithms with 0.88 F1 metric scores.</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {resumeAudience === 'founder' && (
-                        <div className="space-y-3">
-                          <div>
-                            <span className="font-extrabold text-amber-300 block text-[9.5px] uppercase font-mono">PRODUCT FOUNDRY PROTOCOL (FOUNDER ALIGNED)</span>
-                            <p>High-tempo zero-to-one software architect constructing high-performance platforms immediately on demand. Combines outstanding visual UI craftsmanship with decoupled scalable database designs, providing functional, production-ready systems without overhead.</p>
-                          </div>
-                          <div>
-                            <span className="font-extrabold text-amber-300 block text-[9.5px] uppercase font-mono">CORE FLUIDITY TOOLS</span>
-                            <p>TypeScript endpoints, instant responsive Tailwind designs, container networks, vector caches, and real-time bimodal communication interfaces.</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {resumeAudience === 'researcher' && (
-                        <div className="space-y-3">
-                          <div>
-                            <span className="font-extrabold text-emerald-300 block text-[9.5px] uppercase font-mono">RESEARCH STATEMENT (ACADEMIC ALIGNED)</span>
-                            <p>Quantitative researcher researching the diagnostic intersection of linguistics analytics and mental wellness forums. Formulating custom bidirectional classification weights metrics that leverage fine-grained RoBERTa embeddings to map emotional distress on social media platforms.</p>
-                          </div>
-                          <div>
-                            <span className="font-extrabold text-emerald-300 block text-[9.5px] uppercase font-mono">ACADEMIC RESEARCH TRACK RECORD</span>
-                            <p>First-named author on clinical papers (RoBERTa depression classifier F1 accuracy of 0.914 against traditional baselines of 0.781). Outlined topological multidimensional sentiment models.</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading resume...</div>}>
+                    <ResumeWindow
+                      styleSet={styleSet}
+                      resumeAudience={resumeAudience}
+                      setResumeAudience={setResumeAudience}
+                      triggerSound={triggerSound}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* H. INTERACTIVE TIMELINE / EXPERIENCE BLOCK */}
                 {winId === 'timeline' && (
-                  <div className="flex flex-col md:flex-row h-full gap-4">
-                    
-                    {/* LHS Slider Selector */}
-                    <div className="w-full md:w-52 border-r border-[#2d2f3d] pr-4 flex flex-col gap-2 select-none">
-                      <span className={styleSet.panelHeader}>CHRONOLOGY INDEX</span>
-                      <div className="space-y-1.5">
-                        {portfolioData.timeline.map((item) => (
-                          <button 
-                            key={item.year}
-                            onClick={() => { setSelectedTimeline(item); triggerSound(800, 0.03); }}
-                            className={`w-full text-left p-2 rounded-lg border flex items-center justify-between transition-all cursor-pointer ${selectedTimeline.year === item.year ? 'bg-sky-500/10 border-sky-500/30 text-sky-300 font-bold' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
-                          >
-                            <span className="text-[10.5px]">{item.company}</span>
-                            <span className="bg-zinc-900 px-1.5 py-0.5 rounded text-[8.5px] font-mono">{item.year}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* RHS Event Details */}
-                    <div className="flex-1 space-y-3">
-                      <div className="border-b border-[#2c2d3a] pb-2">
-                        <span className="bg-sky-500/10 text-sky-300 border border-sky-500/20 px-1 py-0.5 rounded text-[9.5px] font-mono">YEAR: {selectedTimeline.year} EXP</span>
-                        <h4 className="text-xs font-black text-white mt-1.5">{selectedTimeline.title}</h4>
-                        <span className="text-[9.5px] text-zinc-500 font-sans block">{selectedTimeline.company} · Role: {selectedTimeline.role}</span>
-                      </div>
-
-                      <p className="text-[11px] leading-relaxed text-zinc-400 font-sans select-text">{selectedTimeline.description}</p>
-
-                      <div className="space-y-2 select-text">
-                        <span className={styleSet.panelHeader}>HIGHLIGHT ACCOMPLISHMENTS</span>
-                        <ul className="space-y-1.5 pl-3 list-disc text-[10.5px] text-slate-300 leading-normal">
-                          {selectedTimeline.achievements.map((ach, idx) => (
-                            <li key={idx} className="marker:text-sky-400">{ach}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="bg-zinc-950/40 p-2.5 border border-zinc-900 rounded-lg mt-3">
-                        <span className="font-bold text-zinc-300 block text-[9.5px] uppercase font-mono tracking-widest mb-1.5">INTEGRATED TECH GRID</span>
-                        <div className="flex flex-wrap gap-1 select-none">
-                          {selectedTimeline.technologies.map((t) => (
-                            <span key={t} className="bg-zinc-900 text-slate-400 border border-zinc-800 rounded px-1.5 font-mono text-[9px]">{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading chronology...</div>}>
+                    <TimelineWindow
+                      styleSet={styleSet}
+                      selectedTimeline={selectedTimeline}
+                      setSelectedTimeline={setSelectedTimeline}
+                      triggerSound={triggerSound}
+                    />
+                  </Suspense>
                 )}
 
+                {/* I. PROFESSIONAL TIMELINE / CHRONOLOGY BLOCK */}
                 {winId === 'profTimeline' && (
-                  <div className="space-y-6">
-                    <div className="border-b border-[#2c2d3a] pb-2">
-                      <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">PRO TIMELINE NODE</span>
-                      <h3 className="text-xs font-black text-white mt-1">Professional Experience & Verification Chronology</h3>
-                    </div>
-
-                    <div className="relative pl-6 md:pl-0 pt-4">
-                      {/* Vertical line */}
-                      <div className="absolute left-[13px] md:left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-indigo-500/60 via-cyan-500/20 to-transparent -translate-x-1/2 pointer-events-none z-0"></div>
-                      <div 
-                        ref={osTimelineProgressLineRef}
-                        className="absolute left-[13px] md:left-1/2 top-0 bottom-16 w-[2px] bg-gradient-to-b from-cyan-400 to-purple-600 -translate-x-1/2 origin-top pointer-events-none z-10"
-                        style={{ transform: `scaleY(0)`, transformOrigin: 'top' }}
-                      ></div>
-
-                      <div className="space-y-10 relative z-10">
-                        {portfolioData.professionalTimeline.map((item, idx) => {
-                          const isLeft = idx % 2 === 0;
-                          return (
-                            <div key={idx} className={`flex flex-col md:flex-row items-start ${isLeft ? 'md:flex-row-reverse' : ''} relative`}>
-                              {/* Node Circle */}
-                              <div className="absolute left-[13px] md:left-1/2 -translate-x-1/2 flex items-center justify-center z-20">
-                                <div className="w-8 h-8 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center shadow-md">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-cyan-400 to-indigo-500"></span>
-                                </div>
-                              </div>
-
-                              {/* Spacer */}
-                              <div className="hidden md:block w-1/2" />
-
-                              {/* Card container */}
-                              <div className="w-full md:w-[46%] pl-8 md:pl-0">
-                                <div className="p-5 rounded-xl bg-zinc-900/30 border border-zinc-900/80 relative group hover:border-zinc-800 transition-all duration-300">
-                                  <div className="absolute top-0 right-0 w-12 h-12 bg-indigo-500/5 blur-lg pointer-events-none group-hover:bg-cyan-500/10 transition-colors"></div>
-                                  
-                                  <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
-                                    <div>
-                                      <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest font-semibold block mb-0.5">{item.year}</span>
-                                      <h4 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors leading-tight">{item.title}</h4>
-                                      <span className="text-[9px] text-zinc-550 block font-mono mt-0.5">{item.company}</span>
-                                    </div>
-                                    <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-mono border font-medium uppercase ${
-                                      item.badgeColor === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                                      item.badgeColor === 'indigo' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
-                                      item.badgeColor === 'pink' ? 'bg-pink-500/10 text-pink-400 border-pink-500/30' :
-                                      'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                    }`}>{item.company}</span>
-                                  </div>
-
-                                  <ul className="space-y-2 mb-4 text-[10.5px] text-zinc-400">
-                                    {item.achievements.map((bullet, bulletIdx) => (
-                                      <li key={bulletIdx} className="flex items-start leading-relaxed text-zinc-400 select-text">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400/80 mt-1.5 mr-2 shrink-0" />
-                                        <span>{bullet}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-
-                                  <div className="flex flex-wrap gap-1 pt-3 border-t border-zinc-900/60 select-none">
-                                    {item.technologies.map((t) => (
-                                      <span key={t} className="px-1.5 py-0.5 rounded text-[8px] font-mono bg-zinc-950/80 text-zinc-400 border border-zinc-900">{t}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading career chronology...</div>}>
+                    <ProfTimelineWindow osTimelineProgressLineRef={osTimelineProgressLineRef} />
+                  </Suspense>
                 )}
 
 
                 {/* I. TECH OBSERVATORY / SKILLS OBSERVER */}
+                {/* I. SKILLS MATRIX / OBSERVATORY PANEL */}
                 {winId === 'skills' && (
-                  <div className="space-y-4">
-                    <div className="border-b border-[#2c2d3a] pb-2 flex-col gap-0.5">
-                      <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">Observatory Deck</span>
-                      <h3 className="text-xs font-black text-white mt-1">Linguistic, Structural & Compute Matrices</h3>
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-zinc-950/60 p-1 border border-zinc-900 rounded-lg overflow-x-auto scrollbar-none select-none">
-                      {['all', 'AI/ML', 'Frontend', 'Backend', 'Research', 'Systems'].map((filter) => (
-                        <button 
-                          key={filter}
-                          onClick={() => { setSkillFilter(filter as any); triggerSound(800, 0.02); }}
-                          className={`text-[9.5px] px-2.5 py-1 rounded capitalize cursor-pointer transition-colors ${skillFilter === filter ? 'bg-indigo-600 font-bold text-white shadow-[0_0_8px_#4f46e5]' : 'bg-transparent text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                          {filter === 'all' ? 'All Matrices' : filter}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Weight-based circular coordinate grid matrix representing custom skills map */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[220px] overflow-y-auto p-1 scrollbar-none">
-                      {filteredSkills.map((sk) => {
-                        const weightPct = sk.weight === 5 ? 'border-sky-500/50 bg-sky-500/5 text-sky-200' : sk.weight === 4 ? 'border-indigo-500/30 bg-indigo-500/5 text-indigo-200' : 'border-zinc-800 bg-zinc-900/40 text-zinc-400';
-                        return (
-                          <div 
-                            key={sk.name}
-                            onClick={() => triggerSound(700 + sk.weight * 100, 0.03)}
-                            className={`p-2.5 rounded-lg border text-center cursor-pointer transition-all hover:scale-103 select-none flex flex-col items-center justify-center gap-1 relative overflow-hidden ${weightPct}`}
-                          >
-                            <span className="text-[10.5px] font-bold md:tracking-tight font-sans text-stone-100">{sk.name}</span>
-                            <span className="text-[8px] opacity-75 uppercase tracking-widest font-mono text-zinc-400">{sk.category}</span>
-                            <div className="flex items-center gap-0.5 mt-1">
-                              {Array.from({ length: 5 }).map((_, stIdx) => (
-                                <span key={stIdx} className={`w-1 h-1 rounded-full ${stIdx < sk.weight ? 'bg-indigo-400 shadow-[0_0_4px_#818cf8]' : 'bg-zinc-800'}`} />
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading skill matrices...</div>}>
+                    <SkillsWindow
+                      filteredSkills={filteredSkills}
+                      skillFilter={skillFilter}
+                      setSkillFilter={setSkillFilter}
+                      triggerSound={triggerSound}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* J. COLLABORATION HUB / STRATEGIC BRIEF PREVIEW */}
+                {/* J. COLLABORATION HUB / STRATEGIC BRIEF PREVIEW */}
                 {winId === 'brief' && (
-                  <div className="space-y-4">
-                    <div className="border-b border-[#2c2d3a] pb-2">
-                      <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">INTELLIGENT INTAKE PROCESS</span>
-                      <h3 className="text-xs font-black text-white mt-1">Initiate Feasibility Evaluation Strategy</h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      
-                      {/* Configuration Parameter Fields */}
-                      <div className="space-y-2.5">
-                        <div>
-                          <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-mono">VENTURE DOMAIN:</label>
-                          <select 
-                            value={briefForm.projectType}
-                            onChange={(e) => setBriefForm({ ...briefForm, projectType: e.target.value })}
-                            className="w-full bg-black/60 border border-zinc-800 rounded px-2.5 py-1.5 text-slate-100 text-[10.5px] outline-hidden focus:border-rose-500/50 cursor-pointer"
-                          >
-                            <option>AI Engineering & LLMs</option>
-                            <option>Clinical NLP & Mental State analysis</option>
-                            <option>SaaS Automation Development</option>
-                            <option>Interactive UI/UX Projects</option>
-                          </select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-mono">FINANCIAL BOUNDS:</label>
-                            <select 
-                              value={briefForm.budget}
-                              onChange={(e) => setBriefForm({ ...briefForm, budget: e.target.value })}
-                              className="w-full bg-black/60 border border-zinc-800 rounded px-2 text-slate-100 text-[10.5px] py-1.5 outline-hidden cursor-pointer"
-                            >
-                              <option>$5k - $10k</option>
-                              <option>$10k - $25k</option>
-                              <option>$25k+</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-mono">TIMELINE PROFILE:</label>
-                            <select 
-                              value={briefForm.timeline}
-                              onChange={(e) => setBriefForm({ ...briefForm, timeline: e.target.value })}
-                              className="w-full bg-black/60 border border-zinc-800 rounded px-2 text-slate-100 text-[10.5px] py-1.5 outline-hidden cursor-pointer"
-                            >
-                              <option>1-3 Months</option>
-                              <option>3 Months-half year</option>
-                              <option>Complex Multiphase</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-mono">STRATEGIC GOALS / OBJECTIVES:</label>
-                          <textarea 
-                            value={briefForm.goals}
-                            onChange={(e) => setBriefForm({ ...briefForm, goals: e.target.value })}
-                            rows={3}
-                            placeholder="Detail parameters (e.g. evaluating clinical texts via custom token systems, building offline CRDT platforms)"
-                            className="w-full bg-black/60 border border-zinc-800 rounded p-2 text-slate-100 text-[10.5px] outline-hidden focus:border-rose-500/50 placeholder-zinc-650"
-                          />
-                        </div>
-
-                        <button 
-                          onClick={handleSendBrief}
-                          disabled={!briefForm.goals.trim() || briefLoading}
-                          className="w-full bg-rose-600 hover:bg-rose-500 text-white border border-rose-400 py-2 rounded-lg text-[10.5px] cursor-pointer font-bold tracking-tight shadow-lg shadow-rose-950/50 flex items-center justify-center gap-1.5"
-                        >
-                          {briefLoading ? (
-                            <>
-                              <Cpu className="w-3.5 h-3.5 animate-spin" />
-                              <span>Deconstruct parameters algorithms...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Workflow className="w-3.5 h-3.5" />
-                              <span>Evaluate Feasibility Strategy</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Strategic analysis read-out panel */}
-                      <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-3.5 flex flex-col justify-between min-h-[220px]">
-                        <div>
-                          <span className="font-bold text-rose-300 block text-[9.5px] uppercase font-mono tracking-widest border-b border-zinc-850 pb-1.5 mb-2.5">
-                            ASSESSMENT & ARCHITECTURE STRATEGY:
-                          </span>
-                          {briefSummary ? (
-                            <p className="text-[11px] text-slate-300 leading-relaxed font-sans select-text">{briefSummary}</p>
-                          ) : (
-                            <div className="text-zinc-600 font-sans text-[10.5px] italic text-center py-10">
-                              Formulate objectives on LHS & execute evaluation to render Gemini predictive architecture recommendations...
-                            </div>
-                          )}
-                        </div>
-
-                        {briefSummary && (
-                          <div className="border-t border-zinc-900 pt-2 text-[10px] flex items-center justify-between mt-4">
-                            <span className="text-zinc-500 flex items-center gap-1 font-mono">
-                              <Check className="w-3 h-3 text-emerald-400" /> API SECURE Rails
-                            </span>
-                            <button 
-                              onClick={() => {
-                                alert("Strategy Brief dispatched. Farhan's team will contact you securely.");
-                                setBriefSummary(null);
-                                triggerSound(1100, 0.05);
-                              }}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-1 px-3 border border-emerald-400 rounded text-[9.5px] cursor-pointer"
-                            >
-                              Dispatch Brief
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading mission brief...</div>}>
+                    <BriefWindow
+                      briefForm={briefForm}
+                      setBriefForm={setBriefForm}
+                      briefLoading={briefLoading}
+                      briefSummary={briefSummary}
+                      briefDispatchLoading={briefDispatchLoading}
+                      handleSendBrief={handleSendBrief}
+                      handleDispatchBrief={handleDispatchBrief}
+                    />
+                  </Suspense>
                 )}
 
 
                 {/* L. IDEATION PAD / DRAWING WHITEBOARD */}
                 {winId === 'whiteboard' && (
-                  <Whiteboard theme={theme} triggerSound={triggerSound} />
+                  <Suspense fallback={<div className="flex items-center justify-center h-full text-zinc-500 text-xs">Loading Ideation Pad...</div>}>
+                    <Whiteboard theme={theme} triggerSound={triggerSound} />
+                  </Suspense>
                 )}
 
                 {/* K. SYSTEM BUILD MONITOR / RELEASE LOGS */}
                 {winId === 'builds' && (
-                  <div className="space-y-4">
-                    <div className="border-b border-[#2c2d3a] pb-2 flex-col gap-0.5">
-                      <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono">TELEMETRY DIAGNOSTICS</span>
-                      <h3 className="text-xs font-black text-white mt-1">Continuous Development & Deployment Releases</h3>
-                    </div>
-
-                    <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
-                      {portfolioData.buildLogs.map((log) => (
-                        <div key={log.id} className="bg-zinc-950/40 p-3.5 border border-[#2d2f3d] rounded-lg space-y-2 select-text">
-                          <div className="flex items-center justify-between border-b border-zinc-850 pb-1.5">
-                            <div className="flex items-center gap-1.5 text-white font-bold">
-                              <span className="text-teal-400 font-mono text-[9.5px] p-0.5 px-1.5 border border-teal-500/20 bg-teal-500/5 rounded">{log.version}</span>
-                              <span className="text-[11px] font-sans truncate">{log.title}</span>
-                            </div>
-                            <span className="text-[9.5px] text-zinc-500 font-mono">{log.date}</span>
-                          </div>
-
-                          <p className="text-[10.5px] text-slate-400 leading-relaxed font-sans">{log.description}</p>
-
-                          <div>
-                            <span className="font-bold text-zinc-300 block text-[9px] uppercase font-mono tracking-widest mb-1">TASKS DEPLOYED</span>
-                            <ul className="space-y-1 pl-3 text-[10px] text-zinc-400 list-disc leading-normal font-sans">
-                              {log.tasksCompleted.map((t, tIdx) => (
-                                <li key={tIdx}>{t}</li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="border-t border-zinc-900 pt-1.5">
-                            <span className="font-bold text-teal-300 block text-[9px] uppercase font-mono tracking-widest mb-1">METRIC SHIFTS DETECTED</span>
-                            <div className="flex flex-wrap gap-2 text-[10px] font-mono select-none">
-                              {log.metricsChanged.map((mc, mIdx) => (
-                                <span key={mIdx} className="bg-zinc-90 w-full flex items-center justify-between p-1.5 rounded border border-zinc-900 text-stone-300">
-                                  <span>{mc.metric}:</span>
-                                  <span className="text-teal-400 font-bold">{mc.before} ➔ {mc.after}</span>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading build diagnostics...</div>}>
+                    <BuildsWindow />
+                  </Suspense>
                 )}
 
               </div>
@@ -2264,9 +1444,16 @@ export default function App() {
             </div>
           </div>
         </div>
-      )}
-        </>
-      )}
-    </div>
+        )}
+      </>
+    )}
+    <Suspense fallback={null}>
+    <AssistantLauncher
+      theme={theme}
+      triggerSound={triggerSound}
+      placement={viewMode === 'landing' ? 'landing-left' : 'global-bottom-left'}
+    />
+    </Suspense>
+  </div>
   );
 }

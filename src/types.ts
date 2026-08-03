@@ -2,7 +2,7 @@ export interface Project {
   id: string;
   title: string;
   description: string;
-  category: 'AI' | 'NLP' | 'SaaS' | 'Open Source' | 'Research' | 'Productivity' | 'Design';
+  category: 'AI' | 'NLP' | 'SaaS' | 'Open Source' | 'Research' | 'Productivity' | 'Design' | 'Education' | 'Developer Tools' | 'AI/ML' | 'AI/Code' | 'Automation' | 'MLOps' | 'Web' | 'CLI Tool';
   techStack: string[];
   architecture: string;
   timeline: string;
@@ -108,4 +108,40 @@ export interface PortfolioData {
   skills: SkillNode[];
   gardenNodes: GardenNode[];
   gardenLinks: GardenLink[];
+}
+
+export interface GitHubRepo {
+  id: number;
+  name: string;
+  full_name: string;
+  description: string | null;
+  html_url: string;
+  language: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  updated_at: string;
+  topics: string[];
+  homepage: string | null;
+}
+
+export interface StyleSet {
+  bg: string;
+  glass: string;
+  windowHeader: string;
+  btnPrimary: string;
+  btnSecondary: string;
+  accentColor: string;
+  accentBorder: string;
+  indicator: string;
+  panelHeader: string;
+  badge: string;
+}
+
+export interface BriefForm {
+  projectType: string;
+  budget: string;
+  timeline: string;
+  goals: string;
+  comments: string;
+  email: string;
 }

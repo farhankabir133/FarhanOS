@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://farhanos.net/sitemap.xml
+Sitemap: https://farhanos.net/FarhanOS/sitemap.xml
