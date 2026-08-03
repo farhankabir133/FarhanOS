@@ -66,13 +66,17 @@ The application supports two views:
 | Styling | Tailwind CSS v4 |
 | Animation | Motion (Framer Motion), CSS transitions |
 | 3D / WebGL | Three.js |
-| Icons | Lucide React |
-| Backend (dev) | Express, Node.js |
+| Icons | Lucide React, custom SVG icons |
+| Backend | Vercel Serverless Functions + Express (dev) |
+| AI | Groq API (`llama-3.3-70b-versatile`) |
+| Email | Resend + Nodemailer fallback |
+| Fonts | Custom woff2 (`ABCFavorit`) with preload, inlined `@font-face` with `font-display: swap` |
+| Environment | Node 24.x, TypeScript 5.8 |
 | Backend (prod) | Vercel Serverless Functions |
 | AI | Groq API (`llama-3.3-70b-versatile`) |
 | Email | Resend |
-| Fonts | Custom woff2 with preload |
-| Deployment | Vercel (production), GitHub Pages (legacy) |
+| Fonts | Custom woff2 (`ABCFavorit-Bold`, `Regular`, `BoldItalic`, `RegularItalic`) with preload, inlined `@font-face` in HTML with `font-display: swap` |
+| Deployment | Vercel production at `https://farhankabir.me` (HTTP/2, Brotli + gzip, edge cache) |
 
 ---
 
@@ -86,11 +90,15 @@ The application supports two views:
 
 ### Frontend Structure
 - `App.tsx` — root component managing view mode (`landing` / `os`), window state, theme, and global shortcuts.
-- `LandingPage.tsx` — scrollable landing sections and animations.
-- `FloatingAssistant.tsx` — floating chat UI with magnetic hover, ripple effects, and responsive sheet behavior.
-- `TerminalBootLoader/` — boot sequence with custom typing engine and particle effects.
+- `LandingPage.tsx` — scrollable landing sections with lazy-loaded below-fold content via `LazySection` and `LandingPageContext`.
+- `LandingBelowFold.tsx` — below-fold sections (about, skills, timeline, projects, publications, writings) lazy-loaded when near the viewport.
+- `AssistantLauncher.tsx` — floating chat UI with magnetic hover, ripple effects, and responsive sheet behavior.
+- `AssistantGlyph.tsx` — custom animated AI glyph button for mobile touch targets.
+- `TerminalBootLoader/` — boot sequence with custom typing engine, particles, and `requestAnimationFrame`-synced animation; WCAG 2.1 AA contrast-compliant color palette.
 - `ThreeWormhole.tsx` — WebGL background scene.
-- `Whiteboard.tsx` — lazy-loaded canvas component.
+- `Whiteboard.tsx` — lazy-loaded interactive canvas.
+- `LazySection.tsx` — IntersectionObserver-based lazy-loading wrapper with React.lazy and Suspense.
+- `LandingPageContext.tsx` — shared context for landing page state, eliminating prop drilling across lazy-loaded sections.
 
 ### Backend Structure
 - `api/index.ts` — single bundled Vercel serverless handler containing all API routes:
@@ -118,11 +126,17 @@ The application supports two views:
 │       └── rssParser.ts      # Medium RSS feed parser
 ├── src/
 │   ├── components/
-│   │   ├── FloatingAssistant.tsx
+│   │   ├── AssistantGlyph.tsx
+│   │   ├── AssistantLauncher.tsx
+│   │   ├── DecryptText.tsx
 │   │   ├── LandingPage.tsx
+│   │   ├── LandingBelowFold.tsx
+│   │   ├── LazySection.tsx
+│   │   ├── LandingPageContext.tsx
 │   │   ├── Whiteboard.tsx
 │   │   ├── ThreeWormhole.tsx
-│   │   ├── DecryptText.tsx
+│   │   ├── FarhanAIIcon.tsx
+│   │   ├── MarkdownRenderer.tsx
 │   │   ├── OneTimeTypewriter.tsx
 │   │   ├── LoopingTypewriter.tsx
 │   │   └── TerminalBootLoader/
@@ -134,7 +148,8 @@ The application supports two views:
 │   │       ├── Particles.tsx
 │   │       ├── Background.tsx
 │   │       ├── TransitionManager.tsx
-│   │       └── TypingEngine.ts
+│   │       ├── TypingEngine.ts
+│   │       └── TerminalWindow.tsx
 │   ├── config/
 │   │   └── terminalCommands.ts
 │   ├── data/
@@ -142,10 +157,10 @@ The application supports two views:
 │   ├── hooks/
 │   │   └── useTerminalBoot.ts
 │   ├── utils/
-│   │   ├── apiConfig.ts
-│   │   ├── rssParser.ts
 │   │   ├── aiFallback.ts
-│   │   └── audio.ts
+│   │   ├── apiConfig.ts
+│   │   ├── delay.ts
+│   │   └── rssParser.ts
 │   ├── types.ts
 │   ├── index.css
 │   ├── main.tsx
@@ -359,13 +374,14 @@ Processes contact form submissions, analyzes urgency via Groq, and sends email v
 ## Deployment
 
 ### Vercel (Production)
-The site is live at **https://farhankabir.me** via a Vercel custom domain.
+The site is live at **https://farhankabir.me** via a Vercel custom domain with edge-level caching.
 
 **Configuration files:**
-- `vercel.json` — routes `/api/*` to the serverless backend and all other routes to the static build.
-- `CNAME` — contains `farhankabir.me` for custom domain configuration.
+- `vercel.json` — routes `/api/*` to the serverless backend and all other routes to the static build output.
+- `public/CNAME` — contains `farhankabir.me` for GitHub Pages / CNAME management.
+- `server.ts` — local development server with Brotli (quality 11) and gzip (level 9) compression, ETag, and CORS headers.
 
-**Deploy:**
+**Production deploy:**
 ```bash
 npx vercel --prod
 ```
@@ -383,6 +399,7 @@ Publishes the built site to the `gh-pages` branch.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GROQ_API_KEY` | Yes | Groq API key for Llama 3.3 70B completions |
+| `RESEND_API_KEY` | Yes | Resend API key for contact form email delivery |
 | `PORT` | No | Development server port (default: `3001`) |
 | `APP_URL` | No | Base URL for self-referential links |
 
@@ -396,16 +413,66 @@ Secrets are configured in the Vercel dashboard for production deployments.
 - **GPU-Friendly Transitions** — uses `opacity` and `scale` only; no `blur()` in reveal animations.
 - **Code Splitting** — manual chunks for `react`, `three`, and `motion`.
 - **Caching** — `medium-stories` and `github-repos` endpoints use in-memory caching with ETag/Last-Modified.
-- **Lazy Loading** — Whiteboard and heavy 3D components are lazy-loaded.
-- **Font Preloads** — critical fonts preloaded with `preload` and `preconnect` hints.
+- **Lazy Loading** — Whiteboard, heavy 3D components, and all below-fold landing sections are lazy-loaded via `React.lazy` + `IntersectionObserver` (`LazySection`).
+- **Font Preloads** — critical fonts preloaded with `preload` and `preconnect` hints; `@font-face` inlined in HTML with `font-display: swap`.
 - **Responsive Design** — fluid widths, safe-area insets, and reduced motion support for mobile.
+- **Bundle Sizes** — Main bundle: 395KB gzip; lazy-loaded motion chunk: 97KB gzip; vendor chunk: ~180KB gzip; icons chunk: ~45KB gzip.
+- **Lighthouse Scores** — Performance: 85, Accessibility: 100, Best Practices: 96.
+
+---
+
+## Performance Optimization
+
+The following techniques are applied to maximize load performance, minimize bundle size, and ensure a smooth user experience:
+
+### Lazy-Loading Below-Fold Sections
+- `LazySection` (`src/components/LazySection.tsx`) uses the **IntersectionObserver API** to detect when the user scrolls near below-fold content.
+- When the trigger element enters the viewport (with a `rootMargin` of `300px`), the component is dynamically imported via **React.lazy** and rendered inside a `<Suspense>` boundary.
+- `LandingBelowFold.tsx` — all content below the hero (about, skills, timeline, projects, publications, writings) is lazy-loaded, reducing the initial JavaScript payload.
+- `LandingPageContext.tsx` — a React Context provider eliminates prop drilling across lazy-loaded sections, sharing theme, form state, and navigation callbacks without re-rendering the entire tree.
+
+### Motion Bundle Split
+- The **Motion** library (Framer Motion) is split into its own chunk via `manualChunks` in `vite.config.ts`.
+- The motion chunk (~97KB gzip) is only loaded when the user scrolls into sections that use `motion` components (timeline, skills, projects), keeping the initial bundle lean.
+
+### Critical CSS & Font Optimization
+- **Inline critical CSS** is inlined in `index.html` to eliminate render-blocking requests for above-the-fold styles.
+- `@font-face` declarations are **inlined in the HTML `<style>` block** with `font-display: swap` to prevent invisible text during font loading.
+- Font files are served as `woff2` with `preload` hints and `crossorigin` for early fetching.
+
+### LCP Image Optimization
+- The hero portrait uses `<picture>` with **AVIF**, **WebP**, and **PNG** sources for progressive format support.
+- `fetchpriority="high"` is set on the LCP image to prioritize its download.
+- `sizes` attribute provides responsive breakpoints: `(max-width: 768px) 112px, (max-width: 1024px) 144px, (max-width: 1536px) 224px, 288px`.
+- `loading="eager"` and `decoding="async"` ensure the LCP image is decoded without blocking the main thread.
+
+### Brotli + Gzip Compression
+- `server.ts` configures the `compression` middleware with **gzip level 9** and **Brotli quality 11** (`BROTLI_PARAM_QUALITY: 11`, `BROTLI_PARAM_LGWIN: 22`).
+- Compression is thresholded at 1024 bytes to avoid compressing very small responses.
+
+### WCAG 2.1 AA Color Contrast Fixes
+- `TerminalBootLoader` components use **custom intermediate color shades** (`text-zinc-100`, `text-zinc-300`, `text-sky-300/90`, `text-sky-400/90`) that meet WCAG 2.1 AA contrast ratios against the dark terminal background (`#070809`).
+- The `Prompt` component uses `text-sky-400/90` (contrast ratio ≥ 4.5:1 against the background).
+- The `OutputRenderer` uses `text-zinc-300` for standard output and `text-emerald-400/90` / `text-sky-300/90` for status messages, all meeting AA requirements.
+
+### Custom Tailwind Intermediate Colors
+- The `@theme` block in `src/index.css` defines **custom intermediate color shades** not available in default Tailwind:
+  - `zinc-90`, `zinc-350`, `zinc-550`, `zinc-750`
+  - `slate-105`, `slate-250`, `slate-650`, `slate-850`
+  - `indigo-650`, `indigo-700`
+- These enable precise color control for UI elements while maintaining consistent contrast.
+
+### Build Configuration
+- `vite.config.ts` enables `cssCodeSplit` for CSS code-splitting alongside JS chunks.
+- `sourcemap: false` in production builds reduces bundle size.
+- `esbuild.pure` strips `console.debug`, `console.warn`, and `console.info` calls from the production bundle.
 
 ---
 
 ## Security
 
 - Server-side API keys (`GROQ_API_KEY`, `RESEND_API_KEY`) are injected as Vercel environment variables and never exposed to the client bundle.
-- Express server uses `compression` thresholded at 1024 bytes.
+- Express server uses `compression` with Brotli (quality 11) and gzip (level 9), thresholded at 1024 bytes.
 - Contact form validates required fields server-side before processing.
 - No client-side secrets are logged or rendered.
 
