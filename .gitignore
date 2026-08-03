@@ -18,3 +18,6 @@ AGENT.md
 metadata.json
 .vercel
 .kilo/
+.claude/
+lighthouse.pdf
+supabase/.temp/

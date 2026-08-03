@@ -54,7 +54,7 @@ export function TerminalBootLoader({ children, onComplete }: TerminalBootLoaderP
             </div>
           </TerminalWindow>
 
-          <p className="mt-4 font-mono text-[11px] tracking-wide text-zinc-600">
+          <p className="mt-4 font-mono text-[11px] tracking-wide text-slate-400">
             secure remote session · {WORKSTATION_HOST}
           </p>
         </div>

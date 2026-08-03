@@ -12,7 +12,7 @@ export function TerminalWindow({ children }: { children: ReactNode }) {
         <span className="h-3 w-3 rounded-full bg-[#ff5f57]/70" />
         <span className="h-3 w-3 rounded-full bg-[#febc2e]/70" />
         <span className="h-3 w-3 rounded-full bg-[#28c840]/70" />
-        <span className="ml-3 select-none font-mono text-[11px] tracking-wide text-zinc-500">
+        <span className="ml-3 select-none font-mono text-[11px] tracking-wide text-zinc-400">
           portfolio — zsh — 80×24
         </span>
       </div>

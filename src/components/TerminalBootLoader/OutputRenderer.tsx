@@ -7,7 +7,7 @@ interface OutputRendererProps {
 }
 
 const TONE: Record<Exclude<LineKind, 'cmd'>, string> = {
-  out: 'text-zinc-400',
+  out: 'text-zinc-300',
   ok: 'text-emerald-400/90',
   info: 'text-sky-300/90',
 };

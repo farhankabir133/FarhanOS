@@ -34,7 +34,7 @@ export default function BuildsWindow() {
               <span className="font-bold text-teal-300 block text-[9px] uppercase font-mono tracking-widest mb-1">METRIC SHIFTS DETECTED</span>
               <div className="flex flex-wrap gap-2 text-[10px] font-mono select-none">
                 {log.metricsChanged.map((mc, mIdx) => (
-                  <span key={mIdx} className="bg-zinc-90 w-full flex items-center justify-between p-1.5 rounded border border-zinc-900 text-stone-300">
+                  <span key={mIdx} className="bg-zinc-900 w-full flex items-center justify-between p-1.5 rounded border border-zinc-900 text-stone-300">
                     <span>{mc.metric}:</span>
                     <span className="text-teal-400 font-bold">{mc.before} → {mc.after}</span>
                   </span>

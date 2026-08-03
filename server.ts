@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import compression from 'compression';
 import crypto from 'node:crypto';
+import { constants as zlibConstants } from 'node:zlib';
 import { parseMediumRSS } from './src/utils/rssParser';
 
 dotenv.config();
@@ -11,7 +12,17 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
-app.use(compression({ threshold: 1024 }));
+app.use(compression({
+  threshold: 1024,
+  level: 9,
+  brotli: {
+    enabled: true,
+    params: {
+      [zlibConstants.BROTLI_PARAM_QUALITY]: 11,
+      [zlibConstants.BROTLI_PARAM_LGWIN]: 22,
+    },
+  } as any,
+}));
 app.use(express.json({ limit: '10mb' }));
 
 interface CacheEntry {
@@ -307,6 +318,13 @@ async function startServer() {
     app.use(express.static(distPath, {
       maxAge: '1y',
       immutable: true,
+      etag: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.woff2')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+        }
+      },
     }));
     app.get('*', (req, res) => {
       res.setHeader('Cache-Control', 'no-cache');

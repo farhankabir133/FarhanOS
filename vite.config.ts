@@ -17,15 +17,25 @@ export default defineConfig(() => {
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
     build: {
+      cssCodeSplit: true,
+      sourcemap: false,
       rollupOptions: {
         output: {
           manualChunks: {
-            'vendor': ['react', 'react-dom'],
-            'three': ['three'],
-            'motion': ['motion'],
+            vendor: ['react', 'react-dom'],
+            three: ['three'],
+            motion: ['motion'],
+            icons: ['lucide-react'],
           },
         },
+        onwarn(warning, warn) {
+          if (warning.code === 'MODULE_LEVELS_NOT_MATCHING') return;
+          warn(warning);
+        },
       },
+    },
+    esbuild: {
+      pure: ['console.debug', 'console.warn', 'console.info'],
     },
   };
 });
