@@ -21,3 +21,5 @@ metadata.json
 .claude/
 lighthouse.pdf
 supabase/.temp/
+lighthouse*.json
+lighthouse*.html
