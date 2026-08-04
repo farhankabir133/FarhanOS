@@ -143,12 +143,19 @@ export default function LandingPage({
     }
   };
 
-  // Auto-play Testimonials
+  // Auto-play Testimonials — deferred to after LCP
   useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 8000);
-    return () => clearInterval(timer);
+    const startRotation = () => {
+      const timer = setInterval(() => {
+        setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+      }, 8000);
+      return () => clearInterval(timer);
+    };
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(startRotation, { timeout: 4000 });
+      return () => cancelIdleCallback(id);
+    }
+    return startRotation();
   }, []);
 
   // Theme Config mapper

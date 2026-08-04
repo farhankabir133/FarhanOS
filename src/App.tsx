@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback, startTransition } from 'react';
 const AssistantLauncher = lazy(() => import('./components/AssistantLauncher'));
 import { 
   Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText, 
@@ -85,13 +85,22 @@ export default function App() {
 
   const osTimelineProgressLineRef = useRef<HTMLDivElement | null>(null);
 
-  // Dynamic CPU Load for telemetry
+  // Dynamic CPU Load for telemetry — deferred to after LCP
   const [cpuLoad, setCpuLoad] = useState(12);
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCpuLoad(Math.floor(Math.random() * 10) + 7);
-    }, 2500);
-    return () => clearInterval(timer);
+    const callback = () => {
+      const timer = setInterval(() => {
+        startTransition(() => {
+          setCpuLoad(Math.floor(Math.random() * 10) + 7);
+        });
+      }, 2500);
+      return () => clearInterval(timer);
+    };
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(callback, { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    return callback();
   }, []);
 
   // Dynamic window width for responsiveness
@@ -146,15 +155,17 @@ export default function App() {
   const [selectedArticle, setSelectedArticle] = useState<Article>(portfolioData.articles[0]);
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineEvent>(portfolioData.timeline[0]);
 
-useEffect(() => {
+  useEffect(() => {
     const fetchMediumStories = async () => {
       try {
         const res = await fetch('/api/medium-stories');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            setArticles(data);
-            setSelectedArticle(data[0]);
+            startTransition(() => {
+              setArticles(data);
+              setSelectedArticle(data[0]);
+            });
             return;
           }
         }
@@ -162,10 +173,16 @@ useEffect(() => {
         console.warn('Medium stories endpoint unavailable, using static articles:', err);
       }
 
-      setArticles(portfolioData.articles);
-      setSelectedArticle(portfolioData.articles[0]);
+      startTransition(() => {
+        setArticles(portfolioData.articles);
+        setSelectedArticle(portfolioData.articles[0]);
+      });
     };
-    fetchMediumStories();
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => fetchMediumStories(), { timeout: 5000 });
+    } else {
+      setTimeout(fetchMediumStories, 1000);
+    }
   }, []);
   const [skillFilter, setSkillFilter] = useState<'all' | 'AI/ML' | 'Frontend' | 'Backend' | 'Research' | 'Systems'>('all');
   const [resumeAudience, setResumeAudience] = useState<'recruiter' | 'investor' | 'founder' | 'researcher'>('recruiter');
@@ -210,15 +227,25 @@ useEffect(() => {
 
   const triggerSound = (_freq: number = 800, _dur: number = 0.03) => {};
 
-  // Clock Ticker
+  // Clock Ticker — deferred to after LCP
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTime(now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+      startTransition(() => {
+        setCurrentTime(now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+      });
     };
     updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    let timerId: ReturnType<typeof setInterval>;
+    const startClock = () => {
+      timerId = setInterval(updateTime, 1000);
+    };
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(startClock, { timeout: 4000 });
+      return () => { cancelIdleCallback(id); clearInterval(timerId); };
+    }
+    startClock();
+    return () => clearInterval(timerId);
   }, []);
 
   const handleWarpAndEnter = useCallback(() => {
@@ -734,7 +761,7 @@ useEffect(() => {
     return results;
   }, [searchQuery, articles, openWindow, setSelectedProject, setSelectedPaper, setSelectedArticle, setSkillFilter, setCommandPaletteOpen]);
 
-  const systemSearchResults = useMemo(() => getSearchItems(), [getSearchItems]);
+  const systemSearchResults = searchQuery ? useMemo(() => getSearchItems(), [getSearchItems]) : [];
 
   // Desktop Icons Configuration for ease of access
   const desktopIcons = useMemo(() => [
