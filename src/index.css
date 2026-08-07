@@ -276,6 +276,14 @@ body {
   animation: terminal-caret 1.05s steps(1, end) infinite;
 }
 
+/* Keyboard-only focus affordance — visible outline on programmatic/keyboard
+   focus without changing what keyboard users see on mouse interaction. */
+:where(a, button, input, select, textarea, [role='button'], [tabindex]):focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Global text justification */
 p, li, blockquote, .text-justify {
   text-align: justify;

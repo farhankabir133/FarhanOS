@@ -9,6 +9,7 @@ import {
   Clock, CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
 import { FarhanAIIcon } from './components/FarhanAIIcon';
+import ClockText from './components/Clock';
 import MarkdownRenderer from './components/MarkdownRenderer';
 import { portfolioData } from './data/portfolioData';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
@@ -56,7 +57,6 @@ export default function App() {
 
   // OS System States
   const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
-  const [currentTime, setCurrentTime] = useState('');
   const [isBooted, setIsBooted] = useState(false);
   const [bootProgress, setBootProgress] = useState(0);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
@@ -84,24 +84,6 @@ export default function App() {
   const [windowReady, setWindowReady] = useState<Record<string, boolean>>({});
 
   const osTimelineProgressLineRef = useRef<HTMLDivElement | null>(null);
-
-  // Dynamic CPU Load for telemetry — deferred to after LCP
-  const [cpuLoad, setCpuLoad] = useState(12);
-  useEffect(() => {
-    const callback = () => {
-      const timer = setInterval(() => {
-        startTransition(() => {
-          setCpuLoad(Math.floor(Math.random() * 10) + 7);
-        });
-      }, 2500);
-      return () => clearInterval(timer);
-    };
-    if ('requestIdleCallback' in window) {
-      const id = requestIdleCallback(callback, { timeout: 3000 });
-      return () => cancelIdleCallback(id);
-    }
-    return callback();
-  }, []);
 
   // Dynamic window width for responsiveness
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -226,27 +208,6 @@ export default function App() {
   const [draggedWindow, setDraggedWindow] = useState<string | null>(null);
 
   const triggerSound = (_freq: number = 800, _dur: number = 0.03) => {};
-
-  // Clock Ticker — deferred to after LCP
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      startTransition(() => {
-        setCurrentTime(now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
-      });
-    };
-    updateTime();
-    let timerId: ReturnType<typeof setInterval>;
-    const startClock = () => {
-      timerId = setInterval(updateTime, 1000);
-    };
-    if ('requestIdleCallback' in window) {
-      const id = requestIdleCallback(startClock, { timeout: 4000 });
-      return () => { cancelIdleCallback(id); clearInterval(timerId); };
-    }
-    startClock();
-    return () => clearInterval(timerId);
-  }, []);
 
   const handleWarpAndEnter = useCallback(() => {
     if (isWarping) return;
@@ -866,6 +827,14 @@ export default function App() {
         />
       ) : (
         <>
+          {/* Skip link — first tabbable element, moves focus past the OS chrome to content */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[2000] focus:px-4 focus:py-2 focus:rounded focus:bg-sky-600 focus:text-white focus:text-xs focus:font-mono"
+          >
+            Skip to content
+          </a>
+
           {/* 2. TOP MENU NAVIGATION BAR */}
           <header className="h-10 bg-black/40 backdrop-blur-md border-b border-zinc-800/40 flex items-center justify-between px-4 z-[99] select-none text-xs font-mono">
             <div className="flex items-center gap-3">
@@ -937,7 +906,7 @@ export default function App() {
 
               <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
                 <Clock className="w-3.5 h-3.5 text-sky-400" />
-                <span>{currentTime || '14:37:33'} (UTC)</span>
+                <span><ClockText /> (UTC)</span>
               </div>
             </div>
           </header>
@@ -996,7 +965,7 @@ export default function App() {
                   <div className="pt-4 border-t border-zinc-800/40">
                     <div className="flex items-center gap-2 px-3 text-zinc-400 font-mono text-[11px]">
                       <Clock className="w-3.5 h-3.5 text-sky-400" />
-                      <span>{currentTime || '14:37:33'} (UTC)</span>
+                      <span><ClockText /> (UTC)</span>
                     </div>
                   </div>
                 </div>
@@ -1035,7 +1004,7 @@ export default function App() {
       )}
 
       {/* 4. MAIN WORKSPACE / MONITOR AREA */}
-      <main className="flex-1 relative overflow-auto p-4 md:p-6 scrollbar-none">
+      <main id="main-content" tabIndex={-1} className="flex-1 relative overflow-auto p-4 md:p-6 scrollbar-none">
         
         {/* Dynamic ambient grid particle network background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none -z-10 opacity-35">
@@ -1052,9 +1021,18 @@ export default function App() {
             const isFocus = focusedWindow === ico.id && !minimizedWindows.includes(ico.id);
             
             return (
-              <div 
-                key={ico.id} 
+              <div
+                key={ico.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open ${ico.label}`}
                 onClick={() => openWindow(ico.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openWindow(ico.id);
+                  }
+                }}
                 style={{ animationDelay: `${idx * 45}ms` }}
                 className={`flex flex-col items-center justify-center p-2.5 rounded-xl border border-transparent hover:border-zinc-800/40 hover:bg-zinc-950/25 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] cursor-pointer transition-all duration-300 active:scale-95 group text-center relative animate-fade-in opacity-0 ${isOpen ? 'bg-zinc-950/15' : ''}`}
               >
@@ -1134,24 +1112,27 @@ export default function App() {
                 </div>
 
                 <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
-                  <button 
+                  <button
                     onClick={() => minimizeWindow(winId)}
                     className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
                     title="Minimize"
+                    aria-label="Minimize window"
                   >
                     <Minimize2 className="w-3 h-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => toggleMaximize(winId)}
                     className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
                     title="Toggle Maximize"
+                    aria-label="Toggle maximize"
                   >
                     <Maximize2 className="w-3 h-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => closeWindow(winId)}
                     className="p-1 text-rose-400 hover:text-rose-500 rounded hover:bg-rose-500/10"
                     title="Close Window"
+                    aria-label="Close window"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -1399,22 +1380,34 @@ export default function App() {
 
       {/* 7. CMD + K GLOBAL COMMAND PALETTE SEARCH SCREEN PANEL */}
       {commandPaletteOpen && (
-        <div className="fixed inset-0 bg-[#020204]/85 z-[1000] flex items-start justify-center pt-[15vh] px-4 font-normal">
-          <div className="w-full max-w-lg bg-[#0e0f17] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[60vh] select-none animate-scale-up">
-            
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Command palette"
+          className="fixed inset-0 bg-[#020204]/85 z-[1000] flex items-start justify-center pt-[15vh] px-4 font-normal"
+          onClick={() => { setCommandPaletteOpen(false); triggerSound(400, 0.02); }}
+        >
+          <div
+            role="document"
+            className="w-full max-w-lg bg-[#0e0f17] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl flex flex-col max-h-[60vh] select-none animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+
             <div className="flex items-center gap-3 p-3 bg-zinc-950 border-b border-zinc-850">
               <Search className="w-4 h-4 text-sky-400" />
-              <input 
+              <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search projects, research papers, tech stack node keys, commands..."
+                aria-label="Search projects, research papers and commands"
                 className="flex-1 bg-transparent text-slate-105 font-sans outline-hidden border-none text-xs text-white"
                 autoFocus
               />
-              <button 
+              <button
                 onClick={() => { setCommandPaletteOpen(false); triggerSound(400, 0.02); }}
                 className="p-1 text-zinc-500 hover:text-white rounded"
+                aria-label="Close command palette"
               >
                 <X className="w-4 h-4" />
               </button>
