@@ -609,7 +609,7 @@ export default function AssistantLauncher({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
-              className="hidden md:flex assistant-chat-window w-[35vw] max-h-[70vh] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
+              className="assistant-desktop-window hidden md:flex assistant-chat-window w-[35vw] min-w-[320px] max-h-[70vh] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
             >
               {chatWindowContent}
             </motion.div>
@@ -621,7 +621,7 @@ export default function AssistantLauncher({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              className="md:hidden fixed bottom-3 left-3 z-[9998] w-[35vw] max-h-[70vh] rounded-2xl border bg-zinc-950/97 backdrop-blur-2xl overflow-hidden flex flex-col"
+              className="assistant-mobile-sheet md:hidden fixed inset-x-0 bottom-0 z-[9998] w-full h-[85vh] rounded-t-2xl border border-b-0 bg-zinc-950/97 backdrop-blur-2xl overflow-hidden flex flex-col"
               style={{
                 paddingTop: 'env(safe-area-inset-top)',
                 paddingBottom: 'env(safe-area-inset-bottom)',

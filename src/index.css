@@ -597,3 +597,13 @@ p, li, blockquote, .text-justify {
   .site-mobile-hamburger { display: none !important; }
   .site-mobile-overlay { display: none !important; }
 }
+
+/* Assistant: force the desktop window / mobile bottom-sheet split. Tailwind's
+   md:flex / md:hidden utilities lose the cascade in this build, which otherwise
+   leaves the mobile sheet showing on every device. */
+.assistant-desktop-window { display: none !important; }
+.assistant-mobile-sheet { display: flex; }
+@media (min-width: 768px) {
+  .assistant-desktop-window { display: flex !important; }
+  .assistant-mobile-sheet { display: none !important; }
+}
