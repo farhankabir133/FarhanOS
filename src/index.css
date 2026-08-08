@@ -545,7 +545,7 @@ p, li, blockquote, .text-justify {
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .assistant-chat-window {
-    width: 340px !important;
+    width: 35vw !important;
     max-height: 60vh !important;
   }
 }
@@ -558,7 +558,7 @@ p, li, blockquote, .text-justify {
 
 @media (min-width: 1536px) {
   .assistant-chat-window {
-    width: 420px !important;
+    width: 35vw !important;
     max-height: 70vh !important;
   }
 }
@@ -582,4 +582,18 @@ p, li, blockquote, .text-justify {
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Robust responsive navigation
+   Tailwind v4's responsive utilities (md:flex, lg:flex, etc.) are not reliably
+   winning the cascade in this build, which hid the desktop nav behind its
+   base `hidden` class. These explicit media queries force the correct state
+   with !important so the navbar shows across desktop screen sizes.
+--------------------------------------------------------------------------- */
+@media (min-width: 768px) {
+  .site-desktop-nav { display: flex !important; }
+  .site-desktop-launch { display: flex !important; }
+  .site-mobile-hamburger { display: none !important; }
+  .site-mobile-overlay { display: none !important; }
 }

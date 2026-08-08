@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X, Send, ChevronRight, Copy, Check, Volume2, VolumeX,
-  RefreshCw, Loader2, Maximize2, Minimize2, Sparkles, Zap,
+  RefreshCw, Maximize2, Minimize2, Sparkles, Zap,
   Brain, MessageCircle, Search, HelpCircle
 } from 'lucide-react';
 import { getApiBaseUrl } from '../utils/apiConfig';
@@ -21,6 +21,8 @@ interface Message {
   content: string;
   timestamp: Date;
   id: string;
+  /** True while a response is streaming in token-by-token. */
+  streaming?: boolean;
 }
 
 const QUICK_ACTIONS = [
@@ -30,6 +32,38 @@ const QUICK_ACTIONS = [
   { label: 'Contact', query: 'How can I contact or hire Farhan Kabir?', icon: MessageCircle },
 ];
 
+const STORAGE_KEY = 'farhanos.twin.chat';
+
+const WELCOME_MESSAGE: Message = {
+  id: 'welcome',
+  role: 'assistant',
+  content:
+    'Systems fully operational. I am Farhan\'s certified neural clone. Query clinical pipelines, NLP architectures, or engineering profiles.',
+  timestamp: new Date(),
+};
+
+const FOLLOW_UPS = [
+  'What are Farhan\'s most impressive achievements?',
+  'How does Farhan\'s depression-detection model work?',
+  'Can you summarize Farhan\'s current research focus?',
+];
+
+/** Load a previously persisted conversation, falling back to the welcome message. */
+const loadStoredMessages = (): Message[] => {
+  try {
+    const raw = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw) as Message[];
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((m) => ({ ...m, timestamp: new Date(m.timestamp), streaming: false }));
+      }
+    }
+  } catch {
+    // ignore corrupt / unavailable storage
+  }
+  return [WELCOME_MESSAGE];
+};
+
 export default function AssistantLauncher({
   theme = 'dark',
   triggerSound,
@@ -37,15 +71,7 @@ export default function AssistantLauncher({
   defaultOpen = false,
 }: AssistantLauncherProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content:
-        'Systems fully operational. I am Farhan\'s certified neural clone. Query clinical pipelines, NLP architectures, or engineering profiles.',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(loadStoredMessages);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -78,6 +104,31 @@ export default function AssistantLauncher({
     }
   }, [isOpen]);
 
+  // Persist conversation across reloads.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // ignore quota / availability errors
+    }
+  }, [messages]);
+
+  // Global keyboard shortcut: Cmd/Ctrl+K toggles the panel, "/" focuses input.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsOpen((o) => !o);
+        triggerSound?.(800, 0.03);
+      } else if (e.key === '/' && isOpen && document.activeElement !== inputRef.current) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, triggerSound]);
+
   const sendMessage = useCallback(
     async (text?: string) => {
       const content = (text || input).trim();
@@ -93,8 +144,20 @@ export default function AssistantLauncher({
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, userMessage]);
+
+      const assistantId = `assistant-${Date.now()}`;
+      // Placeholder assistant bubble we stream tokens into. It renders a typing
+      // indicator until the first token arrives.
+      setMessages((prev) => [
+        ...prev,
+        { id: assistantId, role: 'assistant', content: '', timestamp: new Date(), streaming: true },
+      ]);
+
       setInput('');
       setIsLoading(true);
+
+      const setAssistantContent = (patch: Partial<Message>) =>
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, ...patch } : m)));
 
       try {
         const history = messages.map((m) => ({
@@ -108,30 +171,88 @@ export default function AssistantLauncher({
           body: JSON.stringify({ message: content, history }),
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed');
+        if (!res.ok) {
+          let errMsg = 'Neural link unstable. Retry transmission.';
+          try {
+            const d = await res.json();
+            errMsg = d.error || errMsg;
+          } catch {
+            // fall through to default message
+          }
+          throw new Error(errMsg);
+        }
 
-        setAiState('responding');
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: data.reply || 'No verified information available.',
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-        setAiState('success');
-        setTimeout(() => setAiState('idle'), 1200);
+        const contentType = res.headers.get('content-type') || '';
+        const isStream = contentType.includes('text/event-stream') || !!res.body;
+
+        if (isStream && res.body) {
+          setAiState('responding');
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let streamed = '';
+
+          // Robust SSE parser that tolerates frames split across read() chunks.
+          let sseBuffer = '';
+          let pendingData = '';
+          const handleData = (payload: string) => {
+            if (payload === '[DONE]') return;
+            try {
+              const json = JSON.parse(payload);
+              const delta = json.delta;
+              if (typeof delta === 'string' && delta) {
+                streamed += delta;
+                setAssistantContent({ content: streamed });
+              }
+            } catch {
+              // ignore malformed / partial frame
+            }
+          };
+          const processChunk = (text: string, flush = false) => {
+            sseBuffer += text;
+            let idx;
+            while ((idx = sseBuffer.indexOf('\n')) !== -1) {
+              let line = sseBuffer.slice(0, idx);
+              sseBuffer = sseBuffer.slice(idx + 1);
+              if (line.endsWith('\r')) line = line.slice(0, -1);
+              if (line.startsWith('data:')) {
+                pendingData += line.slice(5).trim();
+              } else if (line === '' && pendingData) {
+                handleData(pendingData);
+                pendingData = '';
+              }
+            }
+            if (flush && pendingData) {
+              handleData(pendingData);
+              pendingData = '';
+            }
+          };
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            processChunk(decoder.decode(value, { stream: true }));
+          }
+          processChunk(decoder.decode(), true);
+
+          setAssistantContent({ content: streamed || 'No verified information available.', streaming: false });
+          setAiState('success');
+          setTimeout(() => setAiState('idle'), 1200);
+        } else {
+          // Non-streaming fallback (older backend).
+          const data = await res.json();
+          setAssistantContent({
+            content: data.reply || 'No verified information available.',
+            streaming: false,
+          });
+          setAiState('success');
+          setTimeout(() => setAiState('idle'), 1200);
+        }
       } catch (err) {
         setAiState('error');
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `error-${Date.now()}`,
-            role: 'assistant',
-            content: 'Neural link unstable. Retry transmission.',
-            timestamp: new Date(),
-          },
-        ]);
+        setAssistantContent({
+          content: (err as Error).message || 'Neural link unstable. Retry transmission.',
+          streaming: false,
+        });
         setTimeout(() => setAiState('idle'), 2000);
       } finally {
         setIsLoading(false);
@@ -306,13 +427,25 @@ export default function AssistantLauncher({
                     msg.role === 'user' ? userBubble : assistantBubble
                   }`}
                 >
-                  {msg.role === 'assistant' ? (
+                  {msg.streaming && !msg.content ? (
+                    /* Animated typing indicator while awaiting the first token */
+                    <div className="flex items-center gap-1.5 py-0.5" aria-label="Assistant is typing">
+                      {[0, 1, 2].map((i) => (
+                        <motion.span
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-indigo-400"
+                          animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
+                        />
+                      ))}
+                    </div>
+                  ) : msg.role === 'assistant' ? (
                     <MarkdownRenderer content={msg.content} />
                   ) : (
                     <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                   )}
                 </div>
-                {msg.role === 'assistant' && (
+                {msg.role === 'assistant' && msg.content && !msg.streaming && (
                   <div className="flex items-center gap-2 pl-1">
                     <button
                       onClick={() => {
@@ -347,14 +480,29 @@ export default function AssistantLauncher({
         )}
       </AnimatePresence>
 
-      {isLoading && (
-        <div className="flex items-center gap-2 text-indigo-400 px-1">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-xs font-medium">
-            {aiState === 'thinking' ? 'Processing neural pathways...' : 'Synthesizing response...'}
-          </span>
-        </div>
-      )}
+      {(() => {
+        const lastDone = [...messages]
+          .reverse()
+          .find((m) => m.role === 'assistant' && m.content && !m.streaming);
+        const showSuggestions = !!lastDone && !isLoading && lastDone.id !== 'welcome' && messages.length > 1;
+        return showSuggestions ? (
+          <div className="flex flex-wrap gap-2 pl-1 pt-0.5">
+            {FOLLOW_UPS.map((q) => (
+              <button
+                key={q}
+                onClick={() => sendMessage(q)}
+                className={`text-[11px] px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                  isLight
+                    ? 'border-indigo-200 bg-indigo-50/60 text-indigo-600 hover:bg-indigo-100 hover:border-indigo-300'
+                    : 'border-zinc-700 bg-zinc-900/40 text-indigo-300 hover:bg-zinc-800 hover:border-indigo-500/40'
+                }`}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        ) : null;
+      })()}
       <div ref={messagesEndRef} />
     </>
   );
@@ -390,7 +538,7 @@ export default function AssistantLauncher({
         </div>
         <div className="flex items-center gap-0.5">
           <button
-            onClick={() => setMessages([])}
+            onClick={() => setMessages([{ ...WELCOME_MESSAGE, timestamp: new Date() }])}
             className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-all cursor-pointer"
             title="New chat"
             aria-label="New chat"
@@ -461,7 +609,7 @@ export default function AssistantLauncher({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
-              className="hidden md:flex assistant-chat-window w-[380px] max-h-[560px] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
+              className="hidden md:flex assistant-chat-window w-[35vw] max-h-[70vh] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
             >
               {chatWindowContent}
             </motion.div>
@@ -473,7 +621,7 @@ export default function AssistantLauncher({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              className="md:hidden fixed inset-0 z-[9998] bg-zinc-950/97 border-t border-zinc-800/60 overflow-hidden flex flex-col"
+              className="md:hidden fixed bottom-3 left-3 z-[9998] w-[35vw] max-h-[70vh] rounded-2xl border bg-zinc-950/97 backdrop-blur-2xl overflow-hidden flex flex-col"
               style={{
                 paddingTop: 'env(safe-area-inset-top)',
                 paddingBottom: 'env(safe-area-inset-bottom)',
@@ -485,8 +633,8 @@ export default function AssistantLauncher({
                   isLight ? 'border-slate-200 bg-white/70 backdrop-blur-md' : 'border-zinc-800/60 bg-black/50 backdrop-blur-md'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="relative shrink-0">
                     <div
                       className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                         isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
@@ -499,11 +647,11 @@ export default function AssistantLauncher({
                     </div>
                     <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
                   </div>
-                  <div className="flex flex-col">
-                    <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+                  <div className="flex flex-col min-w-0">
+                    <span className={`text-sm font-bold tracking-tight truncate ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
                       Neural Assistant
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
+                    <span className="text-[10px] text-emerald-400 font-mono font-medium hidden min-[420px]:inline">Online</span>
                   </div>
                 </div>
                 <button

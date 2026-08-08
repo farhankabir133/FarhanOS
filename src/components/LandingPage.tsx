@@ -391,20 +391,20 @@ export default function LandingPage({
             />
             <div className="flex flex-col">
               <span className={`text-xs font-black tracking-widest uppercase font-sans ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>FARHAN KABIR</span>
-              <span className="text-[8.5px] font-mono text-zinc-550 uppercase tracking-widest">COGNITIVE SYSTEMS ARCHITECT</span>
+              <span className="hidden lg:block text-[8.5px] font-mono text-zinc-550 uppercase tracking-widest">COGNITIVE SYSTEMS ARCHITECT</span>
             </div>
           </div>
 
           {/* Hamburger button - mobile only */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
+            className="site-mobile-hamburger md:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
 
-          <nav className="hidden lg:flex items-center gap-5 text-[10.5px] font-mono tracking-wider font-semibold text-zinc-400">
+          <nav className="site-desktop-nav hidden md:flex items-center gap-x-4 text-[10.5px] font-mono tracking-wider font-semibold text-zinc-400 whitespace-nowrap">
             {[
               { href: "#about", label: "ABOUT", target: "about" },
               { href: "#skills", label: "STATIONS", target: "skills" },
@@ -426,7 +426,7 @@ export default function LandingPage({
             ))}
           </nav>
 
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="site-desktop-launch hidden md:flex items-center gap-3">
             <button 
               onClick={onLaunchOS}
               disabled={isWarping}
@@ -440,7 +440,7 @@ export default function LandingPage({
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[9999] lg:hidden">
+        <div className="site-mobile-overlay fixed inset-0 z-[9999] md:hidden">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-72 bg-zinc-950/95 border-l border-zinc-800/60 shadow-2xl flex flex-col">
             <div className="flex items-center justify-between px-4 h-14 border-b border-zinc-800/40">

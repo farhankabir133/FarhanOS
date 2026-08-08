@@ -315,16 +315,67 @@ export default async function handler(req: any, res: any) {
             ...historyPayload,
             { role: 'user', content: message }
           ],
-          temperature: 0.7
+          temperature: 0.7,
+          stream: true
         })
       });
 
-      const data = await groqRes.json();
-      if (!groqRes.ok) {
-        throw new Error(data.error?.message || 'Groq api error');
+      if (!groqRes.ok || !groqRes.body) {
+        const errData = await groqRes.json().catch(() => ({}));
+        throw new Error(errData.error?.message || 'Groq api error');
       }
 
-      res.json({ reply: data.choices?.[0]?.message?.content || '' });
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders?.();
+
+      const reader = groqRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const flush = () => {
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const payload = trimmed.slice(5).trim();
+          if (payload === '[DONE]') continue;
+          try {
+            const json = JSON.parse(payload);
+            const delta = json.choices?.[0]?.delta?.content;
+            if (delta) res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+          } catch {
+            // ignore malformed frames
+          }
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        flush();
+      }
+      buffer += decoder.decode();
+      if (buffer.trim()) {
+        const line = buffer.trim();
+        if (line.startsWith('data:')) {
+          const payload = line.slice(5).trim();
+          if (payload !== '[DONE]') {
+            try {
+              const json = JSON.parse(payload);
+              const delta = json.choices?.[0]?.delta?.content;
+              if (delta) res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+            } catch {
+              // ignore malformed frames
+            }
+          }
+        }
+      }
+      res.write('data: [DONE]\n\n');
+      res.end();
       return;
     }
 

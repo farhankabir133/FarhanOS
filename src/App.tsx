@@ -858,13 +858,13 @@ export default function App() {
             {/* Hamburger button - mobile only */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
+              className="site-mobile-hamburger md:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
 
-            <nav className="hidden md:flex items-center gap-4 text-zinc-400 font-medium select-none">
+            <nav className="site-desktop-nav hidden md:flex items-center gap-4 text-zinc-400 font-medium select-none">
               <button onClick={() => { setCommandPaletteOpen(true); triggerSound(800, 0.03); }} className="hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer">
                 <Search className="w-3.5 h-3.5" />
                 <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-0.5">Cmd+K</kbd></span>
@@ -913,7 +913,7 @@ export default function App() {
 
           {/* Mobile Menu Overlay */}
           {mobileMenuOpen && (
-            <div className="fixed inset-0 z-[9999] md:hidden">
+            <div className="site-mobile-overlay fixed inset-0 z-[9999] md:hidden">
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
               <div className="absolute right-0 top-0 h-full w-72 bg-zinc-950/95 border-l border-zinc-800/60 shadow-2xl flex flex-col">
                 <div className="flex items-center justify-between px-4 h-10 border-b border-zinc-800/40">
