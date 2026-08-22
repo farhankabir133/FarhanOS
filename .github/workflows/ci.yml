@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Smoke test backend boot
+        env:
+          GROQ_API_KEY: smoke-test-key
+          RESEND_API_KEY: re_smoke_test_key
+          CORS_ORIGINS: https://farhankabir.me
+          PORT: "3199"
+        run: |
+          node dist/backend/app/server.js &
+          SERVER_PID=$!
+          sleep 2
+          curl --fail --silent http://127.0.0.1:3199/api/health > /dev/null || (echo "health check failed" && kill $SERVER_PID && exit 1)
+          kill $SERVER_PID

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AppError, ValidationError, ExternalServiceError } from "../utils/errors.js";
 import { orchestrateSummarizeBrief } from "../services/ai.js";
 import { sanitizeString, validateRequired } from "../utils/sanitize.js";
+import { saveBriefRequest } from "../repositories/leads.js";
 import type { SummarizeBriefRequest } from "../types/index.js";
 
 export async function summarizeBrief(req: Request, res: Response): Promise<void> {
@@ -31,6 +32,17 @@ export async function summarizeBrief(req: Request, res: Response): Promise<void>
       timeline: body.timeline,
       goals: sanitizedGoals,
       comments: body.comments,
+    });
+
+    // Durable brief record — best-effort, never blocks the response.
+    void saveBriefRequest({
+      projectType: sanitizedProjectType,
+      budget: body.budget,
+      timeline: body.timeline,
+      goals: sanitizedGoals,
+      comments: body.comments,
+      email: body.email,
+      aiSummary: summary,
     });
 
     res.status(200).json({ summary });

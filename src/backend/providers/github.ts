@@ -20,7 +20,6 @@ export async function fetchTopRepos(
   username: string,
   limit: number
 ): Promise<GithubRepo[]> {
-  const apiKey = config.groq.apiKey;
   const url = `https://api.github.com/users/${username}/repos?sort=stars&per_page=100`;
 
   const response = await fetchClient(
@@ -29,7 +28,7 @@ export async function fetchTopRepos(
       headers: {
         "Accept": config.github.acceptHeader,
         "User-Agent": config.github.userAgent,
-        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        ...(config.github.token ? { Authorization: `Bearer ${config.github.token}` } : {}),
       },
     },
     config.github.timeoutMs,

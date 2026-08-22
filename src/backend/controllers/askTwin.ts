@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AppError, ValidationError, ExternalServiceError } from "../utils/errors.js";
 import { orchestrateAskTwin } from "../services/ai.js";
 import { sanitizeString } from "../utils/sanitize.js";
+import { ensureSession, logTwinTurn } from "../repositories/chatLogs.js";
 import type { AskTwinRequest } from "../types/index.js";
 
 export async function askTwin(req: Request, res: Response): Promise<void> {
@@ -20,12 +21,21 @@ export async function askTwin(req: Request, res: Response): Promise<void> {
       throw new ValidationError("Message contains no valid content after sanitization.", requestId);
     }
 
+    const sessionId = await ensureSession(body.sessionId).catch(() => null);
+
     const reply = await orchestrateAskTwin(
       sanitizedMessage,
       body.history
     );
 
-    res.status(200).json({ reply });
+    if (sessionId && reply.trim()) {
+      await logTwinTurn(sessionId, [
+        { role: "user", content: sanitizedMessage },
+        { role: "assistant", content: reply },
+      ]).catch(() => undefined);
+    }
+
+    res.status(200).json({ reply, ...(sessionId ? { sessionId } : {}) });
   } catch (err: unknown) {
     if (err instanceof SyntaxError) {
       res.status(400).json({ error: "Invalid JSON in request body." });

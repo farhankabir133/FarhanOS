@@ -48,3 +48,41 @@ export async function chatCompletion(
   const data: GroqResponse = await groqRes.json();
   return data.choices?.[0]?.message?.content || "";
 }
+
+interface GroqStreamChunk {
+  choices?: Array<{ delta?: { content?: string } }>;
+}
+
+export async function chatCompletionStream(
+  messages: ChatMessage[],
+  _requestId: string
+): Promise<ReadableStream<Uint8Array>> {
+  const apiKey = config.groq.apiKey;
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY is not configured.");
+  }
+
+  const groqRes = await fetch(config.groq.baseUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: config.groq.model,
+      messages,
+      temperature: config.groq.temperature,
+      max_tokens: config.groq.maxTokens,
+      stream: true,
+    }),
+    signal: AbortSignal.timeout(config.groq.timeoutMs),
+  });
+
+  if (!groqRes.ok || !groqRes.body) {
+    const errBody = await groqRes.json().catch(() => ({}));
+    const errMsg = errBody.error?.message || `Groq API error: ${groqRes.status}`;
+    throw new Error(errMsg);
+  }
+
+  return groqRes.body as ReadableStream<Uint8Array>;
+}

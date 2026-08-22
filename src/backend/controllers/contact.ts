@@ -3,6 +3,7 @@ import { config } from "../config/env.js";
 import { AppError, ValidationError, ExternalServiceError } from "../utils/errors.js";
 import { orchestrateContactAnalysis } from "../services/ai.js";
 import { sendContactEmail } from "../services/email.js";
+import { saveContactMessage } from "../repositories/leads.js";
 import { sanitizeString, sanitizeEmail, isValidEmail, sanitizeObject, validateRequired } from "../utils/sanitize.js";
 import type { ContactRequest, ContactAnalysis } from "../types/index.js";
 
@@ -56,12 +57,10 @@ export async function contact(req: Request, res: Response): Promise<void> {
 
     const resendApiKey = config.resend.apiKey;
     if (resendApiKey) {
-      const emailSubject = `[FarhanOS] ${analysis.urgency === "High" ? "🔴" : analysis.urgency === "Medium" ? "🟡" : "🟢"} ${analysis.inquiryType || "New Message"} from ${sanitizedName || sanitizedEmail}`;
-
       const emailResult = await sendContactEmail({
         name: sanitizedName || "Anonymous",
         email: sanitizedEmail,
-        subject: emailSubject,
+        subject: sanitizedSubject,
         message: sanitizedMessage,
         urgency: analysis.urgency || "Medium",
         inquiryType: analysis.inquiryType || "General Inquiry",
@@ -76,6 +75,17 @@ export async function contact(req: Request, res: Response): Promise<void> {
       console.warn("[Contact] RESEND_API_KEY not set — email notification skipped.");
       emailStatus = { sent: false, error: "RESEND_API_KEY not configured." };
     }
+
+    // Durable lead record — best-effort, never blocks the response.
+    void saveContactMessage({
+      name: sanitizedName,
+      email: sanitizedEmail,
+      subject: sanitizedSubject,
+      message: sanitizedMessage,
+      urgency: analysis.urgency,
+      inquiryType: analysis.inquiryType,
+      emailSent: emailStatus.sent,
+    });
 
     res.status(200).json({
       success: true,

@@ -6,12 +6,31 @@ interface ThreeWormholeProps {
   theme?: 'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light';
 }
 
+type WormholeTheme = NonNullable<ThreeWormholeProps['theme']>;
+
+const THEME_COLORS: Record<WormholeTheme, { primary: number; secondary: number }> = {
+  dark:      { primary: 0x6366f1, secondary: 0x06b6d4 },
+  cyberpunk: { primary: 0xff0055, secondary: 0x00ffcc },
+  ai:        { primary: 0x8b5cf6, secondary: 0x6366f1 },
+  terminal:  { primary: 0x22c55e, secondary: 0x16a34a },
+  light:     { primary: 0x4f46e5, secondary: 0x06b6d4 },
+};
+
 export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormholeProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const isWarpingRef = useRef(isWarping);
   useEffect(() => { isWarpingRef.current = isWarping; }, [isWarping]);
+
+  const themeRef = useRef<WormholeTheme>(theme);
+  const applyThemeRef = useRef<((t: WormholeTheme) => void) | null>(null);
+
+  // Re-theme uniforms/materials in place instead of rebuilding the whole scene.
+  useEffect(() => {
+    themeRef.current = theme;
+    applyThemeRef.current?.(theme);
+  }, [theme]);
 
   const isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent) || window.innerWidth < 768;
   const quality = isMobile ? 'low' : 'high';
@@ -28,13 +47,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    let primaryColor   = 0x6366f1;
-    let secondaryColor = 0x06b6d4;
-
-    if (theme === 'cyberpunk')  { primaryColor = 0xff0055; secondaryColor = 0x00ffcc; }
-    else if (theme === 'ai')    { primaryColor = 0x8b5cf6; secondaryColor = 0x6366f1; }
-    else if (theme === 'terminal') { primaryColor = 0x22c55e; secondaryColor = 0x16a34a; }
-    else if (theme === 'light') { primaryColor = 0x4f46e5; secondaryColor = 0x06b6d4; }
+    const { primary: primaryColor, secondary: secondaryColor } = THEME_COLORS[themeRef.current];
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x020308, 0.012);
@@ -97,7 +110,6 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     scene.add(outerTunnel);
 
     // Glowing rings
-    const numRings = 8;
     const rings: THREE.Mesh[] = [];
     const ringGeom = new THREE.TorusGeometry(tunnelRadius + 0.3, 0.08, 8, 24);
     for (let i = 0; i < numRings; i++) {
@@ -118,7 +130,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
         float noise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); vec2 u=f*f*(3.0-2.0*f);
           return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y); }
         float fbm(vec2 p){ float v=0.0; float a=0.5; mat2 rot=mat2(cos(0.5),sin(0.5),-sin(0.5),cos(0.5));
-          for(int i=0;i<4;i++){ v+=a*noise(p); p=rot*p*2.0+vec2(100.0); a*=0.5; } return v; }
+          for(int i=0;i<${fbmOctaves};i++){ v+=a*noise(p); p=rot*p*2.0+vec2(100.0); a*=0.5; } return v; }
         void main(){
           vec2 p=vUv*3.5; float t=uTime*0.018;
           float n1=fbm(p+vec2(t*0.4,t*0.2));
@@ -141,8 +153,23 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     nebulaMesh.position.set(0, 0, -85);
     scene.add(nebulaMesh);
 
+    // Live theme switching: mutate colors in place (no scene rebuild)
+    const applyThemeColors = (t: WormholeTheme) => {
+      const { primary, secondary } = THEME_COLORS[t];
+      innerMat.color.setHex(primary);
+      outerMat.color.setHex(secondary);
+      rings.forEach((ring, i) => {
+        const mat = ring.material as THREE.MeshBasicMaterial;
+        mat.color.setHex(i % 2 === 0 ? primary : secondary);
+      });
+      (warpShaderMat.uniforms.uPrimaryColor.value as THREE.Color).setHex(primary);
+      (warpShaderMat.uniforms.uSecondaryColor.value as THREE.Color).setHex(secondary);
+      (nebulaMat.uniforms.uPrimaryColor.value as THREE.Color).setHex(primary);
+      (nebulaMat.uniforms.uSecondaryColor.value as THREE.Color).setHex(secondary);
+    };
+    applyThemeRef.current = applyThemeColors;
+
     // ── Star field (particleCount particles, richer color variety) ────────────────────
-    const particleCount = 1200;
     const particlePositions = new Float32Array(particleCount * 3);
     const particleColors    = new Float32Array(particleCount * 3);
     const starSpeeds: number[] = [], twinkleSpeeds: number[] = [], twinklePhases: number[] = [], baseColors: number[][] = [];
@@ -187,7 +214,6 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     scene.add(particles);
 
     // ── Cosmic dust lanes (dustCount fine particles in diagonal bands) ─────────────
-    const dustCount = 220;
     const dustPositions = new Float32Array(dustCount * 3);
     const dustVelocities: number[] = [];
     for (let i = 0; i < dustCount; i++) {
@@ -343,7 +369,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
         float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
         float noise(vec2 p){ vec2 i=floor(p); vec2 f=fract(p); vec2 u=f*f*(3.0-2.0*f);
           return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y); }
-        float fbm(vec2 p){ float v=0.0,a=0.5; for(int i=0;i<5;i++){v+=a*noise(p);p*=2.05;a*=0.5;} return v; }
+        float fbm(vec2 p){ float v=0.0,a=0.5; for(int i=0;i<${fbmOctaves};i++){v+=a*noise(p);p*=2.05;a*=0.5;} return v; }
         void main(){
           vec2 d=vUv-0.5; float r=length(d)*2.0; float theta=atan(d.y,d.x);
           float innerR=${innerUV.toFixed(3)}; float outerR=0.98;
@@ -808,8 +834,9 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       infallGeo.dispose(); infallMat.dispose();
       gravWaveBaseGeo.dispose();
       gravWaveRings.forEach(gw=>gw.mat.dispose());
+      applyThemeRef.current = null;
     };
-  }, [theme]);
+  }, []);
 
   return (
     <div

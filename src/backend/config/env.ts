@@ -7,6 +7,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).optional(),
   PORT: z.string().optional(),
   GITHUB_USERNAME: z.string().optional(),
+  GITHUB_TOKEN: z.string().optional(),
   APP_URL: z.string().optional(),
 });
 
@@ -20,6 +21,7 @@ export function getEnv(): EnvConfig {
     NODE_ENV: process.env.NODE_ENV || "production",
     PORT: process.env.PORT,
     GITHUB_USERNAME: process.env.GITHUB_USERNAME,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     APP_URL: process.env.APP_URL,
   });
 
@@ -53,6 +55,7 @@ export const config = {
   },
   github: {
     username: env.GITHUB_USERNAME || "farhankabir133",
+    token: env.GITHUB_TOKEN,
     userAgent: "FarhanOS-Portfolio/1.0",
     acceptHeader: "application/vnd.github.v3+json",
     timeoutMs: 15000,
@@ -72,6 +75,10 @@ export const config = {
     maxRequestsPerWindow: 60,
     windowMs: 60000,
     skipErrors: true,
+  },
+  aiRateLimit: {
+    maxRequestsPerWindow: 10,
+    windowMs: 60000,
   },
   health: {
     timeoutMs: 5000,

@@ -4,7 +4,7 @@
 [![Framework: React 19](https://img.shields.io/badge/Framework-React_19-indigo.svg)](https://react.dev/)
 [![Styling: Tailwind CSS v4](https://img.shields.io/badge/Styling-Tailwind_v4-06b6d4.svg)](https://tailwindcss.com)
 [![AI-Core: Groq Llama 3.3](https://img.shields.io/badge/AI--Core-Groq_Llama_3.3_70B-orange.svg)](https://groq.com/)
-[![Backend: Supabase Edge Functions](https://img.shields.io/badge/Backend-Supabase_Edge_Functions-green.svg)](https://supabase.com/)
+[![Backend: Express on Railway](https://img.shields.io/badge/Backend-Express_on_Railway-green.svg)](https://railway.app/)
 
 > An immersive, high-fidelity windowed operating system simulator presenting clinical NLP research, conceptual garden maps, and AI SaaS agent architectures in an interactive desktop environment.
 
@@ -51,6 +51,8 @@ The interface bridges professional NLP researcher credentials with premium front
 
 ### 1. Digital Twin AI Clone (`FarhanTwin`)
 * **Direct Groq Integration**: Client and server routes communicate with **Llama 3.3 70B (via Groq)**. Answers questions about Farhan's biography, achievements, tech stack, and publications in his verified tone.
+* **Token Streaming**: Responses stream token-by-token over SSE with automatic fallback to JSON and a client-side keyword bot when offline.
+* **Bounded Context**: Conversation history is trimmed server-side (12 turns / 16k chars) before every inference; sessions persist to Postgres when `DATABASE_URL` is configured.
 * **Contextual Knowledge Base**: Ingests custom clinical datasets, RoBERTa accuracy F1 indicators, and product metrics directly from system prompts.
 
 ### 2. Neural OS Speech Synthesizer (TTS)
@@ -95,10 +97,11 @@ The interface bridges professional NLP researcher credentials with premium front
 * **Frontend Framework**: React 19 (Hooks, Motion transitions)
 * **Styling & HUD**: Tailwind CSS v4 + custom CSS variable CRT scans + glassmorphic filters
 * **WebGL Elements**: Vanilla Three.js (particle gravity wells, node coordinates)
-* **Server Backend**: Supabase Edge Functions (Deno runtime, sole production backend)
-* **Dev Server**: Vite dev server with API proxy to local Supabase Edge Functions
-* **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via direct fetch calls
-* **Email**: Resend API for transactional email (contact form)
+* **Server Backend**: Express 5 on Railway (`src/backend/`) — sole production backend, Dockerized with health checks
+* **Dev Server**: Vite dev server with API proxy to the local Express server
+* **AI Engine**: Groq API (`llama-3.3-70b-versatile`) via SSE token streaming, with JSON + client-side fallbacks
+* **Persistence (optional)**: Postgres (e.g. Supabase) via `DATABASE_URL` — durable contact leads, project briefs, and twin chat sessions; fully stateless when unset
+* **Email**: Resend API for transactional email (contact form: owner notification + sender confirmation)
 * **Static Hosting**: GitHub Pages (`gh-pages`) + Vercel (`vercel.json`)
 
 ---
@@ -106,53 +109,47 @@ The interface bridges professional NLP researcher credentials with premium front
 ## 📂 Project Structure
 
 ```bash
-├── supabase/
-│   └── functions/
-│       └── api/
-│           ├── index.ts               # Function entry point
-│           └── src/
-│               ├── routes/            # Main router
-│               ├── controllers/       # Request handlers
-│               ├── middleware/        # CORS, rate limiting, sanitization
-│               ├── services/          # Email delivery
-│               ├── utils/             # Fetch timeout, RSS parser, logger
-│               ├── config/            # Centralized configuration
-│               ├── types/             # TypeScript interfaces
-│               ├── errors/            # Standardized error classes
-│               └── prompts/           # AI system prompts
-├── src/                         # React frontend application
-├── src/                         # React frontend application
+├── src/
+│   ├── backend/                     # Express 5 API (canonical production backend)
+│   │   ├── app/server.ts            # Entry point (helmet, cors, compression, rate limits)
+│   │   ├── config/env.ts            # Fail-fast env validation + central config
+│   │   ├── controllers/             # ask-twin (+ SSE stream), contact, github, medium, brief, health
+│   │   ├── routes/                  # Router with per-route AI rate limiting
+│   │   ├── middlewares/             # CORS, rate limiter
+│   │   ├── services/                # AI orchestration, email delivery
+│   │   ├── providers/               # Groq (JSON + streaming), GitHub, Medium RSS, Resend
+│   │   ├── repositories/            # Lead + chat-log persistence (best-effort)
+│   │   ├── db/                      # Optional Postgres pool + schema.sql
+│   │   └── utils/                   # fetch client (timeout/retry), sanitizer, logger
+│   ├── components/
+│   │   ├── windows/                 # Memoized OS window panels (GitHub, Skills, Builds, Timelines, Research)
+│   │   ├── TerminalBootLoader/      # Boot sequence components
+│   │   └── LandingPage.tsx          # Marketing page (9 sections)
+│   ├── data/portfolioData.ts        # Single source of truth for portfolio content
 │   ├── utils/
-│   │   ├── apiConfig.ts         # Dynamic API base URL resolver
-│   │   ├── aiFallback.ts        # Client-side AI fallback + speech synthesis
-│   │   └── rssParser.ts         # RSS parser (frontend-side copy)
-│   └── ...
-├── tests/                       # Vitest test suite
-│   └── unit/
-│       └── api/
-│           └── src/
-│               ├── middleware/   # Sanitizer & rate limiter tests
-│               └── utils/        # RSS parser tests
-├── dist/                        # Deployed production assets
-├── .env.example                 # Environment variables template
-├── vercel.json                  # Vercel static deployment configuration
-├── tsconfig.json                # TypeScript config (includes src/)
-├── vite.config.ts               # Vite bundler + vitest configuration
-└── package.json                 # Scripts, dependencies, devDependencies
+│   │   ├── apiConfig.ts             # Dynamic API base URL resolver
+│   │   ├── aiFallback.ts            # Client-side AI fallback + Web Speech synthesis
+│   │   └── rssParser.ts             # RSS parser (frontend-side copy)
+├── tests/unit/backend/              # Vitest suite (sanitizer, rate limiter, RSS parser)
+├── .github/workflows/ci.yml         # Typecheck → tests → build → backend smoke test
+├── Dockerfile                       # Multi-stage, non-root backend image with HEALTHCHECK
+├── railway.json                     # Railway deploy config (Dockerfile builder)
+├── index.html                       # SEO meta, resource hints, AVIF hero preload
+└── vite.config.ts                   # Vite bundler + vitest configuration
 ```
 
 ---
 
 ## ⚡ Performance Optimizations
 
-This repository includes a full-stack performance optimization pass based on `PERFORMANCE_OPTIMIZATION_REPORT.md`:
-
-- **React render efficiency**: `useMemo` / `useCallback` applied across `App.tsx` and `LandingPage.tsx`; drag system switched to GPU-accelerated `translate3d` with `will-change` hints.
-- **WebGL tuning**: `ThreeWormhole.tsx` now uses mobile LOD, `IntersectionObserver` visibility gating, reduced FBM octaves, and capped pixel ratio on low-end devices.
-- **CSS paint cost**: Added `.gpu-accelerated`, `.no-blur`, and mobile `backdrop-filter` reduction utilities; optimized keyframe animations with `translateZ(0)`.
-- **Backend latency**: Added `compression()` middleware, ETag/Last-Modified caching, shared RSS parser utility, and cache headers on API responses.
-- **Critical path hints**: `index.html` now includes `preconnect`/`dns-prefetch` for API domains and font preloads.
-- **Dead code removed**: Unused components, hooks, and IDE/agent config files purged from the production tree.
+- **AI streaming**: `/api/ask-twin/stream` pipes Groq tokens to the UI over SSE — first token paints in ~300–500ms instead of a full-completion wait; JSON endpoint + keyword fallbacks keep it resilient.
+- **React render efficiency**: `useMemo` / `useCallback` across `App.tsx` and `LandingPage.tsx`; heavy windows extracted as `React.memo` components under `src/components/windows/`; clock isolated in its own component; dead timers/states removed.
+- **WebGL tuning**: mobile LOD presets now actually apply (previously shadowed), adaptive FBM octaves, `IntersectionObserver` visibility gating, capped pixel ratio, and theme switching mutates uniforms in place instead of rebuilding the scene.
+- **Image diet**: hero avatar served as AVIF/WebP via `<picture>` (~96% smaller than PNG) with matching preload; favicon right-sized with apple-touch-icon.
+- **CSS paint cost**: async non-blocking stylesheet injection, GPU-accelerated drag via `translate3d`, mobile `backdrop-filter` reductions.
+- **Backend**: gzip compression (SSE excluded), ETag revalidation, shared RSS parser, cache headers on API responses, bounded conversation history (12 turns / 16k chars) before every Groq call.
+- **Critical path hints**: preconnects limited to origins actually used; font + hero preloads with correct `fetchpriority`.
+- **Accessibility**: keyboard-navigable command palette (↑/↓/Enter), tabbable desktop icons, aria-labeled window chrome, global `prefers-reduced-motion` support.
 
 ---
 
@@ -176,31 +173,34 @@ Create a `.env` file in the root directory based on `.env.example`:
 ```env
 GROQ_API_KEY=gsk_YOUR_GROQ_API_KEY_HERE
 RESEND_API_KEY=re_YOUR_RESEND_API_KEY_HERE
+CORS_ORIGINS=https://farhankabir.me,https://www.farhankabir.me
+# Optional — enables durable lead/chat persistence (Postgres, e.g. Supabase):
+DATABASE_URL=postgresql://...
 ```
 Get your Groq API key from https://console.groq.com and Resend key from https://resend.com.
+To apply the persistence schema: `psql "$DATABASE_URL" -f src/backend/db/schema.sql`.
 
 ### 4. Run Development Server
-Start the Supabase local development stack and the Vite dev server in separate terminals:
+Start the Express backend and the Vite dev server:
 ```bash
-# Terminal 1: Start local Supabase (if not already running)
-supabase start
-
-# Terminal 2: Serve Edge Functions locally
+# Terminal 1: API server on :3001
 npm run dev:backend
 
-# Terminal 3: Start frontend dev server with API proxy
+# Terminal 2: Frontend dev server with API proxy
 npm run dev
 ```
-Navigate to `http://localhost:5173` in your browser. The Vite dev server proxies API requests to the local Supabase Edge Function. All backend logic lives in `supabase/functions/api/src/`.
+Or run both with one command: `npm run dev:all`.
+Navigate to `http://localhost:5173`. The Vite dev server proxies `/api` requests to the Express server. All backend logic lives in `src/backend/`.
 
 ---
 
 ## 🏗️ Build & Deployment
 
 ### Architecture
-- **Production Backend**: Supabase Edge Functions (`supabase/functions/api/src/`) — single canonical backend
+- **Production Backend**: Express 5 (`src/backend/`) deployed to Railway via the in-repo `Dockerfile` (multi-stage, non-root, `HEALTHCHECK` on `/api/health`)
 - **Frontend**: Static SPA built by Vite (`npm run build` → `dist/`)
-- **Deployment**: GitHub Pages or Vercel (static assets) + Supabase Edge Functions (API routes)
+- **Deployment**: GitHub Pages or Vercel (static assets) + Railway (API routes at `api.farhankabir.me`)
+- **CI**: GitHub Actions runs typecheck, unit tests, build, and a backend boot smoke test on every push/PR
 
 ### Production Compilation
 Bundle the static assets for frontend deployment:
@@ -209,16 +209,17 @@ npm run build
 ```
 The compiled output is saved under `dist/`.
 
-### Supabase Edge Functions Deployment
-Deploy the backend Edge Function to Supabase:
+### Railway API Deployment
+Deploy the backend (uses the Dockerfile automatically):
 ```bash
-supabase link --project-ref <your-project-ref>
-supabase functions deploy api --no-verify-jwt
+railway up
 ```
-Set secrets in the Supabase dashboard (Settings → API → Secrets):
-- `GROQ_API_KEY` — your Groq API key
+Set these variables in the Railway dashboard:
+- `GROQ_API_KEY` — your Groq API key (**rotate if it was ever committed or leaked**)
 - `RESEND_API_KEY` — your Resend API key
-- `CORS_ORIGINS` — comma-separated list of allowed origins (e.g., `https://farhankabir.me,https://*.vercel.app`)
+- `CORS_ORIGINS` — explicit allow-list, e.g. `https://farhankabir.me,https://www.farhankabir.me` (never `*` in production)
+- `GITHUB_TOKEN` — optional read-only token to raise GitHub API rate limits (never reuse the Groq key here)
+- `DATABASE_URL` — optional Postgres connection string; enables lead/chat persistence
 
 ### GitHub Pages Static Deployment
 To build and publish the frontend bundle to the `FarhanOS` project pages path:

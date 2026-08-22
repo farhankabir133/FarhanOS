@@ -7,7 +7,9 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-interface EmailHtmlParams {
+import { config } from "../config/env.js";
+
+interface ContactEmailParams {
   name: string;
   email: string;
   subject: string;
@@ -16,6 +18,9 @@ interface EmailHtmlParams {
   inquiryType: string;
   summaryText: string;
   suggestedAutoReply: string;
+}
+
+interface EmailHtmlParams extends ContactEmailParams {
   timestamp: string;
 }
 
@@ -151,16 +156,55 @@ export function buildContactEmailHtml(params: EmailHtmlParams): string {
 </html>`;
 }
 
-export async function sendContactEmail(params: {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  urgency: string;
-  inquiryType: string;
-  summaryText: string;
-  suggestedAutoReply: string;
-}): Promise<{ sent: boolean; id?: string; error?: string }> {
+function buildConfirmationEmailHtml(params: ContactEmailParams): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FarhanOS — Message Received</title>
+</head>
+<body style="margin:0;padding:0;background:#0a0b10;font-family:'Courier New',monospace;color:#e2e8f0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0b10;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#0f1117;border:1px solid #1e2130;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a1d2e 0%,#0f1117 100%);padding:28px 32px;border-bottom:1px solid #1e2130;">
+              <p style="margin:0;font-size:10px;letter-spacing:4px;color:#6366f1;text-transform:uppercase;font-weight:700;">FARHANOS.ME</p>
+              <h1 style="margin:8px 0 0;font-size:20px;color:#fff;font-weight:800;">✓ Transmission Received</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 0;">
+              <p style="margin:0;font-size:13px;color:#cbd5e1;line-height:1.75;">Hi ${escapeHtml(params.name || "there")},</p>
+              <p style="margin:12px 0 0;font-size:13px;color:#94a3b8;line-height:1.75;">Your message has landed in the FarhanOS inbox${params.urgency === "High" ? " with high priority" : ""}. You'll get a reply at <span style="color:#6366f1;">${escapeHtml(params.email)}</span> as soon as possible — usually within 24–48 hours.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px 0;">
+              <div style="background:#12141f;border:1px solid #1e2130;border-left:3px solid #6366f1;border-radius:10px;padding:14px 18px;">
+                <p style="margin:0;font-size:9px;color:#475569;letter-spacing:3px;text-transform:uppercase;">Your Message</p>
+                <p style="margin:8px 0 0;font-size:12px;color:#a5b4fc;white-space:pre-wrap;">${escapeHtml(params.message).slice(0, 600)}${params.message.length > 600 ? "…" : ""}</p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 32px 28px;">
+              <p style="margin:0;font-size:9px;color:#374151;text-align:center;letter-spacing:2px;text-transform:uppercase;">
+                Farhan Kabir · farhankabir.me · This is an automated receipt
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendContactEmail(params: ContactEmailParams): Promise<{ sent: boolean; id?: string; error?: string; confirmationSent?: boolean }> {
   const { sendEmail } = await import("../providers/resend.js");
   const timestamp = new Date().toLocaleString("en-US", {
     timeZone: "Asia/Dhaka",
@@ -180,10 +224,24 @@ export async function sendContactEmail(params: {
 
   const emailSubject = `[FarhanOS] ${params.urgency === "High" ? "🔴" : params.urgency === "Medium" ? "🟡" : "🟢"} ${params.inquiryType || "New Message"} from ${params.name || params.email}`;
 
-  const result = await sendEmail(params.email, emailSubject, emailHtml);
+  const ownerResult = await sendEmail(
+    config.resend.recipient,
+    emailSubject,
+    emailHtml
+  );
 
-  if (result.ok) {
-    return { sent: true, id: result.id };
+  let confirmationSent = false;
+  if (ownerResult.ok) {
+    const confirmResult = await sendEmail(
+      params.email,
+      `FarhanOS — Message received${params.subject ? `: ${params.subject}` : ""}`,
+      buildConfirmationEmailHtml(params)
+    );
+    confirmationSent = confirmResult.ok;
   }
-  return { sent: false, error: result.error };
+
+  if (ownerResult.ok) {
+    return { sent: true, id: ownerResult.id, confirmationSent };
+  }
+  return { sent: false, error: ownerResult.error };
 }

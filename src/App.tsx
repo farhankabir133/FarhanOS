@@ -5,12 +5,19 @@ import {
   Maximize2, Minimize2, X, Send, Sparkles, Code, Workflow, User, 
   Folder, Map, Settings, Play, Pause, HelpCircle, Check, Copy, 
   Download, ExternalLink, Rocket, Compass, PhoneCall, RefreshCw,
-  Clock, CheckSquare, FileSpreadsheet, Palette
+  CheckSquare, FileSpreadsheet, Palette
 } from 'lucide-react';
 import { portfolioData } from './data/portfolioData';
 import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
 import LandingPage from './components/LandingPage';
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
+import TaskbarClock from './components/TaskbarClock';
+import GitHubWindow from './components/windows/GitHubWindow';
+import SkillsWindow from './components/windows/SkillsWindow';
+import BuildsWindow from './components/windows/BuildsWindow';
+import TimelineWindow from './components/windows/TimelineWindow';
+import ProfTimelineWindow from './components/windows/ProfTimelineWindow';
+import ResearchWindow from './components/windows/ResearchWindow';
 import DecryptText from './components/DecryptText';
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
 import { getApiBaseUrl } from './utils/apiConfig';
@@ -32,18 +39,32 @@ export default function App() {
     };
   }, [viewMode]);
 
+  // Deep links: #os boots straight into the OS; hash changes drive the view.
+  useEffect(() => {
+    const applyHash = () => {
+      setViewMode(window.location.hash === '#os' ? 'os' : 'landing');
+    };
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
+  }, []);
+
+  // Keep the URL in sync when the view changes programmatically.
+  useEffect(() => {
+    if (viewMode === 'os' && window.location.hash !== '#os') {
+      history.replaceState(null, '', '#os');
+    } else if (viewMode === 'landing' && window.location.hash === '#os') {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, [viewMode]);
+
   // Landing Page Interactive States
   const [landingQuery, setLandingQuery] = useState('');
   const [landingReply, setLandingReply] = useState('');
   const [landingChatLoading, setLandingChatLoading] = useState(false);
-  const [selectedResearchPaper, setSelectedResearchPaper] = useState<any>(null); // For a popup reader on landing page
 
   // OS System States
   const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
-  const [currentTime, setCurrentTime] = useState('');
-  const [isBooted, setIsBooted] = useState(false);
-  const [bootProgress, setBootProgress] = useState(0);
-  const [bootLogs, setBootLogs] = useState<string[]>([]);
   
   // Window Management States
   // Each open window is represented by its unique id
@@ -67,15 +88,6 @@ export default function App() {
   });
 
   const osTimelineProgressLineRef = useRef<HTMLDivElement | null>(null);
-
-  // Dynamic CPU Load for telemetry
-  const [cpuLoad, setCpuLoad] = useState(12);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCpuLoad(Math.floor(Math.random() * 10) + 7);
-    }, 2500);
-    return () => clearInterval(timer);
-  }, []);
 
   // Dynamic window width for responsiveness
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -103,7 +115,6 @@ export default function App() {
   // Quick Action OS Bypass Helpers
   const handleOpenWindowDirectly = useCallback((winId: string) => {
     setViewMode('os');
-    setIsBooted(true);
     setOpenWindows(prev => {
       if (prev.includes(winId)) return prev;
       return [...prev, winId];
@@ -111,11 +122,6 @@ export default function App() {
     setFocusedWindow(winId);
     triggerSound(900, 0.05);
   }, []);
-
-  const handleOpenProjectDirectly = useCallback((project: Project) => {
-    setSelectedProject(project);
-    handleOpenWindowDirectly('projects');
-  }, [handleOpenWindowDirectly]);
 
   const handleOpenArticleDirectly = useCallback((article: Article) => {
     setSelectedArticle(article);
@@ -125,9 +131,15 @@ export default function App() {
   // UI Interactive States
   const [selectedProject, setSelectedProject] = useState<Project>(portfolioData.projects[0]);
   const [selectedPaper, setSelectedPaper] = useState<Paper>(portfolioData.papers[0]);
+  const handleSelectPaper = useCallback((paper: Paper) => {
+    setSelectedPaper(paper);
+  }, []);
   const [articles, setArticles] = useState<Article[]>(portfolioData.articles);
   const [selectedArticle, setSelectedArticle] = useState<Article>(portfolioData.articles[0]);
   const [selectedTimeline, setSelectedTimeline] = useState<TimelineEvent>(portfolioData.timeline[0]);
+  const handleSelectTimeline = useCallback((event: TimelineEvent) => {
+    setSelectedTimeline(event);
+  }, []);
 
 useEffect(() => {
     const fetchMediumStories = async () => {
@@ -151,11 +163,15 @@ useEffect(() => {
     fetchMediumStories();
   }, []);
   const [skillFilter, setSkillFilter] = useState<'all' | 'AI/ML' | 'Frontend' | 'Backend' | 'Research' | 'Systems'>('all');
+  const handleSkillFilterChange = useCallback((filter: string) => {
+    setSkillFilter(filter as 'all' | 'AI/ML' | 'Frontend' | 'Backend' | 'Research' | 'Systems');
+  }, []);
   const [resumeAudience, setResumeAudience] = useState<'recruiter' | 'investor' | 'founder' | 'researcher'>('recruiter');
 
   // Command Palette & Search States
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [paletteHighlight, setPaletteHighlight] = useState(0);
 
   // Ask Twin AI State
   const [twinInput, setTwinInput] = useState('');
@@ -163,6 +179,7 @@ useEffect(() => {
     { role: 'assistant', content: "Systems fully operational. I am Farhan's certified neural clone. Feel free to enquire about my NLP predictive pipelines, clinical depression research, full-stack architectures, or project command maps." }
   ]);
   const [twinLoading, setTwinLoading] = useState(false);
+  const [twinSessionId, setTwinSessionId] = useState<string | null>(null);
   const [playingMessageIndex, setPlayingMessageIndex] = useState<number | null>(null);
   const [currentTTSAudio, setCurrentTTSAudio] = useState<{ stop: () => void } | null>(null);
 
@@ -193,17 +210,6 @@ useEffect(() => {
 
   const triggerSound = (_freq: number = 800, _dur: number = 0.03) => {};
 
-  // Clock Ticker
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   const handleWarpAndEnter = useCallback(() => {
     if (isWarping) return;
     triggerSound(1200, 0.4);
@@ -221,9 +227,6 @@ useEffect(() => {
 
     setTimeout(() => {
       setViewMode('os');
-      setBootProgress(0);
-      setBootLogs([]);
-      setIsBooted(false);
       setIsWarping(false);
     }, 1800);
   }, [isWarping]);
@@ -269,7 +272,7 @@ useEffect(() => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, []);
 
   // Drag Window logic handlers
   const draggedWindowRef = useRef<string | null>(null);
@@ -417,40 +420,25 @@ useEffect(() => {
     }));
   }, []);
 
-  // TTS Speech Player
-  const speakText = useCallback(async (text: string, index: number | null = null, mode: 'tour' | 'narrate' = 'narrate') => {
+  // TTS Speech Player (Web Speech API — narration is handled fully client-side)
+  const speakText = useCallback(async (text: string, index: number | null = null, _mode: 'tour' | 'narrate' = 'narrate') => {
     try {
       if (currentTTSAudio) {
         currentTTSAudio.stop();
         setCurrentTTSAudio(null);
       }
       setPlayingMessageIndex(index);
-      const res = await fetch(`${getApiBaseUrl()}/api/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, type: mode })
+      const audioControl = speakTextClient(text, () => {
+        setPlayingMessageIndex(null);
       });
-      const data = await res.json();
-      if (data.audio) {
-        setTimeout(() => {
-          setPlayingMessageIndex(null);
-        }, 2000);
-      }
-    } catch (err) {
-      console.error('Narrator service unreachable, falling back to client voice:', err);
-      try {
-        const audioControl = speakTextClient(text, () => {
-          setPlayingMessageIndex(null);
-        });
-        if (audioControl) {
-          setCurrentTTSAudio(audioControl);
-        } else {
-          setPlayingMessageIndex(null);
-        }
-      } catch (clientErr) {
-        console.error('Client speech synthesis failed:', clientErr);
+      if (audioControl) {
+        setCurrentTTSAudio(audioControl);
+      } else {
         setPlayingMessageIndex(null);
       }
+    } catch (clientErr) {
+      console.error('Client speech synthesis failed:', clientErr);
+      setPlayingMessageIndex(null);
     }
   }, [currentTTSAudio]);
 
@@ -462,46 +450,116 @@ useEffect(() => {
     setPlayingMessageIndex(null);
   }, [currentTTSAudio]);
 
+  const streamTwinReply = useCallback(async (
+    message: string,
+    history: Array<{ role: string; content: string }>,
+    sessionId: string | null,
+    onDelta: (partial: string) => void,
+    onSessionId?: (id: string) => void
+  ): Promise<string> => {
+    const res = await fetch(`${getApiBaseUrl()}/api/ask-twin/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history, ...(sessionId ? { sessionId } : {}) })
+    });
+    if (!res.ok || !res.body) throw new Error(`Stream unavailable (${res.status})`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let full = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n');
+      buffer = parts.pop() || '';
+      for (const line of parts) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(payload) as { delta?: string; error?: string; done?: boolean; sessionId?: string };
+          if (evt.error) throw new Error(evt.error);
+          if (evt.sessionId && onSessionId) onSessionId(evt.sessionId);
+          if (evt.delta) {
+            full += evt.delta;
+            onDelta(full);
+          }
+        } catch (parseErr) {
+          if (parseErr instanceof SyntaxError) continue;
+          throw parseErr;
+        }
+      }
+    }
+    return full;
+  }, []);
+
   const handleSendTwinMessage = useCallback(async () => {
-    if (!twinInput.trim()) return;
+    if (!twinInput.trim() || twinLoading) return;
     const userMsg = twinInput.trim();
     setTwinInput('');
     setTwinMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setTwinLoading(true);
     triggerSound(1100, 0.03);
 
-    try {
-      const historyPayload = twinMessages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.content
-      }));
+    const historyPayload = twinMessages.slice(-12).map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content
+    }));
+    const assistantIndex = twinMessages.length + 1;
 
+    const finishWith = (reply: string) => {
+      setTwinMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      setTwinLoading(false);
+      speakText(reply, assistantIndex);
+    };
+
+    // Stream first; progressive assistant bubble updates token-by-token.
+    let streamed = false;
+    try {
+      streamed = true;
+      setTwinMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      const full = await streamTwinReply(userMsg, historyPayload, twinSessionId, (partial) => {
+        setTwinMessages(prev => {
+          const next = [...prev];
+          next[next.length - 1] = { role: 'assistant', content: partial };
+          return next;
+        });
+      }, setTwinSessionId);
+      if (!full.trim()) throw new Error('Empty stream response.');
+      speakText(full, assistantIndex);
+      setTwinLoading(false);
+      return;
+    } catch (streamErr) {
+      console.warn('Streaming failed, falling back:', streamErr);
+      if (streamed) {
+        // remove the empty streaming placeholder before retry paths
+        setTwinMessages(prev => prev.slice(0, -1));
+      }
+    }
+
+    try {
       const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, history: historyPayload })
+        body: JSON.stringify({ message: userMsg, history: historyPayload, ...(twinSessionId ? { sessionId: twinSessionId } : {}) })
       });
       const data = await res.json();
-      
+
+      if (data.sessionId) setTwinSessionId(data.sessionId);
       if (data.reply) {
-        setTwinMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        setTwinLoading(false);
-        speakText(data.reply, twinMessages.length + 1);
-      } else {
-        throw new Error(data.error || 'General twin system fault.');
+        finishWith(data.reply);
+        return;
       }
+      throw new Error(data.error || 'General twin system fault.');
     } catch (err: any) {
       console.warn('Backend twin service failed, using local fallback:', err);
-      const historyPayload = twinMessages.map(m => ({
-        role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
-        content: m.content
-      }));
-      const fallbackReply = getAskTwinFallback(userMsg, historyPayload);
-      setTwinMessages(prev => [...prev, { role: 'assistant', content: fallbackReply }]);
-      setTwinLoading(false);
-      speakText(fallbackReply, twinMessages.length + 1);
+      finishWith(getAskTwinFallback(userMsg, historyPayload));
     }
-  }, [twinInput, twinMessages, speakText]);
+  }, [twinInput, twinLoading, twinMessages, twinSessionId, speakText, streamTwinReply]);
 
   const handleSendBrief = useCallback(async () => {
     if (!briefForm.goals.trim()) return;
@@ -707,6 +765,46 @@ useEffect(() => {
 
   const systemSearchResults = useMemo(() => getSearchItems(), [getSearchItems]);
 
+  // Palette keyboard navigation: ↑/↓ to move, Enter to execute.
+  const paletteCount = searchQuery.trim().length === 0 ? 2 : systemSearchResults.length;
+
+  useEffect(() => {
+    setPaletteHighlight(0);
+  }, [searchQuery, commandPaletteOpen]);
+
+  useEffect(() => {
+    if (!commandPaletteOpen) return;
+    const onPaletteKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setPaletteHighlight(h => {
+          const next = paletteCount > 0 ? (h + 1) % paletteCount : h;
+          document.getElementById(`palette-item-${next}`)?.scrollIntoView({ block: 'nearest' });
+          return next;
+        });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setPaletteHighlight(h => {
+          const next = paletteCount > 0 ? (h - 1 + paletteCount) % paletteCount : h;
+          document.getElementById(`palette-item-${next}`)?.scrollIntoView({ block: 'nearest' });
+          return next;
+        });
+      } else if (e.key === 'Enter') {
+        if (paletteCount === 0 || e.target instanceof HTMLInputElement === false) return;
+        e.preventDefault();
+        if (searchQuery.trim().length === 0) {
+          if (paletteHighlight === 0) runTourCycle();
+          else openWindow('brief');
+          setCommandPaletteOpen(false);
+        } else {
+          systemSearchResults[paletteHighlight]?.action();
+        }
+      }
+    };
+    window.addEventListener('keydown', onPaletteKey);
+    return () => window.removeEventListener('keydown', onPaletteKey);
+  }, [commandPaletteOpen, searchQuery, paletteHighlight, paletteCount, systemSearchResults, runTourCycle, openWindow]);
+
   // Desktop Icons Configuration for ease of access
   const desktopIcons = useMemo(() => [
     { id: 'twin', label: 'Ask Twin AI', icon: Sparkles, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
@@ -870,10 +968,7 @@ useEffect(() => {
             <span>Theme: {theme}</span>
           </button>
 
-            <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
-              <Clock className="w-3.5 h-3.5 text-sky-400" />
-              <span>{currentTime || '14:37:33'} (UTC)</span>
-            </div>
+            <TaskbarClock />
           </div>
         </header>
 
@@ -925,11 +1020,12 @@ useEffect(() => {
             const isFocus = focusedWindow === ico.id && !minimizedWindows.includes(ico.id);
             
             return (
-              <div 
-                key={ico.id} 
+              <button
+                key={ico.id}
                 onClick={() => openWindow(ico.id)}
+                aria-label={`Open ${ico.label}`}
                 style={{ animationDelay: `${idx * 45}ms` }}
-                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border border-transparent hover:border-zinc-800/40 hover:bg-zinc-950/25 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] cursor-pointer transition-all duration-300 active:scale-95 group text-center relative animate-fade-in opacity-0 ${isOpen ? 'bg-zinc-950/15' : ''}`}
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border border-transparent hover:border-zinc-800/40 hover:bg-zinc-950/25 hover:backdrop-blur-md hover:shadow-[0_4px_20px_rgba(99,102,241,0.08)] cursor-pointer transition-all duration-300 active:scale-95 group text-center relative animate-fade-in opacity-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400 ${isOpen ? 'bg-zinc-950/15' : ''}`}
               >
                 <div className={`p-4 rounded-2xl ${ico.color} transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-200 relative`}>
                   <ActiveIcon className="w-6 h-6" />
@@ -940,12 +1036,12 @@ useEffect(() => {
                 <span className="text-slate-300 group-hover:text-white font-sans text-[11px] font-semibold mt-2.5 tracking-tight line-clamp-1">
                   {ico.label}
                 </span>
-                
+
                 {/* Visual glow backdrop for focused window */}
                 {isFocus && (
                   <span className="absolute inset-x-4 -bottom-1 h-0.5 bg-gradient-to-r from-sky-450 to-purple-500 rounded filter blur-xs" />
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -1002,24 +1098,27 @@ useEffect(() => {
                 </div>
 
                 <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
-                  <button 
+                  <button
                     onClick={() => minimizeWindow(winId)}
                     className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
                     title="Minimize"
+                    aria-label={`Minimize ${desktopIco ? desktopIco.label : 'window'}`}
                   >
                     <Minimize2 className="w-3 h-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => toggleMaximize(winId)}
                     className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
                     title="Toggle Maximize"
+                    aria-label={`Maximize or restore ${desktopIco ? desktopIco.label : 'window'}`}
                   >
                     <Maximize2 className="w-3 h-3" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => closeWindow(winId)}
                     className="p-1 text-rose-400 hover:text-rose-500 rounded hover:bg-rose-500/10"
                     title="Close Window"
+                    aria-label={`Close ${desktopIco ? desktopIco.label : 'window'}`}
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -1229,159 +1328,17 @@ useEffect(() => {
 
                 {/* C. LINGUISTIC RESEARCH LAB PANEL */}
                 {winId === 'research' && (
-                  <div className="flex flex-col md:flex-row h-full gap-4">
-                    
-                    {/* LHS Switcher */}
-                    <div className="w-full md:w-56 border-r border-[#2d2f3d] pr-4 flex flex-col gap-2">
-                      <span className={styleSet.panelHeader}>PUBLICATIONS CATALOG</span>
-                      <div className="space-y-1 select-none">
-                        {portfolioData.papers.map((p) => (
-                          <button 
-                            key={p.id}
-                            onClick={() => { setSelectedPaper(p); triggerSound(800, 0.03); }}
-                            className={`w-full text-left p-2 rounded-lg border flex flex-col gap-1 transition-all cursor-pointer ${selectedPaper.id === p.id ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
-                          >
-                            <span className="font-bold text-[10px] line-clamp-2 leading-snug">{p.title}</span>
-                            <span className="text-[9px] opacity-75 font-mono">{p.journal} ({p.year})</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg mt-auto text-[10px] select-text">
-                        <span className="font-bold text-emerald-300">Clinician Alerts</span>
-                        <p className="text-zinc-500 leading-normal font-sans mt-1">Automatic alert pipeline triggers clinical assessment support metrics on exceeding distress metrics threshold.</p>
-                      </div>
-                    </div>
-
-                    {/* RHS Contents */}
-                    <div className="flex-1 space-y-4">
-                      <div className="border-b border-zinc-800/40 pb-2 flex-col gap-0.5 justify-start">
-                        <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded px-2 py-0.5 text-[9.5px]">PEER-REVIEWED JOURNAL</span>
-                        <h3 className="text-xs font-black text-slate-100 tracking-tight leading-relaxed select-text mt-1.5">{selectedPaper.title}</h3>
-                        <div className="text-[9.5px] text-zinc-500 italic mt-0.5 select-text">Authors: {selectedPaper.authors} · Published in {selectedPaper.journal} ({selectedPaper.year})</div>
-                      </div>
-
-                      {/* Paper Abstract Tabbed panel */}
-                      <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg p-3 relative select-text">
-                        <span className="font-bold text-zinc-300 text-[10px] block uppercase tracking-wide mb-1">Anatomical Abstract:</span>
-                        <p className="text-slate-400 font-sans leading-normal text-[10px]">{selectedPaper.abstract}</p>
-                      </div>
-
-                      {/* Interactive block representing high level engineering classification pipelines */}
-                      <div>
-                        <span className={styleSet.panelHeader}>CLASSIFIER PIPELINE DATAFLOW</span>
-                        <div className="flex items-center gap-1 mt-1.5 select-none text-[9px] bg-zinc-950/30 p-2 border border-zinc-900 rounded-lg justify-around overflow-x-auto text-center font-mono">
-                          <div className="bg-zinc-900 border border-zinc-800 p-1 px-1.5 rounded text-slate-400">Ingestion</div>
-                          <span className="text-zinc-600">→</span>
-                          <div className="bg-zinc-900 border border-zinc-800 p-1 px-1.5 rounded text-slate-400">POS normalise</div>
-                          <span className="text-[#33ff33]">→</span>
-                          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 p-1 px-1.5 rounded animate-pulse">RoBERTa Tensor Matrix</span>
-                          <span className="text-[#33ff33]">→</span>
-                          <div className="bg-red-500/20 text-red-300 border border-red-500/30 p-1 px-1.5 rounded">Clinician Alert</div>
-                        </div>
-                      </div>
-
-                      {/* Metrics Performance Comparison Table */}
-                      <div>
-                        <span className={styleSet.panelHeader}>EVALUATION ACCURACY STATISTICS</span>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-1.5 font-mono text-[10px]">
-                          {selectedPaper.results.map((r, idx) => (
-                            <div key={idx} className="bg-zinc-950 p-2 border border-zinc-900 rounded-md text-center">
-                              <div className="text-zinc-500 text-[9px] truncate" title={r.metric}>{r.metric}</div>
-                              <div className="font-bold text-emerald-400 text-xs mt-0.5">{r.score}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* BibTeX citation block Copy/Paste */}
-                      <div className="border border-zinc-900 bg-zinc-950/60 p-2.5 rounded-lg">
-                        <div className="flex items-center justify-between pointer-events-auto select-none mb-1">
-                          <span className="text-[10px] text-zinc-500 font-bold block">BIBTEX CITATION RESOURCE</span>
-                          <button 
-                            onClick={() => {
-                              navigator.clipboard.writeText(selectedPaper.citation);
-                              triggerSound(1200, 0.05);
-                            }}
-                            className="bg-zinc-900 text-zinc-400 hover:text-white px-1.5 py-0.5 rounded text-[9.5px] border border-zinc-850 flex items-center gap-0.5 cursor-pointer"
-                          >
-                            <Copy className="w-2.5 h-2.5" />
-                            <span>Copy Citation</span>
-                          </button>
-                        </div>
-                        <code className="text-[9.5px] text-zinc-400 font-mono select-all block leading-tight">{selectedPaper.citation}</code>
-                      </div>
-                    </div>
-                  </div>
+                  <ResearchWindow
+                    selectedPaper={selectedPaper}
+                    onSelectPaper={handleSelectPaper}
+                    panelHeader={styleSet.panelHeader}
+                  />
                 )}
 
 
                 {/* D. GITHUB INTELLIGENCE MONITOR PANEL */}
                 {winId === 'github' && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2c2d3a] pb-2">
-                      <div>
-                        <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">VIRTUALIZED TELEMETRY STREAM</span>
-                        <h3 className="text-sm font-extrabold text-white mt-1">Linguistic & Engineering Pipelines Stream</h3>
-                      </div>
-                      <span className="text-[11px] text-stone-400 font-mono bg-zinc-950/60 px-2 py-0.5 border border-zinc-850 rounded">STREAK: 142 DAYS</span>
-                    </div>
-
-                    {/* Interactive Commits Calendar mock-up representing dynamic workloads */}
-                    <div>
-                      <span className={styleSet.panelHeader}>CODE INTEL CLASSIFIER CALENDAR (MOCK-GRID)</span>
-                      <div className="grid grid-cols-12 lg:grid-cols-24 gap-1 mt-1.5 bg-zinc-950 p-3 border border-zinc-900 rounded-lg">
-                        {Array.from({ length: 48 }).map((_, i) => {
-                          const level = i % 7 === 0 ? 'bg-green-500 shadow-[0_0_4px_#22c55e]' : i % 5 === 0 ? 'bg-green-600' : i % 3 === 0 ? 'bg-green-800' : 'bg-zinc-900';
-                          return (
-                            <div 
-                              key={i} 
-                              onClick={() => triggerSound(900 + (i % 5) * 100, 0.02)}
-                              className={`w-3.5 h-3.5 rounded-xs transition-colors hover:scale-110 cursor-pointer ${level}`}
-                              title={`Telemetry day ${i + 1}: Commits verified`}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-[11px]">
-                      
-                      {/* Active Repositories List */}
-                      <div className="bg-zinc-950/30 p-3 border border-[#2d2f3d] rounded-lg">
-                        <span className="font-bold text-zinc-300 block text-[10px] uppercase tracking-wide mb-2">INTELLIGENT SYSTEMS</span>
-                        <div className="space-y-2 font-mono">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sky-300">typerush-cockpit</span>
-                            <span className="text-zinc-500 text-[10px]">Stars: 184</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sky-300">the-ink-home-portal</span>
-                            <span className="text-zinc-500 text-[10px]">Stars: 142</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sky-300">safeside-predictor</span>
-                            <span className="text-zinc-500 text-[10px]">Stars: 211</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Mock activity feeds */}
-                      <div className="bg-zinc-950/30 p-3 border border-[#2d2f3d] rounded-lg">
-                        <span className="font-bold text-zinc-300 block text-[10px] uppercase tracking-wide mb-2">LIVE COMPILING ACTIONS FEED</span>
-                        <div className="space-y-2 leading-relaxed text-[10.5px]">
-                          <div className="flex items-start gap-1">
-                            <span className="text-emerald-400">●</span>
-                            <p className="text-zinc-400">Pushed update to <code className="text-[#33ff33] font-mono">typerush</code>: Configured Web Audio procedural oscillators & dynamic BPM heartbeats.</p>
-                          </div>
-                          <div className="flex items-start gap-1">
-                            <span className="text-amber-400">●</span>
-                            <p className="text-zinc-400">Released version 1.4.2 containing live Audio Synthesis narrated profiles.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <GitHubWindow panelHeader={styleSet.panelHeader} />
                 )}
 
 
@@ -1648,173 +1605,25 @@ useEffect(() => {
 
                 {/* H. INTERACTIVE TIMELINE / EXPERIENCE BLOCK */}
                 {winId === 'timeline' && (
-                  <div className="flex flex-col md:flex-row h-full gap-4">
-                    
-                    {/* LHS Slider Selector */}
-                    <div className="w-full md:w-52 border-r border-[#2d2f3d] pr-4 flex flex-col gap-2 select-none">
-                      <span className={styleSet.panelHeader}>CHRONOLOGY INDEX</span>
-                      <div className="space-y-1.5">
-                        {portfolioData.timeline.map((item) => (
-                          <button 
-                            key={item.year}
-                            onClick={() => { setSelectedTimeline(item); triggerSound(800, 0.03); }}
-                            className={`w-full text-left p-2 rounded-lg border flex items-center justify-between transition-all cursor-pointer ${selectedTimeline.year === item.year ? 'bg-sky-500/10 border-sky-500/30 text-sky-300 font-bold' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
-                          >
-                            <span className="text-[10.5px]">{item.company}</span>
-                            <span className="bg-zinc-900 px-1.5 py-0.5 rounded text-[8.5px] font-mono">{item.year}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* RHS Event Details */}
-                    <div className="flex-1 space-y-3">
-                      <div className="border-b border-[#2c2d3a] pb-2">
-                        <span className="bg-sky-500/10 text-sky-300 border border-sky-500/20 px-1 py-0.5 rounded text-[9.5px] font-mono">YEAR: {selectedTimeline.year} EXP</span>
-                        <h4 className="text-xs font-black text-white mt-1.5">{selectedTimeline.title}</h4>
-                        <span className="text-[9.5px] text-zinc-500 font-sans block">{selectedTimeline.company} · Role: {selectedTimeline.role}</span>
-                      </div>
-
-                      <p className="text-[11px] leading-relaxed text-zinc-400 font-sans select-text">{selectedTimeline.description}</p>
-
-                      <div className="space-y-2 select-text">
-                        <span className={styleSet.panelHeader}>HIGHLIGHT ACCOMPLISHMENTS</span>
-                        <ul className="space-y-1.5 pl-3 list-disc text-[10.5px] text-slate-300 leading-normal">
-                          {selectedTimeline.achievements.map((ach, idx) => (
-                            <li key={idx} className="marker:text-sky-400">{ach}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="bg-zinc-950/40 p-2.5 border border-zinc-900 rounded-lg mt-3">
-                        <span className="font-bold text-zinc-300 block text-[9.5px] uppercase font-mono tracking-widest mb-1.5">INTEGRATED TECH GRID</span>
-                        <div className="flex flex-wrap gap-1 select-none">
-                          {selectedTimeline.technologies.map((t) => (
-                            <span key={t} className="bg-zinc-900 text-slate-400 border border-zinc-800 rounded px-1.5 font-mono text-[9px]">{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <TimelineWindow
+                    selected={selectedTimeline}
+                    onSelect={handleSelectTimeline}
+                    panelHeader={styleSet.panelHeader}
+                  />
                 )}
 
                 {winId === 'profTimeline' && (
-                  <div className="space-y-6">
-                    <div className="border-b border-[#2c2d3a] pb-2">
-                      <span className="bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">PRO TIMELINE NODE</span>
-                      <h3 className="text-xs font-black text-white mt-1">Professional Experience & Verification Chronology</h3>
-                    </div>
-
-                    <div className="relative pl-6 md:pl-0 pt-4">
-                      {/* Vertical line */}
-                      <div className="absolute left-[13px] md:left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-indigo-500/60 via-cyan-500/20 to-transparent -translate-x-1/2 pointer-events-none z-0"></div>
-                      <div 
-                        ref={osTimelineProgressLineRef}
-                        className="absolute left-[13px] md:left-1/2 top-0 bottom-16 w-[2px] bg-gradient-to-b from-cyan-400 to-purple-600 -translate-x-1/2 origin-top pointer-events-none z-10"
-                        style={{ transform: `scaleY(0)`, transformOrigin: 'top' }}
-                      ></div>
-
-                      <div className="space-y-10 relative z-10">
-                        {portfolioData.professionalTimeline.map((item, idx) => {
-                          const isLeft = idx % 2 === 0;
-                          return (
-                            <div key={idx} className={`flex flex-col md:flex-row items-start ${isLeft ? 'md:flex-row-reverse' : ''} relative`}>
-                              {/* Node Circle */}
-                              <div className="absolute left-[13px] md:left-1/2 -translate-x-1/2 flex items-center justify-center z-20">
-                                <div className="w-8 h-8 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center shadow-md">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-tr from-cyan-400 to-indigo-500"></span>
-                                </div>
-                              </div>
-
-                              {/* Spacer */}
-                              <div className="hidden md:block w-1/2" />
-
-                              {/* Card container */}
-                              <div className="w-full md:w-[46%] pl-8 md:pl-0">
-                                <div className="p-5 rounded-xl bg-zinc-900/30 border border-zinc-900/80 relative group hover:border-zinc-800 transition-all duration-300">
-                                  <div className="absolute top-0 right-0 w-12 h-12 bg-indigo-500/5 blur-lg pointer-events-none group-hover:bg-cyan-500/10 transition-colors"></div>
-                                  
-                                  <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
-                                    <div>
-                                      <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest font-semibold block mb-0.5">{item.year}</span>
-                                      <h4 className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors leading-tight">{item.title}</h4>
-                                      <span className="text-[9px] text-zinc-550 block font-mono mt-0.5">{item.company}</span>
-                                    </div>
-                                    <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-mono border font-medium uppercase ${
-                                      item.badgeColor === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                                      item.badgeColor === 'indigo' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
-                                      item.badgeColor === 'pink' ? 'bg-pink-500/10 text-pink-400 border-pink-500/30' :
-                                      'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                    }`}>{item.company}</span>
-                                  </div>
-
-                                  <ul className="space-y-2 mb-4 text-[10.5px] text-zinc-400">
-                                    {item.achievements.map((bullet, bulletIdx) => (
-                                      <li key={bulletIdx} className="flex items-start leading-relaxed text-zinc-400 select-text">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400/80 mt-1.5 mr-2 shrink-0" />
-                                        <span>{bullet}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-
-                                  <div className="flex flex-wrap gap-1 pt-3 border-t border-zinc-900/60 select-none">
-                                    {item.technologies.map((t) => (
-                                      <span key={t} className="px-1.5 py-0.5 rounded text-[8px] font-mono bg-zinc-950/80 text-zinc-400 border border-zinc-900">{t}</span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
+                  <ProfTimelineWindow progressLineRef={osTimelineProgressLineRef} />
                 )}
 
 
                 {/* I. TECH OBSERVATORY / SKILLS OBSERVER */}
                 {winId === 'skills' && (
-                  <div className="space-y-4">
-                    <div className="border-b border-[#2c2d3a] pb-2 flex-col gap-0.5">
-                      <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">Observatory Deck</span>
-                      <h3 className="text-xs font-black text-white mt-1">Linguistic, Structural & Compute Matrices</h3>
-                    </div>
-
-                    <div className="flex items-center gap-2 bg-zinc-950/60 p-1 border border-zinc-900 rounded-lg overflow-x-auto scrollbar-none select-none">
-                      {['all', 'AI/ML', 'Frontend', 'Backend', 'Research', 'Systems'].map((filter) => (
-                        <button 
-                          key={filter}
-                          onClick={() => { setSkillFilter(filter as any); triggerSound(800, 0.02); }}
-                          className={`text-[9.5px] px-2.5 py-1 rounded capitalize cursor-pointer transition-colors ${skillFilter === filter ? 'bg-indigo-600 font-bold text-white shadow-[0_0_8px_#4f46e5]' : 'bg-transparent text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                          {filter === 'all' ? 'All Matrices' : filter}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Weight-based circular coordinate grid matrix representing custom skills map */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[220px] overflow-y-auto p-1 scrollbar-none">
-                      {filteredSkills.map((sk) => {
-                        const weightPct = sk.weight === 5 ? 'border-sky-500/50 bg-sky-500/5 text-sky-200' : sk.weight === 4 ? 'border-indigo-500/30 bg-indigo-500/5 text-indigo-200' : 'border-zinc-800 bg-zinc-900/40 text-zinc-400';
-                        return (
-                          <div 
-                            key={sk.name}
-                            onClick={() => triggerSound(700 + sk.weight * 100, 0.03)}
-                            className={`p-2.5 rounded-lg border text-center cursor-pointer transition-all hover:scale-103 select-none flex flex-col items-center justify-center gap-1 relative overflow-hidden ${weightPct}`}
-                          >
-                            <span className="text-[10.5px] font-bold md:tracking-tight font-sans text-stone-100">{sk.name}</span>
-                            <span className="text-[8px] opacity-75 uppercase tracking-widest font-mono text-zinc-400">{sk.category}</span>
-                            <div className="flex items-center gap-0.5 mt-1">
-                              {Array.from({ length: 5 }).map((_, stIdx) => (
-                                <span key={stIdx} className={`w-1 h-1 rounded-full ${stIdx < sk.weight ? 'bg-indigo-400 shadow-[0_0_4px_#818cf8]' : 'bg-zinc-800'}`} />
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <SkillsWindow
+                    skills={filteredSkills}
+                    filter={skillFilter}
+                    onFilterChange={handleSkillFilterChange}
+                  />
                 )}
 
 
@@ -1974,51 +1783,7 @@ useEffect(() => {
                 )}
 
                 {/* K. SYSTEM BUILD MONITOR / RELEASE LOGS */}
-                {winId === 'builds' && (
-                  <div className="space-y-4">
-                    <div className="border-b border-[#2c2d3a] pb-2 flex-col gap-0.5">
-                      <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono">TELEMETRY DIAGNOSTICS</span>
-                      <h3 className="text-xs font-black text-white mt-1">Continuous Development & Deployment Releases</h3>
-                    </div>
-
-                    <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
-                      {portfolioData.buildLogs.map((log) => (
-                        <div key={log.id} className="bg-zinc-950/40 p-3.5 border border-[#2d2f3d] rounded-lg space-y-2 select-text">
-                          <div className="flex items-center justify-between border-b border-zinc-850 pb-1.5">
-                            <div className="flex items-center gap-1.5 text-white font-bold">
-                              <span className="text-teal-400 font-mono text-[9.5px] p-0.5 px-1.5 border border-teal-500/20 bg-teal-500/5 rounded">{log.version}</span>
-                              <span className="text-[11px] font-sans truncate">{log.title}</span>
-                            </div>
-                            <span className="text-[9.5px] text-zinc-500 font-mono">{log.date}</span>
-                          </div>
-
-                          <p className="text-[10.5px] text-slate-400 leading-relaxed font-sans">{log.description}</p>
-
-                          <div>
-                            <span className="font-bold text-zinc-300 block text-[9px] uppercase font-mono tracking-widest mb-1">TASKS DEPLOYED</span>
-                            <ul className="space-y-1 pl-3 text-[10px] text-zinc-400 list-disc leading-normal font-sans">
-                              {log.tasksCompleted.map((t, tIdx) => (
-                                <li key={tIdx}>{t}</li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div className="border-t border-zinc-900 pt-1.5">
-                            <span className="font-bold text-teal-300 block text-[9px] uppercase font-mono tracking-widest mb-1">METRIC SHIFTS DETECTED</span>
-                            <div className="flex flex-wrap gap-2 text-[10px] font-mono select-none">
-                              {log.metricsChanged.map((mc, mIdx) => (
-                                <span key={mIdx} className="bg-zinc-90 w-full flex items-center justify-between p-1.5 rounded border border-zinc-900 text-stone-300">
-                                  <span>{mc.metric}:</span>
-                                  <span className="text-teal-400 font-bold">{mc.before} ➔ {mc.after}</span>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {winId === 'builds' && <BuildsWindow />}
 
               </div>
 
@@ -2112,15 +1877,19 @@ useEffect(() => {
               {searchQuery.trim().length === 0 ? (
                 <div className="space-y-2">
                   <div className="text-[10px] text-zinc-500 font-bold px-2 block uppercase tracking-wide">SYSTEM DIAGNOSTIC CORES:</div>
-                  <button 
+                  <button
+                    id="palette-item-0"
                     onClick={() => { runTourCycle(); setCommandPaletteOpen(false); }}
-                    className="w-full text-left p-2 hover:bg-zinc-900 rounded-lg text-emerald-300 font-bold flex items-center gap-2 cursor-pointer text-[10.5px]"
+                    onMouseEnter={() => setPaletteHighlight(0)}
+                    className={`w-full text-left p-2 rounded-lg text-emerald-300 font-bold flex items-center gap-2 cursor-pointer text-[10.5px] ${paletteHighlight === 0 ? 'bg-zinc-900' : 'hover:bg-zinc-900'}`}
                   >
                     🚀 Trigger system AI Guided Tour with synthesized Voice narrations
                   </button>
-                  <button 
+                  <button
+                    id="palette-item-1"
                     onClick={() => { openWindow('brief'); setCommandPaletteOpen(false); }}
-                    className="w-full text-left p-2 hover:bg-zinc-900 rounded-lg text-indigo-300 font-bold flex items-center gap-2 cursor-pointer text-[10.5px]"
+                    onMouseEnter={() => setPaletteHighlight(1)}
+                    className={`w-full text-left p-2 rounded-lg text-indigo-300 font-bold flex items-center gap-2 cursor-pointer text-[10.5px] ${paletteHighlight === 1 ? 'bg-zinc-900' : 'hover:bg-zinc-900'}`}
                   >
                     💡 Open Mission Intake Consultation Workspace
                   </button>
@@ -2133,10 +1902,12 @@ useEffect(() => {
                   <div className="text-[10px] text-zinc-500 px-2 font-bold uppercase tracking-widest border-b border-zinc-900 pb-1 mb-1.5">MATCHED WORKSPACE PARAMS ({systemSearchResults.length})</div>
                   {systemSearchResults.length > 0 ? (
                     systemSearchResults.map((res, sIdx) => (
-                      <button 
+                      <button
                         key={sIdx}
+                        id={`palette-item-${sIdx}`}
                         onClick={res.action}
-                        className="w-full text-left p-3 hover:bg-zinc-900 rounded-lg flex items-center justify-between transition-colors border border-transparent hover:border-zinc-800 cursor-pointer text-[11px]"
+                        onMouseEnter={() => setPaletteHighlight(sIdx)}
+                        className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-colors border cursor-pointer text-[11px] ${sIdx === paletteHighlight ? 'bg-zinc-900 border-zinc-800' : 'border-transparent hover:bg-zinc-900 hover:border-zinc-800'}`}
                       >
                         <div>
                           <span className="text-[9px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-1 py-0.5 rounded font-mono mr-2 uppercase">{res.type}</span>
@@ -2154,7 +1925,7 @@ useEffect(() => {
 
             <div className="p-2.5 bg-zinc-950 border-t border-zinc-850 flex items-center justify-between text-[10px] text-zinc-500">
               <span className="font-mono">SEARCH GRID INTEGRATION READY</span>
-              <span>ESC TO EXIT</span>
+              <span>↑↓ NAVIGATE · ENTER SELECT · ESC EXIT</span>
             </div>
           </div>
         </div>

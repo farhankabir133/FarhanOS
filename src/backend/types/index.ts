@@ -11,21 +11,12 @@ export interface ApiSuccessBody<T = unknown> {
 export interface AskTwinRequest {
   message: string;
   history?: Array<{ role: string; content: string }>;
+  sessionId?: string;
 }
 
 export interface AskTwinResponse {
   reply: string;
-}
-
-export interface TtsRequest {
-  text: string;
-  type?: "narrate" | "tour";
-}
-
-export interface TtsResponse {
-  audio: string | null;
-  method: "server" | "client";
-  message?: string;
+  sessionId?: string;
 }
 
 export interface SummarizeBriefRequest {
@@ -34,6 +25,7 @@ export interface SummarizeBriefRequest {
   timeline?: string;
   goals: string;
   comments?: string;
+  email?: string;
 }
 
 export interface SummarizeBriefResponse {
