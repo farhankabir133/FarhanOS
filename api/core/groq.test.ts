@@ -56,7 +56,7 @@ describe('streamGroqChat', () => {
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://api.groq.com/openai/v1/chat/completions');
     const payload = JSON.parse(String(init.body));
-    expect(payload.model).toBe('llama-3.3-70b-versatile');
+    expect(payload.model).toBe('openai/gpt-oss-120b');
     expect(payload.stream).toBe(true);
     expect(payload.temperature).toBe(0.2);
     expect(payload.max_tokens).toBe(99);

@@ -1,5 +1,5 @@
-import { getEnv } from './env';
-import { ApiError, fetchWithTimeout } from './security';
+import { getEnv } from './env.js';
+import { ApiError, fetchWithTimeout } from './security.js';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -32,7 +32,7 @@ export async function* streamGroqChat(
         Authorization: `Bearer ${requireGroqKey()}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'openai/gpt-oss-120b',
         messages,
         temperature: opts.temperature ?? 0.7,
         max_tokens: opts.maxTokens ?? 1500,
@@ -93,7 +93,7 @@ export async function groqChat(
   opts: { temperature?: number; maxTokens?: number; json?: boolean; timeoutMs?: number } = {}
 ): Promise<string> {
   const body: Record<string, unknown> = {
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     messages,
     temperature: opts.temperature ?? 0.7,
     max_tokens: opts.maxTokens ?? 400,
