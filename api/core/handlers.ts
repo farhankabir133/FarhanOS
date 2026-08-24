@@ -64,12 +64,22 @@ export async function* streamAskTwin(
   let systemPrompt = buildAskTwinSystemPrompt();
   if (rag) {
     try {
-      const docs = rag.searchKnowledge(message, { topK: 6, featuredOnly: false });
-      const context = docs
-        .map((d) => `## ${d.title}\n${clamp(d.content, 4000)}`)
-        .join('\n\n---\n\n')
-        .slice(0, 24_000);
-      systemPrompt = buildAskTwinSystemPrompt(context);
+      // Blend the latest user turn into the query so follow-ups like
+      // "what did he do there?" still retrieve the right documents.
+      const lastUserTurn = [...(Array.isArray(rawHistory) ? rawHistory : [])]
+        .reverse()
+        .find((h: any) => h?.role === 'user');
+      const searchQuery = lastUserTurn
+        ? `${message}\n${clamp(lastUserTurn?.content, 200)}`
+        : message;
+      const docs = rag.searchKnowledge(searchQuery, { topK: 6, featuredOnly: false });
+      if (docs.length > 0) {
+        const context = docs
+          .map((d) => `## ${d.title}\n${clamp(d.content, 4000)}`)
+          .join('\n\n---\n\n')
+          .slice(0, 24_000);
+        systemPrompt = buildAskTwinSystemPrompt(context);
+      }
     } catch (err) {
       console.error('[ask-twin] RAG retrieval failed, falling back to inline prompt', err);
     }

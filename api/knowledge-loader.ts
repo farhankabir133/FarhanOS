@@ -105,8 +105,18 @@ export function parseFrontmatter(raw: string): { data: Record<string, unknown>; 
   return { data, content };
 }
 
+const STOPWORDS = new Set([
+  'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'her', 'was', 'one', 'our',
+  'of', 'to', 'in', 'is', 'it', 'at', 'on', 'or', 'as', 'be', 'by', 'an', 'we', 'do', 'if',
+  'my', 'up', 'so', 'no', 'he', 'me', 'us', 'am', 'did', 'does', 'how', 'what', 'who', 'his',
+]);
+
 function tokenize(text: string): string[] {
-  return text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length > 2);
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => (w.length > 2 || ['ai', 'ml', 'ux', 'ui', 'cv'].includes(w)) && !STOPWORDS.has(w));
 }
 
 function computeTf(tokens: string[]): Record<string, number> {
@@ -139,23 +149,50 @@ function computeIdf() {
 }
 
 function scoreQuery(query: string, doc: KnowledgeDoc): number {
-  const text = `${doc.title} ${doc.summary} ${doc.content} ${(doc.keywords || []).join(' ')} ${(doc.tags || []).join(' ')} ${(doc.technologies || []).join(' ')} ${(doc.skills || []).join(' ')}`;
-  const queryTokens = tokenize(query + ' ' + text);
-  const contentTokens = tokenize(doc.raw);
-  const contentTf = computeTf(contentTokens);
-  const queryTf = computeTf(queryTokens);
+  // Score against the QUERY ONLY — mixing document text into the query tokens
+  // makes every doc score as a per-doc constant and retrieval query-blind.
+  const queryTokens = tokenize(query);
+  if (queryTokens.length === 0) return 0;
+
+  const contentTf = computeTf(tokenize(doc.raw));
 
   let score = 0;
-  for (const t in queryTf) {
+  for (const t of new Set(queryTokens)) {
     const tf = contentTf[t] || 0;
     const idfVal = idf[t] || 1;
-    score += tf * idfVal * (queryTf[t] || 1);
+    score += tf * idfVal * 2;
   }
 
-  score *= (doc.search_boost || 1);
-  score *= (doc.retrieval_priority || 1);
+  // High-signal exact matching on metadata fields.
+  const q = query.toLowerCase().trim();
+  const title = doc.title.toLowerCase();
+  const idForMatch = doc.id.toLowerCase().replace(/-/g, ' ');
+  const keywords = [
+    ...(doc.keywords || []),
+    ...(doc.tags || []),
+    ...(doc.technologies || []),
+    ...(doc.skills || []),
+    ...(doc.projects || []),
+    ...(doc.companies || []),
+  ].map((s) => String(s).toLowerCase());
+
+  if (q.length > 3 && title.includes(q)) score += 8;
+  if (q.length > 3 && idForMatch.includes(q)) score += 6;
+  for (const t of queryTokens) {
+    if (title.includes(t)) score += 3;
+  }
+  for (const kw of keywords) {
+    if (kw === q) {
+      score += 10;
+      break;
+    }
+    if (kw.length > 3 && q.includes(kw)) score += 4;
+  }
+
+  score *= doc.search_boost || 1;
+  score *= doc.retrieval_priority || 1;
   if (doc.featured) score *= 1.5;
-  score *= (doc.confidence || 1);
+  score *= doc.confidence || 1;
   return score;
 }
 
@@ -184,6 +221,7 @@ export function searchKnowledge(query: string, options: { category?: string; tag
 
   const scored = candidates
     .map((doc) => ({ doc, score: scoreQuery(query, doc) }))
+    .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score);
 
   return scored.slice(0, topK).map((s) => s.doc);
