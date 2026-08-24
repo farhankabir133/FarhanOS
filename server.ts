@@ -13,9 +13,9 @@ import {
   getMediumStories,
   getGithubRepos,
   processContact,
-} from './api/core/handlers.ts';
-import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './api/core/security.ts';
-import { etagMatches } from './api/core/cache.ts';
+} from './api/core/handlers';
+import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './api/core/security';
+import { etagMatches } from './api/core/cache';
 
 dotenv.config();
 

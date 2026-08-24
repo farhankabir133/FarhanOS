@@ -1,5 +1,5 @@
-import { getEnv } from './env.ts';
-import { ApiError, fetchWithTimeout } from './security.ts';
+import { getEnv } from './env';
+import { ApiError, fetchWithTimeout } from './security';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 

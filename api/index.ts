@@ -10,9 +10,9 @@ import {
   getMediumStories,
   getGithubRepos,
   processContact,
-} from './core/handlers.ts';
-import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './core/security.ts';
-import { etagMatches } from './core/cache.ts';
+} from './core/handlers';
+import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './core/security';
+import { etagMatches } from './core/cache';
 
 let knowledgeLoader: Promise<typeof import('./knowledge-loader')> | null = null;
 let knowledgeLoaderError: string | null = null;

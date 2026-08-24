@@ -2,13 +2,13 @@
  * Framework-agnostic endpoint logic. Adapters (Vercel function, Express
  * server, Supabase Edge) translate transport <-> these functions.
  */
-import { clamp } from './security.ts';
-import { ApiError, escapeHtml } from './security.ts';
-import { buildAskTwinSystemPrompt, buildBriefPrompt, buildContactAnalysisPrompt } from './prompts.ts';
-import { streamGroqChat, groqChat, type GroqMessage } from './groq.ts';
-import { getCache, setCache } from './cache.ts';
-import { parseMediumRSS, type MediumStory } from './rssParser.ts';
-import { getEnv } from './env.ts';
+import { clamp } from './security';
+import { ApiError, escapeHtml } from './security';
+import { buildAskTwinSystemPrompt, buildBriefPrompt, buildContactAnalysisPrompt } from './prompts';
+import { streamGroqChat, groqChat, type GroqMessage } from './groq';
+import { getCache, setCache } from './cache';
+import { parseMediumRSS, type MediumStory } from './rssParser';
+import { getEnv } from './env';
 
 export { ApiError };
 export type { MediumStory };
