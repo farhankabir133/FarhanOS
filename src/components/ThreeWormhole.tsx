@@ -20,13 +20,16 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
   const infallCount = quality === 'low' ? 40 : 80;
   const tunnelSegments = quality === 'low' ? 40 : 50;
   const asteroidCount = quality === 'low' ? 5 : 10;
-  const fbmOctaves = quality === 'low' ? 3 : 4;
   const numRings = quality === 'low' ? 6 : 8;
 
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
+
+    // Respect user motion preferences: render one static frame, no rAF loop.
+    const prefersReducedMotion =
+      typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let primaryColor   = 0x6366f1;
     let secondaryColor = 0x06b6d4;
@@ -96,8 +99,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     const outerTunnel = new THREE.Mesh(outerGeom, outerMat);
     scene.add(outerTunnel);
 
-    // Glowing rings
-    const numRings = 8;
+    // Glowing rings (count honors the device quality tier)
     const rings: THREE.Mesh[] = [];
     const ringGeom = new THREE.TorusGeometry(tunnelRadius + 0.3, 0.08, 8, 24);
     for (let i = 0; i < numRings; i++) {
@@ -141,8 +143,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     nebulaMesh.position.set(0, 0, -85);
     scene.add(nebulaMesh);
 
-    // ── Star field (particleCount particles, richer color variety) ────────────────────
-    const particleCount = 1200;
+    // ── Star field (count honors the device quality tier) ────────────────────
     const particlePositions = new Float32Array(particleCount * 3);
     const particleColors    = new Float32Array(particleCount * 3);
     const starSpeeds: number[] = [], twinkleSpeeds: number[] = [], twinklePhases: number[] = [], baseColors: number[][] = [];
@@ -186,8 +187,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
     const particles = new THREE.Points(particleGeometry, pMaterial);
     scene.add(particles);
 
-    // ── Cosmic dust lanes (dustCount fine particles in diagonal bands) ─────────────
-    const dustCount = 220;
+    // ── Cosmic dust lanes (count honors the device quality tier) ─────────────
     const dustPositions = new Float32Array(dustCount * 3);
     const dustVelocities: number[] = [];
     for (let i = 0; i < dustCount; i++) {
@@ -763,10 +763,7 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       animationFrameId = requestAnimationFrame(animate);
     };
 
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
+    const cleanupScene = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       resizeObserver.disconnect();
       renderer.dispose();
@@ -797,6 +794,21 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
       infallGeo.dispose(); infallMat.dispose();
       gravWaveBaseGeo.dispose();
       gravWaveRings.forEach(gw=>gw.mat.dispose());
+      // Per-ring materials + the generated star sprite texture
+      rings.forEach(r => { const m = r.material as THREE.MeshBasicMaterial; if (!Array.isArray(m)) m.dispose(); });
+      pMaterial.map?.dispose();
+    };
+
+    if (prefersReducedMotion) {
+      // Single static frame instead of the animation loop.
+      renderer.render(scene, camera);
+      return cleanupScene;
+    }
+
+    animate();
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      cleanupScene();
     };
   }, [theme]);
 

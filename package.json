@@ -12,7 +12,9 @@
     "predeploy:domain": "VITE_BASE=/ npm run build",
     "deploy:domain": "gh-pages -d dist",
     "start": "node dist/server.cjs",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",
@@ -42,6 +44,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vercel": "^57.0.0",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "vitest": "^4.1.11"
   }
 }

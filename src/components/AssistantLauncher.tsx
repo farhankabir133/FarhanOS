@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X, Send, ChevronRight, Copy, Check, Volume2, VolumeX,
-  RefreshCw, Maximize2, Minimize2, Sparkles, Zap,
-  Brain, MessageCircle, Search, HelpCircle
+  RefreshCw, Sparkles,
+  Brain, MessageCircle, Search
 } from 'lucide-react';
-import { getApiBaseUrl } from '../utils/apiConfig';
+import { askTwin, AskTwinHistoryMessage } from '../utils/askTwin';
 import MarkdownRenderer from './MarkdownRenderer';
 import { AssistantGlyph } from './AssistantGlyph';
 
@@ -82,6 +82,35 @@ export default function AssistantLauncher({
   const sheetRef = useRef<HTMLDivElement>(null);
   const [sheetHeight, setSheetHeight] = useState(0);
 
+  // Render exactly one panel variant (desktop window OR mobile sheet).
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  // In-flight request + tracked timers so unmount/close never leaks work.
+  const abortRef = useRef<AbortController | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+    return id;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+  }, []);
+
   const isLight = theme === 'light';
   const isTerminal = theme === 'terminal';
 
@@ -104,30 +133,34 @@ export default function AssistantLauncher({
     }
   }, [isOpen]);
 
-  // Persist conversation across reloads.
+  // Persist conversation across reloads — debounced, and skipped mid-stream
+  // (messages updates fire on every throttled delta flush).
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {
-      // ignore quota / availability errors
-    }
+    if (messages[messages.length - 1]?.streaming) return;
+    const id = setTimeout(() => {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      } catch {
+        // ignore quota / availability errors
+      }
+    }, 800);
+    return () => clearTimeout(id);
   }, [messages]);
 
-  // Global keyboard shortcut: Cmd/Ctrl+K toggles the panel, "/" focuses input.
+  // Global keyboard shortcut: "/" focuses input when panel is open.
+  // Cmd/Ctrl+K intentionally belongs to the OS command palette (App.tsx).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsOpen((o) => !o);
-        triggerSound?.(800, 0.03);
-      } else if (e.key === '/' && isOpen && document.activeElement !== inputRef.current) {
+      if (e.key === '/' && isOpen && document.activeElement !== inputRef.current) {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
         e.preventDefault();
         inputRef.current?.focus();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, triggerSound]);
+  }, [isOpen]);
 
   const sendMessage = useCallback(
     async (text?: string) => {
@@ -160,106 +193,45 @@ export default function AssistantLauncher({
         setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, ...patch } : m)));
 
       try {
-        const history = messages.map((m) => ({
-          role: m.role === 'user' ? 'user' : 'assistant',
+        const history = messages.map<AskTwinHistoryMessage>((m) => ({
+          role: m.role,
           content: m.content,
         }));
 
-        const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: content, history }),
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        const reply = await askTwin({
+          message: content,
+          history,
+          signal: controller.signal,
+          onDelta: (full) => {
+            setAiState('responding');
+            setAssistantContent({ content: full });
+          },
         });
 
-        if (!res.ok) {
-          let errMsg = 'Neural link unstable. Retry transmission.';
-          try {
-            const d = await res.json();
-            errMsg = d.error || errMsg;
-          } catch {
-            // fall through to default message
-          }
-          throw new Error(errMsg);
-        }
-
-        const contentType = res.headers.get('content-type') || '';
-        const isStream = contentType.includes('text/event-stream') || !!res.body;
-
-        if (isStream && res.body) {
-          setAiState('responding');
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let streamed = '';
-
-          // Robust SSE parser that tolerates frames split across read() chunks.
-          let sseBuffer = '';
-          let pendingData = '';
-          const handleData = (payload: string) => {
-            if (payload === '[DONE]') return;
-            try {
-              const json = JSON.parse(payload);
-              const delta = json.delta;
-              if (typeof delta === 'string' && delta) {
-                streamed += delta;
-                setAssistantContent({ content: streamed });
-              }
-            } catch {
-              // ignore malformed / partial frame
-            }
-          };
-          const processChunk = (text: string, flush = false) => {
-            sseBuffer += text;
-            let idx;
-            while ((idx = sseBuffer.indexOf('\n')) !== -1) {
-              let line = sseBuffer.slice(0, idx);
-              sseBuffer = sseBuffer.slice(idx + 1);
-              if (line.endsWith('\r')) line = line.slice(0, -1);
-              if (line.startsWith('data:')) {
-                pendingData += line.slice(5).trim();
-              } else if (line === '' && pendingData) {
-                handleData(pendingData);
-                pendingData = '';
-              }
-            }
-            if (flush && pendingData) {
-              handleData(pendingData);
-              pendingData = '';
-            }
-          };
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            processChunk(decoder.decode(value, { stream: true }));
-          }
-          processChunk(decoder.decode(), true);
-
-          setAssistantContent({ content: streamed || 'No verified information available.', streaming: false });
-          setAiState('success');
-          setTimeout(() => setAiState('idle'), 1200);
+        setAssistantContent({ content: reply || 'No verified information available.', streaming: false });
+        setAiState('success');
+        later(() => setAiState('idle'), 1200);
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          setAssistantContent({ streaming: false });
+          setAiState('idle');
         } else {
-          // Non-streaming fallback (older backend).
-          const data = await res.json();
+          setAiState('error');
           setAssistantContent({
-            content: data.reply || 'No verified information available.',
+            content: (err as Error).message || 'Neural link unstable. Retry transmission.',
             streaming: false,
           });
-          setAiState('success');
-          setTimeout(() => setAiState('idle'), 1200);
+          later(() => setAiState('idle'), 2000);
         }
-      } catch (err) {
-        setAiState('error');
-        setAssistantContent({
-          content: (err as Error).message || 'Neural link unstable. Retry transmission.',
-          streaming: false,
-        });
-        setTimeout(() => setAiState('idle'), 2000);
       } finally {
+        abortRef.current = null;
         setIsLoading(false);
-        inputRef.current?.focus();
       }
     },
-    [input, isLoading, messages, triggerSound]
+    [input, isLoading, messages, triggerSound, later]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -295,7 +267,7 @@ export default function AssistantLauncher({
   const copyToClipboard = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    later(() => setCopiedId(null), 2000);
   };
 
   const isLandingLeft = placement === 'landing-left';
@@ -336,15 +308,30 @@ export default function AssistantLauncher({
 
   const motionStyle = isHovering ? { x: mousePosition.x, y: mousePosition.y } : {};
 
-  const onClickHandler = (e: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
-    setIsOpen(true);
-    triggerSound?.(800, 0.03);
-  };
-
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     stopSpeaking();
+    abortRef.current?.abort();
     setIsOpen(false);
-  };
+    buttonRef.current?.focus();
+  }, []);
+
+  // Dialog semantics: Escape closes; focus moves into the dialog on open
+  // and returns to the launcher button on close (handled in handleClose).
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    const focusTimer = setTimeout(() => inputRef.current?.focus(), 350);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      clearTimeout(focusTimer);
+    };
+  }, [isOpen, handleClose]);
 
   const glassClass = isLight
     ? 'bg-white/85 border-slate-200/80 shadow-xl shadow-slate-900/10'
@@ -507,35 +494,44 @@ export default function AssistantLauncher({
     </>
   );
 
-  const chatWindowContent = (
-    <>
-      {/* Header */}
-      <div
-        className={`flex items-center justify-between px-4 h-12 border-b shrink-0 ${
-          isLight ? 'border-slate-200 bg-white/70 backdrop-blur-md' : 'border-zinc-800/60 bg-black/50 backdrop-blur-md'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-                isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
-              }`}
-            >
-              <AssistantGlyph
-                state={aiState}
-                className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-4 h-4`}
-              />
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
+  // Shared dialog chrome — a single implementation rendered into whichever
+  // panel variant (desktop floating window vs mobile bottom sheet) is active.
+  const headerBar = (compact: boolean) => (
+    <div
+      className={`flex items-center justify-between px-4 h-12 border-b shrink-0 ${
+        isLight ? 'border-slate-200 bg-white/70 backdrop-blur-md' : 'border-zinc-800/60 bg-black/50 backdrop-blur-md'
+      }`}
+    >
+      <div className={`flex items-center gap-3 ${compact ? 'min-w-0 flex-1' : ''}`}>
+        <div className="relative shrink-0">
+          <div
+            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+              isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
+            }`}
+          >
+            <AssistantGlyph
+              state={aiState}
+              className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-4 h-4`}
+            />
           </div>
-          <div className="flex flex-col">
-            <span className={`text-sm font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-              Neural Assistant
-            </span>
-            <span className="text-[10px] text-emerald-400 font-mono font-medium">Online</span>
-          </div>
+          <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
         </div>
+        <div className={`flex flex-col ${compact ? 'min-w-0' : ''}`}>
+          <span className={`text-sm font-bold tracking-tight ${compact ? 'truncate' : ''} ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
+            Neural Assistant
+          </span>
+          <span className={`text-[10px] text-emerald-400 font-mono font-medium ${compact ? 'hidden min-[420px]:inline' : ''}`}>Online</span>
+        </div>
+      </div>
+      {compact ? (
+        <button
+          onClick={handleClose}
+          className="flex items-center justify-center w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/60 text-zinc-300 hover:text-white hover:border-zinc-700 active:scale-95 transition-all cursor-pointer"
+          aria-label="Close assistant"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      ) : (
         <div className="flex items-center gap-0.5">
           <button
             onClick={() => setMessages([{ ...WELCOME_MESSAGE, timestamp: new Date() }])}
@@ -554,43 +550,52 @@ export default function AssistantLauncher({
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-        {renderMessages()}
-      </div>
-
-      {/* Input */}
-      <div
-        className={`p-3 border-t shrink-0 ${
-          isLight ? 'border-slate-200 bg-white/60 backdrop-blur-md' : 'border-zinc-800/60 bg-black/40 backdrop-blur-md'
-        }`}
-      >
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Query neural core..."
-            rows={1}
-            className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
-            style={{ minHeight: '44px', maxHeight: '120px' }}
-            aria-label="Chat input"
-          />
-          <button
-            onClick={() => sendMessage()}
-            disabled={!input.trim() || isLoading}
-            className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
-            aria-label="Send message"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    </>
+      )}
+    </div>
   );
+
+  const messagesColumn = (
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+      {renderMessages()}
+    </div>
+  );
+
+  const composer = (compact: boolean) => (
+    <div
+      className={`p-3 border-t shrink-0 ${
+        isLight ? 'border-slate-200 bg-white/60 backdrop-blur-md' : 'border-zinc-800/60 bg-black/40 backdrop-blur-md'
+      }`}
+      style={compact ? { paddingBottom: 'max(12px, env(safe-area-inset-bottom))' } : undefined}
+    >
+      <div className="flex items-end gap-2">
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Query neural core..."
+          rows={1}
+          className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
+          style={{ minHeight: '44px', maxHeight: '120px' }}
+          aria-label="Chat input"
+        />
+        <button
+          onClick={() => sendMessage()}
+          disabled={!input.trim() || isLoading}
+          className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
+          aria-label="Send message"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const dialogProps = {
+    role: 'dialog' as const,
+    'aria-modal': true as const,
+    'aria-label': 'Neural Assistant',
+  };
 
   return (
     <div
@@ -602,102 +607,42 @@ export default function AssistantLauncher({
     >
       <AnimatePresence>
         {isOpen && (
-          <>
-            {/* Desktop & Tablet Chat Window */}
+          isMobile ? (
+            /* Mobile Fullscreen Sheet */
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.96 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
-              className="assistant-desktop-window hidden md:flex assistant-chat-window w-[35vw] min-w-[320px] max-h-[70vh] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
-            >
-              {chatWindowContent}
-            </motion.div>
-
-            {/* Mobile Fullscreen Sheet */}
-            <motion.div
+              key="assistant-mobile-sheet"
               ref={sheetRef}
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              className="assistant-mobile-sheet md:hidden fixed inset-x-0 bottom-0 z-[9998] w-full h-[85vh] rounded-t-2xl border border-b-0 bg-zinc-950/97 backdrop-blur-2xl overflow-hidden flex flex-col"
+              className="assistant-mobile-sheet fixed inset-x-0 bottom-0 z-[9998] w-full h-[85vh] rounded-t-2xl border border-b-0 bg-zinc-950/97 backdrop-blur-2xl overflow-hidden flex flex-col"
               style={{
                 paddingTop: 'env(safe-area-inset-top)',
                 paddingBottom: 'env(safe-area-inset-bottom)',
               }}
+              {...dialogProps}
             >
-              {/* Mobile Header */}
-              <div
-                className={`flex items-center justify-between px-4 h-12 border-b shrink-0 ${
-                  isLight ? 'border-slate-200 bg-white/70 backdrop-blur-md' : 'border-zinc-800/60 bg-black/50 backdrop-blur-md'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="relative shrink-0">
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                        isTerminal ? 'bg-[#33ff33]/10 border border-[#33ff33]/20' : 'bg-indigo-500/10 border border-indigo-500/20'
-                      }`}
-                    >
-                      <AssistantGlyph
-                        state={aiState}
-                        className={`${isTerminal ? 'text-[#33ff33]' : 'text-indigo-400'} w-4 h-4`}
-                      />
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-white dark:border-zinc-900" />
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className={`text-sm font-bold tracking-tight truncate ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-                      Neural Assistant
-                    </span>
-                    <span className="text-[10px] text-emerald-400 font-mono font-medium hidden min-[420px]:inline">Online</span>
-                  </div>
-                </div>
-                <button
-                  onClick={handleClose}
-                  className="flex items-center justify-center w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800/60 text-zinc-300 hover:text-white hover:border-zinc-700 active:scale-95 transition-all cursor-pointer"
-                  aria-label="Close assistant"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Mobile Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-                {renderMessages()}
-              </div>
-
-              {/* Mobile Input */}
-              <div
-                className={`p-3 border-t shrink-0 ${
-                  isLight ? 'border-slate-200 bg-white/60 backdrop-blur-md' : 'border-zinc-800/60 bg-black/40 backdrop-blur-md'
-                }`}
-                style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
-              >
-                <div className="flex items-end gap-2">
-                  <textarea
-                    value={input}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Query neural core..."
-                    rows={1}
-                    className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
-                    style={{ minHeight: '44px', maxHeight: '120px' }}
-                    aria-label="Chat input"
-                  />
-                  <button
-                    onClick={() => sendMessage()}
-                    disabled={!input.trim() || isLoading}
-                    className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
-                    aria-label="Send message"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              {headerBar(true)}
+              {messagesColumn}
+              {composer(true)}
             </motion.div>
-          </>
+          ) : (
+            /* Desktop & Tablet Chat Window */
+            <motion.div
+              key="assistant-desktop-window"
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
+              className="assistant-desktop-window assistant-chat-window flex w-[35vw] min-w-[320px] max-h-[70vh] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
+              {...dialogProps}
+            >
+              {headerBar(false)}
+              {messagesColumn}
+              {composer(false)}
+            </motion.div>
+          )
         )}
       </AnimatePresence>
 
@@ -708,11 +653,11 @@ export default function AssistantLauncher({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onTouchStart={handleTouchStart}
-        onTouchEnd={(e) => {
-          handleTouchEnd();
-          onClickHandler(e as any);
+        onTouchEnd={handleTouchEnd}
+        onClick={() => {
+          setIsOpen(true);
+          triggerSound?.(800, 0.03);
         }}
-        onClick={onClickHandler}
         className={`
           relative flex items-center justify-center cursor-pointer
           rounded-2xl p-0 w-12 h-12
@@ -726,14 +671,6 @@ export default function AssistantLauncher({
         `}
         aria-label="Open Neural Assistant"
         aria-expanded={isOpen}
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setIsOpen(true);
-            triggerSound?.(800, 0.03);
-          }
-        }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.8, y: 20 }}

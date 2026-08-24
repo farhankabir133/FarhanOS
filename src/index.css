@@ -74,7 +74,15 @@ body {
   --color-zinc-90: oklch(97.3% .002 286.375);
   --color-zinc-350: oklch(78.8% .0105 286.18);
   --color-zinc-550: oklch(49.7% .0165 285.86);
+  --color-zinc-650: oklch(40.6% .015 285.8);
   --color-zinc-750: oklch(32.2% .0095 285.92);
+  --color-zinc-850: oklch(24.2% .006 285.96);
+  /* sky intermediate */
+  --color-sky-450: oklch(71.5% .165 235);
+  /* amber intermediate */
+  --color-amber-250: oklch(90.1% .145 93.7);
+  /* pink intermediate */
+  --color-pink-550: oklch(62.4% .245 354.5);
   /* slate intermediates */
   --color-slate-105: oklch(96.5% .006 247.896);
   --color-slate-250: oklch(89.9% .0175 254.2);

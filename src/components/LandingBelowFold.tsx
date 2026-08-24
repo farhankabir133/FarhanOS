@@ -144,6 +144,7 @@ function LandingBelowFold() {
     formSubject, setFormSubject, formMessage, setFormMessage,
     formErrors, setFormErrors, formSubmitted, setFormSubmitted,
     formLoading, setFormLoading,
+    formSubmitError, setFormSubmitError,
     styleSet, filteredSkills, testimonials, certifications,
     timelineRef, progressLineRef,
     handleAnchorClick, handleContactSubmit, scrollToTop,
@@ -1371,6 +1372,25 @@ function LandingBelowFold() {
                     />
                   {formErrors.message && <span className="text-[9px] text-red-500 font-bold block mt-0.5">{formErrors.message}</span>}
                 </div>
+
+                {formSubmitError && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-lg p-3"
+                  >
+                    <span className="text-red-400 font-bold leading-relaxed text-[9.5px]">
+                      ⚠ TRANSMISSION FAILED — {formSubmitError}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormSubmitError(null)}
+                      aria-label="Dismiss error"
+                      className="ml-auto text-red-400 hover:text-red-300 font-bold cursor-pointer shrink-0"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
 
                 <motion.button 
                   whileHover={{ scale: 1.02, opacity: 0.95 }}

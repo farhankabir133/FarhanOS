@@ -1,74 +1,135 @@
-import { StyleSet } from '../../types';
+import { useEffect, useState } from 'react';
+import { StyleSet, GitHubRepo } from '../../types';
+import { getApiBaseUrl } from '../../utils/apiConfig';
 
 interface GithubWindowProps {
   styleSet: StyleSet;
   triggerSound: (freq: number, duration: number) => void;
 }
 
-export default function GithubWindow({ styleSet, triggerSound }: GithubWindowProps) {
+export default function GithubWindow({ styleSet }: GithubWindowProps) {
+  const [repos, setRepos] = useState<GitHubRepo[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/api/github-repos`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`GitHub telemetry unavailable (${res.status})`);
+        const data = await res.json();
+        if (!cancelled) setRepos(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!cancelled && (err as Error).name !== 'AbortError') {
+          setError((err as Error).message || 'Failed to load repositories.');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+
+  const topRepos = (repos || []).slice(0, 6);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2c2d3a] pb-2">
         <div>
-          <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">VIRTUALIZED TELEMETRY STREAM</span>
-          <h3 className="text-sm font-extrabold text-white mt-1">Linguistic & Engineering Pipelines Stream</h3>
+          <span className="bg-sky-500/10 text-sky-400 border border-sky-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">LIVE GITHUB TELEMETRY</span>
+          <h3 className="text-sm font-extrabold text-white mt-1">Repositories — @farhankabir133</h3>
         </div>
-        <span className="text-[11px] text-stone-400 font-mono bg-zinc-950/60 px-2 py-0.5 border border-zinc-850 rounded">STREAK: 142 DAYS</span>
+        <a
+          href="https://github.com/farhankabir133"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] text-stone-400 font-mono bg-zinc-950/60 px-2 py-0.5 border border-zinc-800 rounded hover:text-sky-300 hover:border-sky-500/40 transition-colors"
+        >
+          VIEW PROFILE →
+        </a>
       </div>
 
-      {/* Interactive Commits Calendar mock-up */}
-      <div>
-        <span className={styleSet.panelHeader}>CODE INTEL CLASSIFIER CALENDAR (MOCK-GRID)</span>
-        <div className="grid grid-cols-12 lg:grid-cols-24 gap-1 mt-1.5 bg-zinc-950 p-3 border border-zinc-900 rounded-lg">
-          {Array.from({ length: 48 }).map((_, i) => {
-            const level = i % 7 === 0 ? 'bg-green-500 shadow-[0_0_4px_#22c55e]' : i % 5 === 0 ? 'bg-green-600' : i % 3 === 0 ? 'bg-green-800' : 'bg-zinc-900';
-            return (
-              <div
-                key={i}
-                onClick={() => triggerSound(900 + (i % 5) * 100, 0.02)}
-                className={`w-3.5 h-3.5 rounded-xs transition-colors hover:scale-110 cursor-pointer ${level}`}
-                title={`Telemetry day ${i + 1}: Commits verified`}
-              />
-            );
-          })}
+      {loading && (
+        <div className="bg-zinc-950/30 p-6 border border-[#2d2f3d] rounded-lg text-center">
+          <p className="text-zinc-500 font-mono text-[11px]" role="status" aria-live="polite">
+            Synchronizing repository telemetry…
+          </p>
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 text-[11px]">
-        {/* Active Repositories List */}
+      {!loading && error && (
+        <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-lg" role="alert">
+          <span className="text-red-400 font-mono text-[10.5px] font-bold block mb-1">TELEMETRY OFFLINE</span>
+          <p className="text-zinc-400 text-[11px] leading-relaxed">{error}</p>
+          <a
+            href="https://github.com/farhankabir133"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-2 text-sky-300 hover:text-sky-200 text-[10.5px] font-mono underline"
+          >
+            Open github.com/farhankabir133 directly
+          </a>
+        </div>
+      )}
+
+      {!loading && !error && (
         <div className="bg-zinc-950/30 p-3 border border-[#2d2f3d] rounded-lg">
-          <span className="font-bold text-zinc-300 block text-[10px] uppercase tracking-wide mb-2">INTELLIGENT SYSTEMS</span>
-          <div className="space-y-2 font-mono">
-            <div className="flex items-center justify-between">
-              <span className="text-sky-300">typerush-cockpit</span>
-              <span className="text-zinc-500 text-[10px]">Stars: 184</span>
+          <span className="font-bold text-zinc-300 block text-[10px] uppercase tracking-wide mb-2">
+            TOP REPOSITORIES BY STARS
+          </span>
+          {topRepos.length === 0 ? (
+            <p className="text-zinc-500 font-mono text-[10.5px]" role="status">
+              No public repositories found.
+            </p>
+          ) : (
+            <div className="space-y-1.5 font-mono">
+              {topRepos.map((repo) => (
+                <a
+                  key={repo.id}
+                  href={repo.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start justify-between gap-3 p-2 rounded-md hover:bg-zinc-900/60 transition-colors group"
+                >
+                  <span className="min-w-0">
+                    <span className="text-sky-300 group-hover:text-sky-200 text-[11.5px] font-bold block truncate">
+                      {repo.name}
+                    </span>
+                    {repo.description && (
+                      <span className="text-zinc-500 text-[10px] line-clamp-1">{repo.description}</span>
+                    )}
+                    <span className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {repo.language && (
+                        <span className="text-[9px] text-purple-300 bg-purple-500/10 border border-purple-500/20 px-1 rounded">
+                          {repo.language}
+                        </span>
+                      )}
+                      {(repo.topics || []).slice(0, 3).map((t) => (
+                        <span key={t} className="text-[9px] text-zinc-500 bg-zinc-900 border border-zinc-800 px-1 rounded">
+                          {t}
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                  <span className="text-zinc-500 text-[10px] whitespace-nowrap shrink-0 mt-0.5">
+                    ★ {repo.stargazers_count} · ⑂ {repo.forks_count}
+                  </span>
+                </a>
+              ))}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sky-300">the-ink-home-portal</span>
-              <span className="text-zinc-500 text-[10px]">Stars: 142</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sky-300">safeside-predictor</span>
-              <span className="text-zinc-500 text-[10px]">Stars: 211</span>
-            </div>
-          </div>
+          )}
         </div>
-
-        {/* Mock activity feeds */}
-        <div className="bg-zinc-950/30 p-3 border border-[#2d2f3d] rounded-lg">
-          <span className="font-bold text-zinc-300 block text-[10px] uppercase tracking-wide mb-2">LIVE COMPILING ACTIONS FEED</span>
-          <div className="space-y-2 leading-relaxed text-[10.5px]">
-            <div className="flex items-start gap-1">
-              <span className="text-emerald-400">●</span>
-              <p className="text-zinc-400">Pushed update to <code className="text-[#33ff33] font-mono">typerush</code>: Configured Web Audio procedural oscillators & dynamic BPM heartbeats.</p>
-            </div>
-            <div className="flex items-start gap-1">
-              <span className="text-amber-400">●</span>
-              <p className="text-zinc-400">Released version 1.4.2 containing live Audio Synthesis narrated profiles.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

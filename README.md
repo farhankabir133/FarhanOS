@@ -101,14 +101,14 @@ The application supports two views:
 - `LandingPageContext.tsx` — shared context for landing page state, eliminating prop drilling across lazy-loaded sections.
 
 ### Backend Structure
-- `api/index.ts` — single bundled Vercel serverless handler containing all API routes:
-  - `POST /api/ask-twin`
-  - `POST /api/tts`
-  - `POST /api/summarize-brief`
-  - `GET /api/medium-stories`
-  - `GET /api/github-repos`
-  - `POST /api/contact`
-- `server.ts` — local development server that mirrors the same API routes and serves Vite middleware / static dist.
+All endpoint logic lives in `api/core/*` — a single runtime-agnostic core consumed by three thin adapters:
+- `api/index.ts` — Vercel serverless (Node)
+- `server.ts` — Express dev/prod server
+- `supabase/functions/api/index.ts` — Supabase Edge (Deno)
+
+Endpoints: `POST /api/ask-twin` (SSE streaming), `POST /api/tts`, `POST /api/summarize-brief`, `GET /api/medium-stories`, `GET /api/github-repos`, `POST /api/contact`.
+
+Security built into the core: per-endpoint rate limiting, CORS origin allowlist, payload caps, outbound timeouts, HTML escaping in emails, prompt-injection delimiting.
 
 ### Data Flow
 - Static portfolio data lives in `src/data/portfolioData.ts` and is typed by `src/types.ts`.
@@ -121,9 +121,18 @@ The application supports two views:
 
 ```
 ├── api/
-│   ├── index.ts              # Vercel serverless backend (all endpoints)
-│   └── utils/
-│       └── rssParser.ts      # Medium RSS feed parser
+│   ├── index.ts              # Vercel serverless adapter (thin transport layer)
+│   ├── knowledge-loader.ts   # RAG loader (Node fs; injected into ask-twin)
+│   └── core/                 # Shared backend core (single source of truth)
+│       ├── handlers.ts       # All endpoint business logic
+│       ├── prompts.ts        # LLM system prompts + injection-hardened builders
+│       ├── groq.ts           # Groq streaming/non-streaming client
+│       ├── security.ts       # Rate limiting, CORS allowlist, escaping, timeouts
+│       ├── cache.ts          # In-memory cache + ETag validators
+│       ├── rssParser.ts      # Medium RSS parser
+│       └── env.ts            # Runtime-agnostic env access (Node/Deno)
+├── server.ts                 # Express adapter (dev + prod static hosting)
+├── supabase/functions/api/   # Supabase Edge adapter (Deno) over the same core
 ├── src/
 │   ├── components/
 │   │   ├── AssistantGlyph.tsx

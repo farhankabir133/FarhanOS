@@ -1,3 +1,9 @@
+/**
+ * Canonical Medium RSS parser — single source of truth for every backend.
+ * Previously duplicated in api/index.ts, src/utils/rssParser.ts and the
+ * Supabase edge function; those copies are gone.
+ */
+
 export interface MediumStory {
   id: string;
   title: string;

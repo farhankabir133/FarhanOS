@@ -5,6 +5,8 @@ import {
 import { portfolioData } from '../data/portfolioData';
 import { Article } from '../types';
 const ThreeWormhole = lazy(() => import('./ThreeWormhole'));
+// Hoisted so LazySection's effect deps see a stable identity across renders.
+const loadBelowFold = () => import('./LandingBelowFold');
 import LoopingTypewriter from './LoopingTypewriter';
 import OneTimeTypewriter from './OneTimeTypewriter';
 import avatarImg from '../../assets/avatar.png';
@@ -75,6 +77,7 @@ export default function LandingPage({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
+  const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
 
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const progressLineRef = useRef<HTMLDivElement | null>(null);
@@ -124,12 +127,11 @@ export default function LandingPage({
     };
   }, []);
 
-  const scrollToTop = () => {
+  const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    ;
-  };
+  }, []);
 
-  const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+  const handleAnchorClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
@@ -141,7 +143,7 @@ export default function LandingPage({
         behavior: 'smooth'
       });
     }
-  };
+  }, []);
 
   // Auto-play Testimonials — deferred to after LCP
   useEffect(() => {
@@ -151,11 +153,20 @@ export default function LandingPage({
       }, 8000);
       return () => clearInterval(timer);
     };
+    let stopRotation: (() => void) | null = null;
+    let scheduledCancel: (() => void) | null = null;
     if ('requestIdleCallback' in window) {
-      const id = requestIdleCallback(startRotation, { timeout: 4000 });
-      return () => cancelIdleCallback(id);
+      const id = requestIdleCallback(() => {
+        stopRotation = startRotation();
+      }, { timeout: 4000 });
+      scheduledCancel = () => cancelIdleCallback(id);
+    } else {
+      stopRotation = startRotation();
     }
-    return startRotation();
+    return () => {
+      scheduledCancel?.();
+      stopRotation?.();
+    };
   }, []);
 
   // Theme Config mapper
@@ -292,9 +303,8 @@ export default function LandingPage({
   }), [activeTab]);
 
   // Handle Contact Form Submit
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    ;
     
     // Simple Validations
     const errors: Record<string, string> = {};
@@ -313,59 +323,84 @@ export default function LandingPage({
     }
 
     setFormErrors({});
+    setFormSubmitError(null);
     setFormLoading(true);
 
     const apiUrl = getApiBaseUrl();
 
     // Execute real API delivery to the backend
-    fetch(`${apiUrl}/api/contact`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: formName,
-        email: formEmail,
-        subject: formSubject,
-        message: formMessage,
-      }),
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to transmit message.');
-        }
-        
-        // Output Groq analytical metrics to console for verified diagnostics
-        if (data.analysis) {
-          console.log('[Transmission Diagnostics Analysed]:', data.analysis);
-        }
-
-        setFormLoading(false);
-        setFormSubmitted(true);
-        ;
-        
-        // Clear inputs
-        setFormName('');
-        setFormEmail('');
-        setFormSubject('');
-        setFormMessage('');
-      })
-      .catch((err) => {
-        console.warn('Real backend message transmission failed, reverting to local fallback:', err);
-        // Resilient Fallback to simulated delivery in case backend is offline
-        setTimeout(() => {
-          setFormLoading(false);
-          setFormSubmitted(true);
-          ;
-          
-          setFormName('');
-          setFormEmail('');
-          setFormSubject('');
-          setFormMessage('');
-        }, 1200);
+    try {
+      const res = await fetch(`${apiUrl}/api/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formName,
+          email: formEmail,
+          subject: formSubject,
+          message: formMessage,
+        }),
       });
-  };
+
+      let data: { error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // non-JSON error body (e.g. gateway HTML page)
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || `Transmission failed (${res.status}).`);
+      }
+
+      setFormLoading(false);
+      setFormSubmitted(true);
+      setFormSubmitError(null);
+
+      // Clear inputs
+      setFormName('');
+      setFormEmail('');
+      setFormSubject('');
+      setFormMessage('');
+    } catch (err) {
+      console.warn('Message transmission failed:', err);
+      // Keep form values intact so the user can retry without retyping.
+      setFormLoading(false);
+      setFormSubmitted(false);
+      setFormSubmitError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Transmission failed. Your message was NOT delivered — please retry or email farhankabir133@gmail.com directly.'
+      );
+    }
+  }, [formName, formEmail, formSubject, formMessage]);
+
+  // Stable context value: LandingBelowFold re-renders only when its actual
+  // inputs change, not on every LandingPage state tick.
+  const contextValue = useMemo(() => ({
+    theme, isWarping, onLaunchOS, onOpenWindowDirectly,
+    articles, onOpenArticleDirectly, prefersReducedMotion,
+    showBackToTop, activeTab, setActiveTab,
+    activeTestimonial, setActiveTestimonial,
+    formName, setFormName, formEmail, setFormEmail,
+    formSubject, setFormSubject, formMessage, setFormMessage,
+    formErrors, setFormErrors, formSubmitted, setFormSubmitted,
+    formLoading, setFormLoading,
+    formSubmitError, setFormSubmitError,
+    styleSet, filteredSkills, testimonials, certifications,
+    timelineRef, progressLineRef,
+    handleAnchorClick, handleContactSubmit, scrollToTop,
+  }), [
+    theme, isWarping, onLaunchOS, onOpenWindowDirectly,
+    articles, onOpenArticleDirectly, prefersReducedMotion,
+    showBackToTop, activeTab,
+    activeTestimonial,
+    formName, formEmail, formSubject, formMessage,
+    formErrors, formSubmitted, formLoading, formSubmitError,
+    styleSet, filteredSkills,
+    handleAnchorClick, handleContactSubmit, scrollToTop,
+  ]);
 
   return (
     <div 
@@ -627,21 +662,9 @@ export default function LandingPage({
 
 
       {/* BELOW-FOLD CONTENT: Lazily loaded when near viewport */}
-      <LandingPageContext.Provider value={{
-        theme, isWarping, onLaunchOS, onOpenWindowDirectly,
-        articles, onOpenArticleDirectly, prefersReducedMotion,
-        showBackToTop, activeTab, setActiveTab,
-        activeTestimonial, setActiveTestimonial,
-        formName, setFormName, formEmail, setFormEmail,
-        formSubject, setFormSubject, formMessage, setFormMessage,
-        formErrors, setFormErrors, formSubmitted, setFormSubmitted,
-        formLoading, setFormLoading,
-        styleSet, filteredSkills, testimonials, certifications,
-        timelineRef, progressLineRef,
-        handleAnchorClick, handleContactSubmit, scrollToTop,
-      }}>
+      <LandingPageContext.Provider value={contextValue}>
         <LazySection
-          loader={() => import('./LandingBelowFold')}
+          loader={loadBelowFold}
           fallback={<div className="h-screen" />}
           rootMargin="300px"
         />

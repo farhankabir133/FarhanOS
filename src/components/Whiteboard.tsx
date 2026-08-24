@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { 
-  Undo2, Redo2, Trash2, Download, Brush, Square, Circle, Eraser, Move, Palette,
-  Sparkles, Check, HelpCircle
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Undo2, Redo2, Trash2, Download, Brush,
+  Sparkles, Check, Eraser
 } from 'lucide-react';
 
 interface Point {
@@ -33,7 +33,18 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
   // Undo/Redo histories
   const [history, setHistory] = useState<Stroke[]>([]);
   const [redoStack, setRedoStack] = useState<Stroke[]>([]);
-  const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
+
+  // Live brush settings mirrored into a ref so incremental segment drawing
+  // never depends on stale closures.
+  const brushRef = useRef({ color: '#6366f1', width: 4, isEraser: false });
+  useEffect(() => {
+    brushRef.current = { color: currentColor, width: brushWidth, isEraser };
+  }, [currentColor, brushWidth, isEraser]);
+
+  // In-flight stroke lives in a ref: appending points must NOT trigger React
+  // re-renders (the previous implementation fully re-drew every stroke on
+  // each pointermove via state updates).
+  const currentStrokeRef = useRef<Point[]>([]);
 
   // Scale tracking for proportion restoration on resizing (optional, but absolute rendering is highly robust)
   const [canvasSize, setCanvasSize] = useState({ width: 600, height: 400 });
@@ -96,7 +107,10 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     { name: 'Pure White', value: '#ffffff' }
   ];
 
-  const colors = paletteType === 'theme' ? getThemeColors() : getStandardColors();
+  const colors = useMemo(
+    () => (paletteType === 'theme' ? getThemeColors() : getStandardColors()),
+    [paletteType, theme]
+  );
 
   // Pick first color as active brush when theme or palette type switches
   useEffect(() => {
@@ -127,17 +141,19 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
   }, []);
 
   // Update canvas properties and redraw everything when canvas size changes
+  // or a stroke is committed/undone/redone/cleared. Live drawing does NOT go
+  // through this path — segments are painted incrementally in paintSegment.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     // Set actual canvas drawing surface coordinates to match current bounding container
     canvas.width = canvasSize.width;
     canvas.height = canvasSize.height;
 
-    // Redraw entire strokes array from scratch
     redrawAll();
-  }, [canvasSize, history, currentStroke]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasSize, history]);
 
   // Redraw helper function
   const redrawAll = () => {
@@ -188,17 +204,35 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
       drawStroke(stroke);
     });
 
-    // Draw active drawing frame (if any)
-    if (currentStroke.length > 0) {
-      drawStroke({
-        points: currentStroke,
-        color: currentColor,
-        width: brushWidth,
-        isEraser: isEraser,
-      });
+    // Reset composite operation to default
+    ctx.globalCompositeOperation = 'source-over';
+  };
+
+  // Paint a single new segment (or the initial dot) of an in-flight stroke.
+  // This is the incremental hot path used on every pointermove.
+  const paintSegment = (from: Point | null, to: Point) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const brush = brushRef.current;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = brush.isEraser ? 'destination-out' : 'source-over';
+    ctx.lineWidth = brush.width;
+
+    ctx.beginPath();
+    if (!from) {
+      ctx.arc(to.x, to.y, brush.width / 2, 0, 2 * Math.PI);
+      ctx.fillStyle = brush.isEraser ? 'rgba(0,0,0,1)' : brush.color;
+      ctx.fill();
+    } else {
+      if (!brush.isEraser) ctx.strokeStyle = brush.color;
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
     }
 
-    // Reset composite operation to default
     ctx.globalCompositeOperation = 'source-over';
   };
 
@@ -235,38 +269,37 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     if (!coords) return;
 
     setIsDrawing(true);
-    setCurrentStroke([coords]);
     setRedoStack([]); // Clear redo timeline once user starts alternative ideation pathway
-    
+    currentStrokeRef.current = [coords];
+    paintSegment(null, coords);
   };
 
-  // Draw process
+  // Draw process — appends a point to the in-flight stroke and paints only
+  // the new segment directly on the canvas. No React state updates here.
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
     e.preventDefault();
-    
+
     const coords = getCoordinates(e);
     if (!coords) return;
 
-    setCurrentStroke(prev => [...prev, coords]);
+    const pts = currentStrokeRef.current;
+    const prev = pts[pts.length - 1] ?? null;
+    pts.push(coords);
+    paintSegment(prev, coords);
   };
 
-  // End dynamic drawing action
+  // End dynamic drawing action — commit the finished stroke to history.
   const stopDrawing = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    if (currentStroke.length > 0) {
-      const newStroke: Stroke = {
-        points: currentStroke,
-        color: currentColor,
-        width: brushWidth,
-        isEraser: isEraser
-      };
-      setHistory(prev => [...prev, newStroke]);
+    const points = currentStrokeRef.current;
+    currentStrokeRef.current = [];
+    if (points.length > 0) {
+      const brush = brushRef.current;
+      setHistory(prev => [...prev, { points, color: brush.color, width: brush.width, isEraser: brush.isEraser }]);
     }
-    
-    setCurrentStroke([]);
   };
 
   // Undo operational trigger
@@ -297,9 +330,30 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
     if (confirm('Clear the entire ideation sketch pad?')) {
       setHistory([]);
       setRedoStack([]);
-      setCurrentStroke([]);
+      currentStrokeRef.current = [];
     }
   };
+
+  // Keyboard shortcuts promised by the button tooltips: Ctrl/Cmd+Z undo,
+  // Ctrl/Cmd+Y (or Cmd+Shift+Z) redo. Skips when typing in form fields.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo(); else handleUndo();
+      } else if (key === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   // Download drawn canvas content locally as high quality PNG image
   const handleDownload = () => {
@@ -406,7 +460,8 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
 
           {/* Draw/Eraser Selector Mode */}
           <button
-            className={`p-1.5 rounded transition-all duration-200 flex items-center gap-1 ${!isEraser ? 'bg-indigo-600/30 font-bold border border-indigo-500/35 text-indigo-300' : 'hover:bg-white/10 hover:scale-105 active:scale-95 text-zinc-400 hover:text-zinc-200'}`}
+            onClick={() => setIsEraser(false)}
+            className={`p-1.5 rounded transition-all duration-200 flex items-center gap-1 cursor-pointer ${!isEraser ? 'bg-indigo-600/30 font-bold border border-indigo-500/35 text-indigo-300' : 'hover:bg-white/10 hover:scale-105 active:scale-95 text-zinc-400 hover:text-zinc-200'}`}
             title="Paint Brush Mode"
           >
             <Brush className="w-3.5 h-3.5" />
@@ -414,7 +469,8 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
           </button>
 
           <button
-            className={`p-1.5 rounded transition-all duration-200 flex items-center gap-1 ${isEraser ? 'bg-indigo-600/30 font-bold border border-indigo-500/35 text-indigo-300' : 'hover:bg-white/10 hover:scale-105 active:scale-95 text-zinc-400 hover:text-zinc-200'}`}
+            onClick={() => setIsEraser(true)}
+            className={`p-1.5 rounded transition-all duration-200 flex items-center gap-1 cursor-pointer ${isEraser ? 'bg-indigo-600/30 font-bold border border-indigo-500/35 text-indigo-300' : 'hover:bg-white/10 hover:scale-105 active:scale-95 text-zinc-400 hover:text-zinc-200'}`}
             title="Eraser tool"
           >
             <Eraser className="w-3.5 h-3.5" />
@@ -426,13 +482,15 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 bg-black/40 p-1 rounded-md border border-zinc-900/80 text-[9px] font-mono">
             <button
-              className={`px-1.5 py-0.5 rounded transition uppercase font-bold tracking-tight ${paletteType === 'theme' ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+              onClick={() => setPaletteType('theme')}
+              className={`px-1.5 py-0.5 rounded transition uppercase font-bold tracking-tight cursor-pointer ${paletteType === 'theme' ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Switch to Theme-specific colors"
             >
               OS Aura
             </button>
             <button
-              className={`px-1.5 py-0.5 rounded transition uppercase font-bold tracking-tight ${paletteType === 'classic' ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
+              onClick={() => setPaletteType('classic')}
+              className={`px-1.5 py-0.5 rounded transition uppercase font-bold tracking-tight cursor-pointer ${paletteType === 'classic' ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
               title="Switch to classic drawing colors (Black, Red, Blue, Green, etc.)"
             >
               Classic
@@ -502,7 +560,8 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
             {[2, 4, 8, 16].map((sz) => (
               <button
                 key={sz}
-                className={`w-5 h-5 rounded flex items-center justify-center transition border ${brushWidth === sz ? 'bg-white/10 border-indigo-500/50 text-indigo-400' : 'border-transparent hover:bg-white/5 text-zinc-400'}`}
+                onClick={() => setBrushWidth(sz)}
+                className={`w-5 h-5 rounded flex items-center justify-center transition cursor-pointer border ${brushWidth === sz ? 'bg-white/10 border-indigo-500/50 text-indigo-400' : 'border-transparent hover:bg-white/5 text-zinc-400'}`}
                 title={`Brush size ${sz}px`}
               >
                 <span className="relative flex items-center justify-center">

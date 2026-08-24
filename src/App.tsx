@@ -27,9 +27,9 @@ const WritingWindow = lazy(() => import('./os/windows/WritingWindow'));
 const TwinWindow = lazy(() => import('./os/windows/TwinWindow'));
 const BriefWindow = lazy(() => import('./os/windows/BriefWindow'));
 const ProfTimelineWindow = lazy(() => import('./os/windows/ProfTimelineWindow'));
-import DecryptText from './components/DecryptText';
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
 import { getApiBaseUrl } from './utils/apiConfig';
+import { askTwin } from './utils/askTwin';
 
 
 export default function App() {
@@ -49,17 +49,8 @@ export default function App() {
     };
   }, [viewMode]);
 
-  // Landing Page Interactive States
-  const [landingQuery, setLandingQuery] = useState('');
-  const [landingReply, setLandingReply] = useState('');
-  const [landingChatLoading, setLandingChatLoading] = useState(false);
-  const [selectedResearchPaper, setSelectedResearchPaper] = useState<any>(null); // For a popup reader on landing page
-
   // OS System States
   const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
-  const [isBooted, setIsBooted] = useState(false);
-  const [bootProgress, setBootProgress] = useState(0);
-  const [bootLogs, setBootLogs] = useState<string[]>([]);
   
   // Window Management States
   // Each open window is represented by its unique id
@@ -111,7 +102,6 @@ export default function App() {
   // Quick Action OS Bypass Helpers
   const handleOpenWindowDirectly = useCallback((winId: string) => {
     setViewMode('os');
-    setIsBooted(true);
     setOpenWindows(prev => {
       if (prev.includes(winId)) return prev;
       return [...prev, winId];
@@ -119,11 +109,6 @@ export default function App() {
     setFocusedWindow(winId);
     triggerSound(900, 0.05);
   }, []);
-
-  const handleOpenProjectDirectly = useCallback((project: Project) => {
-    setSelectedProject(project);
-    handleOpenWindowDirectly('projects');
-  }, [handleOpenWindowDirectly]);
 
   const handleOpenArticleDirectly = useCallback((article: Article) => {
     setSelectedArticle(article);
@@ -172,6 +157,8 @@ export default function App() {
   // Command Palette & Search States
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const paletteListRef = useRef<HTMLDivElement | null>(null);
 
   // Ask Twin AI State
   const [twinInput, setTwinInput] = useState('');
@@ -184,8 +171,8 @@ export default function App() {
 
   // Mission Brief State
   const [briefForm, setBriefForm] = useState({
-    projectType: 'AI Engineering',
-    budget: '$5,000 - $10,000',
+    projectType: 'AI Engineering & LLMs',
+    budget: '$5k - $10k',
     timeline: '1-3 Months',
     goals: '',
     comments: '',
@@ -207,7 +194,7 @@ export default function App() {
   // Draggable State Management (Simple manual drag handler to avoid external libraries complexity)
   const [draggedWindow, setDraggedWindow] = useState<string | null>(null);
 
-  const triggerSound = (_freq: number = 800, _dur: number = 0.03) => {};
+  const triggerSound = useCallback((_freq: number = 800, _dur: number = 0.03) => {}, []);
 
   const handleWarpAndEnter = useCallback(() => {
     if (isWarping) return;
@@ -226,39 +213,9 @@ export default function App() {
 
     setTimeout(() => {
       setViewMode('os');
-      setBootProgress(0);
-      setBootLogs([]);
-      setIsBooted(false);
       setIsWarping(false);
     }, 1800);
   }, [isWarping]);
-
-  const handleSendLandingChat = async () => {
-    if (!landingQuery.trim() || landingChatLoading) return;
-    const q = landingQuery.trim();
-    setLandingQuery('');
-    setLandingReply('');
-    setLandingChatLoading(true);
-    triggerSound(1050, 0.03);
-    try {
-      const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: q, history: [] })
-      });
-      const data = await res.json();
-      if (data.reply) {
-        setLandingReply(data.reply);
-      } else {
-        throw new Error();
-      }
-    } catch {
-      const fallbackReply = getAskTwinFallback(q, []);
-      setLandingReply(fallbackReply);
-    } finally {
-      setLandingChatLoading(false);
-    }
-  };
 
   // Global Key Down for Cmd + K Command Palette
   useEffect(() => {
@@ -270,11 +227,12 @@ export default function App() {
       }
       if (e.key === 'Escape') {
         setCommandPaletteOpen(false);
+        setMobileMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, [triggerSound]);
 
   // Drag Window logic handlers - buttery smooth macOS-style dragging
   const draggedWindowRef = useRef<string | null>(null);
@@ -284,6 +242,15 @@ export default function App() {
   const lastDragTimeRef = useRef(0);
   const currentPosRef = useRef({ x: 0, y: 0 });
   const momentumRafRef = useRef<number | null>(null);
+
+  // Keep at least part of the title bar inside the viewport
+  const clampWindowPos = useCallback((x: number, y: number) => {
+    const marginX = Math.max(160, window.innerWidth - 160);
+    return {
+      x: Math.min(Math.max(x, -marginX), marginX),
+      y: Math.min(Math.max(y, 0), Math.max(0, window.innerHeight - 56)),
+    };
+  }, []);
 
   const handleMouseDown = (windowId: string, e: React.MouseEvent) => {
     if (windowPositions[windowId]?.isMaximized) return;
@@ -331,6 +298,12 @@ export default function App() {
       posX += velX;
       posY += velY;
 
+      const clamped = clampWindowPos(posX, posY);
+      if (clamped.x !== posX) { velX = 0; dragVelocityRef.current.x = 0; }
+      if (clamped.y !== posY) { velY = 0; dragVelocityRef.current.y = 0; }
+      posX = clamped.x;
+      posY = clamped.y;
+
       setWindowPositions(prev => ({
         ...prev,
         [activeWindow]: { ...prev[activeWindow], x: posX, y: posY }
@@ -341,7 +314,7 @@ export default function App() {
     };
 
     momentumRafRef.current = requestAnimationFrame(step);
-  }, []);
+  }, [clampWindowPos]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     const activeWindow = draggedWindowRef.current;
@@ -350,32 +323,32 @@ export default function App() {
     const dx = e.movementX;
     const dy = e.movementY;
 
-    currentPosRef.current.x = Math.max(0, currentPosRef.current.x + dx);
-    currentPosRef.current.y = Math.max(0, currentPosRef.current.y + dy);
+    const next = clampWindowPos(currentPosRef.current.x + dx, currentPosRef.current.y + dy);
+    currentPosRef.current = { x: next.x, y: next.y };
 
     setWindowPositions(prev => ({
       ...prev,
       [activeWindow]: { ...prev[activeWindow], x: currentPosRef.current.x, y: currentPosRef.current.y }
     }));
-  }, []);
+  }, [clampWindowPos]);
 
   const handleMouseUp = useCallback(() => {
     const activeWindow = draggedWindowRef.current;
     if (activeWindow) {
       if (momentumRafRef.current) cancelAnimationFrame(momentumRafRef.current);
 
-      const finalX = currentPosRef.current.x;
-      const finalY = currentPosRef.current.y;
+      const clamped = clampWindowPos(currentPosRef.current.x, currentPosRef.current.y);
+      currentPosRef.current = { x: clamped.x, y: clamped.y };
 
       setWindowPositions(prev => ({
         ...prev,
-        [activeWindow]: { ...prev[activeWindow], x: finalX, y: finalY }
+        [activeWindow]: { ...prev[activeWindow], x: currentPosRef.current.x, y: currentPosRef.current.y }
       }));
 
       draggedWindowRef.current = null;
       setDraggedWindow(null);
     }
-  }, []);
+  }, [clampWindowPos]);
 
   const handleAnimationEnd = useCallback((windowId: string) => {
     setWindowReady(prev => ({ ...prev, [windowId]: true }));
@@ -487,34 +460,49 @@ export default function App() {
     setTwinLoading(true);
     triggerSound(1100, 0.03);
 
-    try {
-      const historyPayload = twinMessages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'assistant',
-        content: m.content
-      }));
+    const historyPayload = twinMessages.map(m => ({
+      role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
+      content: m.content
+    }));
 
-      const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMsg, history: historyPayload })
+    try {
+      const streamedRef = { current: '' };
+      const reply = await askTwin({
+        message: userMsg,
+        history: historyPayload,
+        onDelta: fullText => {
+          if (fullText.length <= streamedRef.current.length) return;
+          streamedRef.current = fullText;
+          setTwinMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last?.role === 'assistant' && last.content === fullText) return prev;
+            if (last?.role === 'assistant') {
+              return [...prev.slice(0, -1), { role: 'assistant' as const, content: fullText }];
+            }
+            return [...prev, { role: 'assistant' as const, content: fullText }];
+          });
+        }
       });
-      const data = await res.json();
-      
-      if (data.reply) {
-        setTwinMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
-        setTwinLoading(false);
-        speakText(data.reply, twinMessages.length + 1);
-      } else {
-        throw new Error(data.error || 'General twin system fault.');
-      }
+
+      setTwinMessages(prev => {
+        const withoutPartial =
+          prev[prev.length - 1]?.role === 'assistant'
+            ? prev.slice(0, -1)
+            : prev;
+        return [...withoutPartial, { role: 'assistant' as const, content: reply }];
+      });
+      setTwinLoading(false);
+      speakText(reply, twinMessages.length + 1);
     } catch (err: any) {
       console.warn('Backend twin service failed, using local fallback:', err);
-      const historyPayload = twinMessages.map(m => ({
-        role: m.role === 'user' ? ('user' as const) : ('assistant' as const),
-        content: m.content
-      }));
       const fallbackReply = getAskTwinFallback(userMsg, historyPayload);
-      setTwinMessages(prev => [...prev, { role: 'assistant', content: fallbackReply }]);
+      setTwinMessages(prev => {
+        const withoutPartial =
+          prev[prev.length - 1]?.role === 'assistant'
+            ? prev.slice(0, -1)
+            : prev;
+        return [...withoutPartial, { role: 'assistant' as const, content: fallbackReply }];
+      });
       setTwinLoading(false);
       speakText(fallbackReply, twinMessages.length + 1);
     }
@@ -580,7 +568,14 @@ export default function App() {
       });
       
       if (!res.ok) {
-        throw new Error('Failed to dispatch brief.');
+        let errMsg = 'Failed to dispatch brief.';
+        try {
+          const d = await res.json();
+          errMsg = d.error || errMsg;
+        } catch {
+          // non-JSON error body
+        }
+        throw new Error(errMsg);
       }
       
       alert("Handshake confirmed. Strategy Brief successfully transmitted to Farhan's secure channel.");
@@ -593,9 +588,9 @@ export default function App() {
         email: ''
       }));
     } catch (err) {
-      console.warn('Real dispatch failed, falling back to simulation:', err);
-      alert("Handshake completed. Strategy Brief successfully recorded (simulated delivery).");
-      setBriefSummary(null);
+      console.warn('Brief dispatch failed:', err);
+      const detail = err instanceof Error && err.message ? ` (${err.message})` : '';
+      alert(`Dispatch FAILED — your brief was NOT delivered${detail}. Please retry or email farhankabir133@gmail.com directly.`);
     } finally {
       setBriefDispatchLoading(false);
     }
@@ -722,7 +717,17 @@ export default function App() {
     return results;
   }, [searchQuery, articles, openWindow, setSelectedProject, setSelectedPaper, setSelectedArticle, setSkillFilter, setCommandPaletteOpen]);
 
-  const systemSearchResults = searchQuery ? useMemo(() => getSearchItems(), [getSearchItems]) : [];
+  const systemSearchResults = useMemo(
+    () => (searchQuery ? getSearchItems() : []),
+    [searchQuery, getSearchItems]
+  );
+
+  // Keyboard navigation for palette results (↑/↓ move, Enter activates).
+  useEffect(() => { setHighlightedIndex(0); }, [searchQuery]);
+  useEffect(() => {
+    const el = paletteListRef.current?.querySelector('[data-highlighted="true"]');
+    el?.scrollIntoView({ block: 'nearest' });
+  }, [highlightedIndex, commandPaletteOpen]);
 
   // Desktop Icons Configuration for ease of access
   const desktopIcons = useMemo(() => [
@@ -1399,8 +1404,29 @@ export default function App() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  const count = systemSearchResults.length;
+                  if (!count) return;
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setHighlightedIndex((i) => (i + 1) % count);
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setHighlightedIndex((i) => (i - 1 + count) % count);
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const hit = systemSearchResults[highlightedIndex];
+                    if (hit) { triggerSound(1000, 0.03); hit.action(); }
+                  }
+                }}
                 placeholder="Search projects, research papers, tech stack node keys, commands..."
                 aria-label="Search projects, research papers and commands"
+                role="combobox"
+                aria-expanded={systemSearchResults.length > 0}
+                aria-controls="palette-results"
+                aria-activedescendant={
+                  systemSearchResults.length > 0 ? `palette-option-${highlightedIndex}` : undefined
+                }
                 className="flex-1 bg-transparent text-slate-105 font-sans outline-hidden border-none text-xs text-white"
                 autoFocus
               />
@@ -1414,7 +1440,7 @@ export default function App() {
             </div>
 
             {/* Quick search guidelines / matching indices list */}
-            <div className="flex-1 overflow-y-auto p-2 scrollbar-none max-h-[300px]">
+            <div ref={paletteListRef} id="palette-results" role="listbox" className="flex-1 overflow-y-auto p-2 scrollbar-none max-h-[300px]">
               {searchQuery.trim().length === 0 ? (
                 <div className="space-y-2">
                   <div className="text-[10px] text-zinc-500 font-bold px-2 block uppercase tracking-wide">SYSTEM DIAGNOSTIC CORES:</div>
@@ -1439,10 +1465,19 @@ export default function App() {
                   <div className="text-[10px] text-zinc-500 px-2 font-bold uppercase tracking-widest border-b border-zinc-900 pb-1 mb-1.5">MATCHED WORKSPACE PARAMS ({systemSearchResults.length})</div>
                   {systemSearchResults.length > 0 ? (
                     systemSearchResults.map((res, sIdx) => (
-                      <button 
+                      <button
                         key={sIdx}
+                        id={`palette-option-${sIdx}`}
+                        role="option"
+                        aria-selected={sIdx === highlightedIndex}
+                        data-highlighted={sIdx === highlightedIndex || undefined}
                         onClick={res.action}
-                        className="w-full text-left p-3 hover:bg-zinc-900 rounded-lg flex items-center justify-between transition-colors border border-transparent hover:border-zinc-800 cursor-pointer text-[11px]"
+                        onMouseEnter={() => setHighlightedIndex(sIdx)}
+                        className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-colors border cursor-pointer text-[11px] ${
+                          sIdx === highlightedIndex
+                            ? 'bg-zinc-900 border-zinc-800'
+                            : 'border-transparent hover:bg-zinc-900 hover:border-zinc-800'
+                        }`}
                       >
                         <div>
                           <span className="text-[9px] bg-sky-500/10 text-sky-400 border border-sky-500/20 px-1 py-0.5 rounded font-mono mr-2 uppercase">{res.type}</span>
@@ -1459,7 +1494,7 @@ export default function App() {
             </div>
 
             <div className="p-2.5 bg-zinc-950 border-t border-zinc-850 flex items-center justify-between text-[10px] text-zinc-500">
-              <span className="font-mono">SEARCH GRID INTEGRATION READY</span>
+              <span className="font-mono">↑↓ NAVIGATE · ↵ SELECT</span>
               <span>ESC TO EXIT</span>
             </div>
           </div>

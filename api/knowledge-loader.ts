@@ -43,7 +43,27 @@ let docs: KnowledgeDoc[] = [];
 let indexReady = false;
 let loadError: string | null = null;
 
-function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
+function coerceScalar(value: string): unknown {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (!isNaN(Number(value)) && value !== '') return Number(value);
+  // Unwrap single or double quoted strings
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function parseInlineArray(value: string): unknown[] {
+  const inner = value.slice(1, -1).trim();
+  if (!inner) return [];
+  return inner.split(',').map((s) => coerceScalar(s.trim())).filter((v) => v !== '' && v != null);
+}
+
+export function parseFrontmatter(raw: string): { data: Record<string, unknown>; content: string } {
   const fmRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
   const match = raw.match(fmRegex);
   if (!match) {
@@ -53,18 +73,34 @@ function parseFrontmatter(raw: string): { data: Record<string, unknown>; content
   const content = match[2].trim();
   const data: Record<string, unknown> = {};
   const lines = fmBlock.split('\n');
-  for (const line of lines) {
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) continue;
+    if (colonIdx === -1 || /^\s/.test(line)) continue;
     const key = line.slice(0, colonIdx).trim();
-    let value: unknown = line.slice(colonIdx + 1).trim();
-    if (value === 'true') value = true;
-    else if (value === 'false') value = false;
-    else if (!isNaN(Number(value)) && value !== '') value = Number(value);
-    else if (typeof value === 'string' && ((value.startsWith('[') && value.endsWith(']')) || (value.startsWith('"') && value.endsWith('"')))) {
-      value = value.slice(1, -1).split(',').map((s: string) => s.trim()).filter(Boolean);
+    const rawValue = line.slice(colonIdx + 1).trim();
+
+    if (rawValue === '') {
+      // Multi-line block: either "- item" list or nested/empty value
+      const items: unknown[] = [];
+      let j = i + 1;
+      while (j < lines.length && /^\s+-\s?/.test(lines[j])) {
+        const itemText = lines[j].replace(/^\s+-\s?/, '').trim();
+        if (itemText) items.push(coerceScalar(itemText));
+        j++;
+      }
+      if (items.length > 0) {
+        data[key] = items;
+        i = j - 1;
+      } else {
+        data[key] = '';
+      }
+    } else if (rawValue.startsWith('[') && rawValue.endsWith(']')) {
+      data[key] = parseInlineArray(rawValue);
+    } else {
+      data[key] = coerceScalar(rawValue);
     }
-    data[key] = value;
   }
   return { data, content };
 }

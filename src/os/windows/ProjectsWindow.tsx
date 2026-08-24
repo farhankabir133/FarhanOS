@@ -10,6 +10,8 @@ interface ProjectsWindowProps {
   openWindow: (id: string) => void;
 }
 
+const categories = [...new Set(portfolioData.projects.map((p) => p.category))].sort();
+
 export default function ProjectsWindow({ styleSet, selectedProject, setSelectedProject, triggerSound, openWindow }: ProjectsWindowProps) {
   return (
     <div className="flex flex-col md:flex-row h-full gap-4">
@@ -17,7 +19,7 @@ export default function ProjectsWindow({ styleSet, selectedProject, setSelectedP
       <div className="w-full md:w-52 border-r border-zinc-800/60 pr-4 flex flex-col gap-2">
         <span className={styleSet.panelHeader}>CATEGORIES</span>
         <div className="flex flex-wrap md:flex-col gap-1 select-none mb-3">
-          {['AI', 'NLP', 'SaaS', 'Open Source', 'Research', 'Productivity', 'Design'].map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => { setSelectedProject(portfolioData.projects.find(p => p.category === cat) || portfolioData.projects[0]); triggerSound(800, 0.02); }}

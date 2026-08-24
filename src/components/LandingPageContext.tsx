@@ -28,6 +28,8 @@ export interface LandingPageContextType {
   setFormSubmitted: (v: boolean) => void;
   formLoading: boolean;
   setFormLoading: (v: boolean) => void;
+  formSubmitError: string | null;
+  setFormSubmitError: (e: string | null) => void;
   styleSet: Record<string, string>;
   filteredSkills: any[];
   testimonials: any[];
