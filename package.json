@@ -11,7 +11,7 @@
     "deploy": "gh-pages -d dist",
     "predeploy:domain": "VITE_BASE=/ npm run build",
     "deploy:domain": "gh-pages -d dist",
-    "start": "node dist/server.cjs",
+    "start": "NODE_ENV=production tsx server.ts",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -37,8 +37,6 @@
     "@types/node": "^22.14.0",
     "@types/three": "^0.184.1",
     "@vercel/node": "^5.8.27",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",

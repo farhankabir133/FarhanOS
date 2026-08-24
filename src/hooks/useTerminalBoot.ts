@@ -5,6 +5,25 @@ import { delay, prefersReducedMotion } from '../utils/delay';
 
 export type BootPhase = 'booting' | 'awaiting' | 'revealing' | 'done';
 
+/** sessionStorage flag so repeat visitors skip straight to the OS. */
+const BOOTED_FLAG = 'farhanos_booted';
+
+function hasBootedBefore(): boolean {
+  try {
+    return sessionStorage.getItem(BOOTED_FLAG) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markBooted(): void {
+  try {
+    sessionStorage.setItem(BOOTED_FLAG, '1');
+  } catch {
+    // storage unavailable (private mode) — boot plays every time
+  }
+}
+
 interface UseTerminalBootOptions {
   script: BootLine[];
   onComplete?: () => void;
@@ -57,6 +76,7 @@ export function useTerminalBoot({
     setPhase('revealing');
     schedule(() => {
       setPhase('done');
+      markBooted();
       onCompleteRef.current?.();
     }, revealMs);
   }, [revealMs, schedule]);
@@ -87,6 +107,14 @@ export function useTerminalBoot({
     engineRef.current = engine;
 
     const run = async () => {
+      // Repeat visitors within the same session skip the boot entirely.
+      if (hasBootedBefore()) {
+        revealedRef.current = true;
+        setPhase('done');
+        onCompleteRef.current?.();
+        return;
+      }
+
       const finish = async () => {
         await engine.waitUntilReady(() => appReadyRef.current, maxDurationMs);
         const elapsed = performance.now() - startedAtRef.current;

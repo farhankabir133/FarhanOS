@@ -189,58 +189,9 @@ export function searchKnowledge(query: string, options: { category?: string; tag
   return scored.slice(0, topK).map((s) => s.doc);
 }
 
-export function getRelated(docId: string, limit = 3): KnowledgeDoc[] {
-  if (!indexReady && !loadError) {
-    try {
-      loadKnowledgeBase();
-    } catch (err) {
-      loadError = err instanceof Error ? err.message : String(err);
-      console.error('[knowledge] load failed:', loadError);
-    }
-  }
-  const doc = docs.find((d) => d.id === docId);
-  if (!doc) return [];
-  const related = docs
-    .filter((d) => d.id !== docId && (doc.related_documents?.includes(d.id) || doc.related_projects?.some((p) => d.projects?.includes(p)) || doc.related_skills?.some((s) => d.skills?.includes(s))))
-    .slice(0, limit);
-  return related;
-}
 
-export function getAllDocs(): KnowledgeDoc[] {
-  if (!indexReady && !loadError) {
-    try {
-      loadKnowledgeBase();
-    } catch (err) {
-      loadError = err instanceof Error ? err.message : String(err);
-      console.error('[knowledge] load failed:', loadError);
-    }
-  }
-  return docs.filter((d) => d.public);
-}
 
-export function getKnowledgeCount(): number {
-  if (!indexReady && !loadError) {
-    try {
-      loadKnowledgeBase();
-    } catch (err) {
-      loadError = err instanceof Error ? err.message : String(err);
-      console.error('[knowledge] load failed:', loadError);
-    }
-  }
-  return docs.filter((d) => d.public).length;
-}
 
-export function listCategories(): string[] {
-  if (!indexReady && !loadError) {
-    try {
-      loadKnowledgeBase();
-    } catch (err) {
-      loadError = err instanceof Error ? err.message : String(err);
-      console.error('[knowledge] load failed:', loadError);
-    }
-  }
-  return Array.from(new Set(docs.filter((d) => d.public).map((d) => d.category).filter(Boolean))) as string[];
-}
 
 export function loadKnowledgeBase() {
   if (indexReady || loadError) return;

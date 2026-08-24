@@ -9,13 +9,12 @@ import {
   streamAskTwin,
   validateAskTwinInput,
   summarizeBrief,
-  ttsPlaceholder,
   getMediumStories,
   getGithubRepos,
   processContact,
-} from './api/core/handlers';
-import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './api/core/security';
-import { etagMatches } from './api/core/cache';
+} from './api/core/handlers.js';
+import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './api/core/security.js';
+import { etagMatches } from './api/core/cache.js';
 
 dotenv.config();
 
@@ -70,7 +69,7 @@ async function getRagSearcher(): Promise<RagSearcher | undefined> {
   if (ragLoadAttempted) return ragSearcher;
   ragLoadAttempted = true;
   try {
-    const mod = await import('./api/knowledge-loader');
+    const mod = await import('./api/knowledge-loader.js');
     ragSearcher = { searchKnowledge: mod.searchKnowledge };
   } catch (err) {
     console.error('[knowledge] load failed:', err);
@@ -107,11 +106,6 @@ app.post('/api/ask-twin', async (req, res) => {
     res.write('data: [DONE]\n\n');
     res.end();
   }
-});
-
-app.post('/api/tts', async (_req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.json(ttsPlaceholder());
 });
 
 app.post('/api/summarize-brief', async (req, res) => {

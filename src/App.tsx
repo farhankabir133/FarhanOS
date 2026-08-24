@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback, startTransition } from 'react';
 const AssistantLauncher = lazy(() => import('./components/AssistantLauncher'));
-import { 
-  Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText, 
-  Calendar, Award, Activity, Search, Briefcase, Volume2, VolumeX, 
-  Maximize2, Minimize2, X, Menu, Send, Sparkles, Code, Workflow, User, 
-  Folder, Map, Settings, Play, Pause, HelpCircle, Check, Copy, 
-  Download, ExternalLink, Rocket, Compass, PhoneCall, RefreshCw,
-  Clock, CheckSquare, FileSpreadsheet, Palette
+import {
+  Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText,
+  Calendar, Award, Search,
+  Maximize2, Minimize2, X, Menu, Sparkles,
+  Rocket, Compass, PhoneCall, Palette,
+  Clock, FileSpreadsheet
 } from 'lucide-react';
 import { FarhanAIIcon } from './components/FarhanAIIcon';
 import ClockText from './components/Clock';
-import MarkdownRenderer from './components/MarkdownRenderer';
 import { portfolioData } from './data/portfolioData';
-import { Project, Paper, TimelineEvent, Article, BuildLog, SkillNode, GardenNode } from './types';
+import { Project, Paper, TimelineEvent, Article } from './types';
 import LandingPage from './components/LandingPage';
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
 const BuildsWindow = lazy(() => import('./os/windows/BuildsWindow'));
@@ -407,40 +405,25 @@ export default function App() {
     }));
   }, []);
 
-  // TTS Speech Player
-  const speakText = useCallback(async (text: string, index: number | null = null, mode: 'tour' | 'narrate' = 'narrate') => {
+  // TTS Speech Player — client-side Web Speech (no server round-trip).
+  const speakText = useCallback((text: string, index: number | null = null, _mode: 'tour' | 'narrate' = 'narrate') => {
     try {
       if (currentTTSAudio) {
         currentTTSAudio.stop();
         setCurrentTTSAudio(null);
       }
       setPlayingMessageIndex(index);
-      const res = await fetch(`${getApiBaseUrl()}/api/tts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, type: mode })
+      const audioControl = speakTextClient(text, () => {
+        setPlayingMessageIndex(null);
       });
-      const data = await res.json();
-      if (data.audio) {
-        setTimeout(() => {
-          setPlayingMessageIndex(null);
-        }, 2000);
-      }
-    } catch (err) {
-      console.error('Narrator service unreachable, falling back to client voice:', err);
-      try {
-        const audioControl = speakTextClient(text, () => {
-          setPlayingMessageIndex(null);
-        });
-        if (audioControl) {
-          setCurrentTTSAudio(audioControl);
-        } else {
-          setPlayingMessageIndex(null);
-        }
-      } catch (clientErr) {
-        console.error('Client speech synthesis failed:', clientErr);
+      if (audioControl) {
+        setCurrentTTSAudio(audioControl);
+      } else {
         setPlayingMessageIndex(null);
       }
+    } catch (clientErr) {
+      console.error('Client speech synthesis failed:', clientErr);
+      setPlayingMessageIndex(null);
     }
   }, [currentTTSAudio]);
 
@@ -904,6 +887,7 @@ export default function App() {
               onClick={cycleTheme}
               className="md:hidden flex items-center gap-1.5 bg-zinc-950/60 border border-zinc-800/40 rounded px-2 py-1 text-[10px] text-zinc-300 hover:text-white capitalize cursor-pointer active:scale-95 transition-all"
               title="Cycle Theme"
+              aria-label={`Cycle Theme (current: ${theme})`}
             >
               <Palette className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
               <span>Theme: {theme}</span>
@@ -986,7 +970,7 @@ export default function App() {
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-cyan-50 font-bold uppercase tracking-wider text-purple-200">AI SYSTEM TOUR — ZONE {tourStep} OF 5</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-purple-200">AI SYSTEM TOUR — ZONE {tourStep} OF 5</h4>
               {tourLoading && <span className="text-[10px] text-purple-300 animate-pulse font-mono select-none">Rendering Synthesized Voice...</span>}
             </div>
             <p className="text-xs text-[#ebd8fb] mt-1 pr-4 leading-relaxed font-sans">{tourMsg || 'Preparing...'}</p>
@@ -1352,8 +1336,9 @@ export default function App() {
                     openWindow(ico.id);
                   }
                 }}
-                className={`p-2 rounded-xl transition-all relative cursor-pointer ${ico.color} transform hover:scale-129 active:scale-95 duration-100`}
+                className={`p-2 rounded-xl transition-all relative cursor-pointer ${ico.color} transform hover:scale-[1.29] active:scale-95 duration-100`}
                 title={ico.label}
+                aria-label={ico.label}
               >
                 <ActiveIcon className="w-5 h-5" />
                 

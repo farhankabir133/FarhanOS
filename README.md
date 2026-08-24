@@ -137,7 +137,6 @@ Security built into the core: per-endpoint rate limiting, CORS origin allowlist,
 │   ├── components/
 │   │   ├── AssistantGlyph.tsx
 │   │   ├── AssistantLauncher.tsx
-│   │   ├── DecryptText.tsx
 │   │   ├── LandingPage.tsx
 │   │   ├── LandingBelowFold.tsx
 │   │   ├── LazySection.tsx
@@ -399,7 +398,7 @@ npx vercel --prod
 ```bash
 npm run deploy
 ```
-Publishes the built site to the `gh-pages` branch.
+Publishes the built site to the `gh-pages` branch. Primary deployment is Vercel (production alias: farhankabir.me).
 
 ---
 

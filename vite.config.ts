@@ -38,11 +38,16 @@ export default defineConfig(() => {
       sourcemap: false,
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom'],
-            three: ['three'],
-            motion: ['motion'],
-            icons: ['lucide-react'],
+          // Function form so heavy libs actually split (object form left
+          // react-dom inside the entry chunk). Order matters: specific
+          // packages before the generic 'react' substring match.
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('lucide-react')) return 'icons';
+            if (/node_modules\/(three|@react-three|postprocessing)[/\\]/.test(id)) return 'three';
+            if (/node_modules\/(motion|framer-motion)[/\\]/.test(id)) return 'motion';
+            if (/node_modules\/(react|react-dom|react-reconciler|scheduler)[/\\]/.test(id)) return 'vendor';
+            return undefined;
           },
         },
         onwarn(warning, warn) {

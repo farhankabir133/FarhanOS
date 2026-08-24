@@ -7,12 +7,12 @@ import {
   streamAskTwin,
   validateAskTwinInput,
   summarizeBrief,
-  ttsPlaceholder,
   getMediumStories,
   getGithubRepos,
   processContact,
 } from '../../../api/core/handlers.ts';
-import { isAllowedOrigin, checkApiRateLimit, getClientIp, etagMatches } from '../../../api/core/security.ts';
+import { isAllowedOrigin, checkApiRateLimit, getClientIp } from '../../../api/core/security.ts';
+import { etagMatches } from '../../../api/core/cache.ts';
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
@@ -73,10 +73,6 @@ Deno.serve(async (req: Request) => {
         },
       });
       return new Response(stream, { headers: sseHeaders });
-    }
-
-    if (path.startsWith('/api/tts') && req.method === 'POST') {
-      return json(headers, ttsPlaceholder());
     }
 
     if (path.startsWith('/api/summarize-brief') && req.method === 'POST') {

@@ -19,7 +19,7 @@ export function Particles({ enabled }: { enabled: boolean }) {
       {DOTS.map((dot, i) => (
         <span
           key={i}
-          className="absolute rounded-full bg-sky-300/40 float-particle"
+          className="absolute rounded-full bg-sky-300/40 animate-float-particle"
           style={{
             top: dot.top,
             left: dot.left,

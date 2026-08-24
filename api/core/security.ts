@@ -94,7 +94,6 @@ const RATE_RULES: RateRule[] = [
   { prefix: '/api/ask-twin', limit: 20, windowMs: 60_000 },
   { prefix: '/api/summarize-brief', limit: 10, windowMs: 60_000 },
   { prefix: '/api/contact', limit: 5, windowMs: 60_000 },
-  { prefix: '/api/tts', limit: 30, windowMs: 60_000 },
 ];
 
 const GLOBAL_RULE: RateRule = { prefix: '/api/', limit: 120, windowMs: 60_000 };

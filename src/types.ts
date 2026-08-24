@@ -137,11 +137,3 @@ export interface StyleSet {
   badge: string;
 }
 
-export interface BriefForm {
-  projectType: string;
-  budget: string;
-  timeline: string;
-  goals: string;
-  comments: string;
-  email: string;
-}

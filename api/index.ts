@@ -6,20 +6,19 @@ import {
   streamAskTwin,
   validateAskTwinInput,
   summarizeBrief,
-  ttsPlaceholder,
   getMediumStories,
   getGithubRepos,
   processContact,
-} from './core/handlers';
-import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './core/security';
-import { etagMatches } from './core/cache';
+} from './core/handlers.js';
+import { isAllowedOrigin, checkApiRateLimit, getClientIp } from './core/security.js';
+import { etagMatches } from './core/cache.js';
 
-let knowledgeLoader: Promise<typeof import('./knowledge-loader')> | null = null;
+let knowledgeLoader: Promise<typeof import('./knowledge-loader.js')> | null = null;
 let knowledgeLoaderError: string | null = null;
 
 async function getRagSearcher() {
   if (!knowledgeLoader && !knowledgeLoaderError) {
-    knowledgeLoader = import('./knowledge-loader').catch((err) => {
+    knowledgeLoader = import('./knowledge-loader.js').catch((err) => {
       knowledgeLoaderError = err instanceof Error ? err.message : String(err);
       console.error('[knowledge] dynamic import failed:', knowledgeLoaderError);
       return null;
@@ -86,12 +85,6 @@ export default async function handler(req: any, res: any) {
         res.write('data: [DONE]\n\n');
         res.end();
       }
-      return;
-    }
-
-    // ─── POST /api/tts ───────────────────────────────────────────────────
-    if (path.startsWith('/api/tts') && req.method === 'POST') {
-      res.json(ttsPlaceholder());
       return;
     }
 

@@ -2,13 +2,13 @@
  * Framework-agnostic endpoint logic. Adapters (Vercel function, Express
  * server, Supabase Edge) translate transport <-> these functions.
  */
-import { clamp } from './security';
-import { ApiError, escapeHtml } from './security';
-import { buildAskTwinSystemPrompt, buildBriefPrompt, buildContactAnalysisPrompt } from './prompts';
-import { streamGroqChat, groqChat, type GroqMessage } from './groq';
-import { getCache, setCache } from './cache';
-import { parseMediumRSS, type MediumStory } from './rssParser';
-import { getEnv } from './env';
+import { clamp } from './security.js';
+import { ApiError, escapeHtml } from './security.js';
+import { buildAskTwinSystemPrompt, buildBriefPrompt, buildContactAnalysisPrompt } from './prompts.js';
+import { streamGroqChat, groqChat, type GroqMessage } from './groq.js';
+import { getCache, setCache } from './cache.js';
+import { parseMediumRSS, type MediumStory } from './rssParser.js';
+import { getEnv } from './env.js';
 
 export { ApiError };
 export type { MediumStory };
@@ -100,12 +100,6 @@ export async function summarizeBrief(body: any): Promise<{ summary: string }> {
     { temperature: 0.7, maxTokens: 400 }
   );
   return { summary };
-}
-
-// ─── tts (vestigial placeholder kept for route compatibility) ────────────────
-
-export function ttsPlaceholder(): { audio: null } {
-  return { audio: null };
 }
 
 // ─── medium-stories ──────────────────────────────────────────────────────────
