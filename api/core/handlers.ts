@@ -207,12 +207,16 @@ export async function* streamAskTwin(
 
     for await (const ev of streamGroqChatEvents(conversation, {
       temperature: 0.6,
-      maxTokens: 1000,
+      // Headroom for gpt-oss reasoning + answer; reasoning tokens count
+      // against this budget.
+      maxTokens: 1400,
       model,
       tools: toolsAvailable ? TOOL_SCHEMAS : undefined,
       // Live-data questions force a first tool call so answers are never
       // guessed from stale memory.
       toolChoice: turn === 0 && LIVE_DATA_RE.test(message) ? 'required' : 'auto',
+      // Keep chain-of-thought short so visible answers always fit.
+      reasoningEffort: 'low',
     })) {
       if (ev.type === 'text') {
         fullAnswer += ev.delta;
@@ -283,7 +287,7 @@ User asked: ${clamp(message, 300)}
 Assistant answered: ${clamp(fullAnswer, 1200)}`,
           },
         ],
-        { model: MODEL_FAST, temperature: 0.9, maxTokens: 400, timeoutMs: 10_000 }
+        { model: MODEL_FAST, temperature: 0.9, maxTokens: 400, reasoningEffort: 'low', timeoutMs: 10_000 }
       );
       // Lenient extraction — some models wrap JSON in prose or code fences.
       const jsonMatch = raw.match(/\{[\s\S]*\}/);

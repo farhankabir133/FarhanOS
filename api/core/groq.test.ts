@@ -76,11 +76,30 @@ describe('streamGroqChat', () => {
   it('throws ApiError(503) when the upstream responds with an error status', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify({ error: { message: 'quota' } }), { status: 429 }))
+      vi.fn(async () => new Response(JSON.stringify({ error: { message: 'quota' } }), { status: 500 }))
     );
     await expect(async () => {
       for await (const d of streamGroqChat([{ role: 'user', content: 'hi' }])) void d;
     }).rejects.toMatchObject({ status: 503 });
+  });
+
+  it('retries once on 429 and succeeds when the window clears', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(
+        async () =>
+          new Response(JSON.stringify({ error: { message: 'TPM' } }), {
+            status: 429,
+            headers: { 'retry-after': '0' },
+          })
+      )
+      .mockImplementationOnce(async () => sseResponse(baseFrames));
+    vi.stubGlobal('fetch', fetchMock);
+
+    let out = '';
+    for await (const delta of streamGroqChat([{ role: 'user', content: 'hi' }])) out += delta;
+    expect(out).toBe('Hello');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('throws ApiError(503) when no API key is configured', async () => {
@@ -158,6 +177,34 @@ describe('streamGroqChatEvents (tools)', () => {
       { type: 'text', delta: 'Hel' },
       { type: 'text', delta: 'lo' },
     ]);
+  });
+
+  it('sends reasoning_effort when configured', async () => {
+    const fetchMock = vi.fn(async () => sseResponse(baseFrames));
+    vi.stubGlobal('fetch', fetchMock);
+
+    for await (const _ev of streamGroqChatEvents([{ role: 'user', content: 'hi' }], {
+      reasoningEffort: 'low',
+    })) {
+      void _ev;
+    }
+
+    const payload = JSON.parse(String((fetchMock.mock.calls[0] as any)[1].body));
+    expect(payload.reasoning_effort).toBe('low');
+  });
+
+  it('throws ApiError(503) instead of ending silently on a zero-output stream', async () => {
+    // Reasoning-only deltas burn the completion budget; no content, no tools.
+    const reasoningOnly = [
+      'data: {"choices":[{"delta":{"reasoning":"thinking hard..."}}]}\n\n',
+      'data: {"choices":[{"delta":{},"finish_reason":"length"}]}\n\n',
+      'data: [DONE]\n\n',
+    ];
+    vi.stubGlobal('fetch', vi.fn(async () => sseResponse(reasoningOnly)));
+
+    await expect(async () => {
+      for await (const ev of streamGroqChatEvents([{ role: 'user', content: 'hi' }])) void ev;
+    }).rejects.toMatchObject({ status: 503 });
   });
 });
 

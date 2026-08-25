@@ -116,11 +116,56 @@ describe('askTwin', () => {
     expect(await askTwin({ message: 'x', history: [] })).toBe('buffered answer');
   });
 
-  it('rejects when the stream ends with no content', async () => {
+  it('rejects with the server error frame when the stream carries one', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(sseBody(['data: [DONE]\n\n']), { status: 200, headers: streamHeaders }))
+      vi.fn(async () => new Response(sseBody([
+        'data: {"type":"sources","items":[{"title":"Bio"}]}\n\n',
+        'data: {"error":"The assistant could not generate a response. Please rephrase or retry."}\n\n',
+        'data: [DONE]\n\n',
+      ]), { status: 200, headers: streamHeaders }))
     );
-    await expect(askTwin({ message: 'x', history: [] })).rejects.toThrow('Empty response stream.');
+    await expect(askTwin({ message: 'x', history: [] })).rejects.toThrow(
+      'The assistant could not generate a response. Please rephrase or retry.'
+    );
+  });
+
+  it('retries transparently once when a stream ends empty', async () => {
+    const emptyStream = () =>
+      new Response(sseBody(['data: [DONE]\n\n']), { status: 200, headers: streamHeaders });
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () => emptyStream())
+      .mockImplementationOnce(async () =>
+        new Response(sseBody(['data: {"delta":"recovered"}\n\n', 'data: [DONE]\n\n']), {
+          status: 200,
+          headers: streamHeaders,
+        })
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await askTwin({ message: 'x', history: [] })).toBe('recovered');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry after an OS action was dispatched (side effects)', async () => {
+    let calls = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        calls++;
+        return new Response(sseBody([
+          'data: {"type":"action","action":{"type":"open_window","window":"projects"}}\n\n',
+          'data: [DONE]\n\n',
+        ]), { status: 200, headers: streamHeaders });
+      })
+    );
+
+    const actions: unknown[] = [];
+    await expect(
+      askTwin({ message: 'x', history: [], onAction: (a) => actions.push(a) })
+    ).rejects.toThrow('Empty response stream.');
+    expect(actions).toHaveLength(1);
+    expect(calls).toBe(1);
   });
 });

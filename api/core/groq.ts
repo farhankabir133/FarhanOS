@@ -37,6 +37,12 @@ export interface GroqStreamOpts {
   model?: string;
   /** 'required' forces the model to emit at least one tool call this turn. */
   toolChoice?: 'auto' | 'required';
+  /**
+   * gpt-oss reasoning budget. 'low' is essential for short chat answers:
+   * reasoning tokens count against max_tokens, so a medium/high effort can
+   * burn the entire completion budget before any visible content is emitted.
+   */
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -70,7 +76,11 @@ async function openGroqStreamWithRetry(
     lastRes = res;
     const retryAfter = Number(res.headers.get('retry-after'));
     if (res.status === 429 && attempt < attempts - 1) {
-      await sleep(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter * 1000, 6000) : 4200);
+      const waitMs =
+        Number.isFinite(retryAfter) && retryAfter >= 0
+          ? Math.min(retryAfter * 1000, 6000)
+          : 4200;
+      await sleep(waitMs);
       continue;
     }
     break;
@@ -101,6 +111,7 @@ export async function* streamGroqChatEvents(
     max_tokens: opts.maxTokens ?? 1500,
     stream: true,
   };
+  if (opts.reasoningEffort) body.reasoning_effort = opts.reasoningEffort;
   if (opts.tools && opts.tools.length > 0) {
     body.tools = opts.tools;
     body.tool_choice = opts.toolChoice === 'required' ? 'required' : 'auto';
@@ -118,6 +129,8 @@ export async function* streamGroqChatEvents(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let emittedText = false;
+  let finishReason: string | null = null;
   // OpenAI-style tool_calls arrive fragmented by index; merge before emitting.
   const toolAcc = new Map<number, { id: string; name: string; args: string }>();
 
@@ -125,8 +138,15 @@ export async function* streamGroqChatEvents(
     if (payload === '[DONE]') return null;
     try {
       const json = JSON.parse(payload);
-      const delta = json.choices?.[0]?.delta;
-      if (!delta) return null;
+      const choice = json.choices?.[0];
+      const delta = choice?.delta;
+      if (!delta) {
+        if (typeof choice?.finish_reason === 'string') finishReason = choice.finish_reason;
+        return null;
+      }
+      if (typeof choice.finish_reason === 'string' && choice.finish_reason) {
+        finishReason = choice.finish_reason;
+      }
 
       const fragments = delta.tool_calls;
       if (Array.isArray(fragments)) {
@@ -141,7 +161,11 @@ export async function* streamGroqChatEvents(
       }
 
       const content = delta.content;
-      return typeof content === 'string' && content ? content : null;
+      if (typeof content === 'string' && content) {
+        emittedText = true;
+        return content;
+      }
+      return null;
     } catch {
       return null; // ignore malformed frames
     }
@@ -181,6 +205,21 @@ export async function* streamGroqChatEvents(
 
   const toolCalls = drainTools();
   if (toolCalls.length > 0) yield { type: 'tool_calls', toolCalls };
+
+  // Guard against silent empty completions: reasoning models can spend the
+  // whole max_tokens budget on chain-of-thought and emit no visible content.
+  // Surface an explicit error instead of ending the SSE stream silently
+  // (which clients would report as a vague "empty response").
+  if (!emittedText && toolCalls.length === 0) {
+    const detail =
+      finishReason === 'length'
+        ? 'The model ran out of response budget before answering.'
+        : finishReason === 'content_filter'
+          ? 'The model declined to answer this prompt.'
+          : 'The model returned no content.';
+    console.error('[groq] empty completion:', detail, 'finish_reason:', finishReason);
+    throw new ApiError(503, 'The assistant could not generate a response. Please rephrase or retry.');
+  }
 }
 
 /** Back-compat wrapper: plain string deltas only (no tool handling). */
@@ -202,6 +241,7 @@ export async function groqChat(
     json?: boolean;
     timeoutMs?: number;
     model?: string;
+    reasoningEffort?: 'low' | 'medium' | 'high';
   } = {}
 ): Promise<string> {
   const body: Record<string, unknown> = {
@@ -211,6 +251,7 @@ export async function groqChat(
     max_tokens: opts.maxTokens ?? 400,
   };
   if (opts.json) body.response_format = { type: 'json_object' };
+  if (opts.reasoningEffort) body.reasoning_effort = opts.reasoningEffort;
 
   const res = await fetchWithTimeout(
     GROQ_URL,

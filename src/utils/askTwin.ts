@@ -147,6 +147,45 @@ export async function askTwin({
   onAction,
   signal,
 }: AskTwinOptions): Promise<string> {
+  // A single transparent retry covers transient empty streams (upstream
+  // hiccups, reasoning-token burnout before the server guard existed).
+  // Retried only when NOTHING was delivered — no text, no events, no
+  // error frame — never after an abort, and never after an OS action has
+  // already been dispatched (retrying would repeat real side effects).
+  let actionDispatched = false;
+  const guardedCallbacks = {
+    onDelta,
+    onSources,
+    onFollowups,
+    onAction: (action: AssistantAction) => {
+      actionDispatched = true;
+      onAction?.(action);
+    },
+  };
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const reply = await askTwinOnce({ message, history, ...guardedCallbacks, signal });
+      if (reply) return reply;
+      throw new Error('Empty response stream.');
+    } catch (err) {
+      const isAbort = (err as Error).name === 'AbortError' || signal?.aborted;
+      const isEmpty = (err as Error).message === 'Empty response stream.';
+      if (!isEmpty || isAbort || actionDispatched || attempt > 0) throw err;
+      console.warn('[askTwin] empty stream, retrying once…');
+    }
+  }
+}
+
+async function askTwinOnce({
+  message,
+  history,
+  onDelta,
+  onSources,
+  onFollowups,
+  onAction,
+  signal,
+}: AskTwinOptions): Promise<string> {
   const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -168,9 +207,7 @@ export async function askTwin({
   const contentType = res.headers.get('content-type') || '';
 
   if (contentType.includes('text/event-stream') && res.body) {
-    const streamed = await consumeSseStream(res.body, { onDelta, onSources, onFollowups, onAction });
-    if (streamed) return streamed;
-    throw new Error('Empty response stream.');
+    return consumeSseStream(res.body, { onDelta, onSources, onFollowups, onAction });
   }
 
   // Legacy buffered contract (Supabase edge variant).
