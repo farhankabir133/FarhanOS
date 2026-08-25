@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   X, Send, ChevronRight, Copy, Check, Volume2, VolumeX,
   RefreshCw, Sparkles,
-  Brain, MessageCircle, Search
+  Brain, MessageCircle, Search, FileText, Square
 } from 'lucide-react';
-import { askTwin, AskTwinHistoryMessage } from '../utils/askTwin';
+import { askTwin, AskTwinHistoryMessage, AskTwinSourceRef, AssistantAction } from '../utils/askTwin';
+import { sourceWindowFor, type AssistantSourceRef } from '../utils/osActions';
 import MarkdownRenderer from './MarkdownRenderer';
 import { AssistantGlyph } from './AssistantGlyph';
 
@@ -14,6 +15,8 @@ export interface AssistantLauncherProps {
   triggerSound?: (freq?: number, dur?: number) => void;
   placement?: 'landing-left' | 'global-bottom-left';
   defaultOpen?: boolean;
+  /** Executes OS actions requested by the assistant (open windows/themes/links). */
+  onAction?: (action: AssistantAction) => void;
 }
 
 interface Message {
@@ -23,6 +26,10 @@ interface Message {
   id: string;
   /** True while a response is streaming in token-by-token. */
   streaming?: boolean;
+  /** RAG document titles that informed this answer. */
+  sources?: AssistantSourceRef[];
+  /** Model-generated follow-up questions for this answer. */
+  followUps?: string[];
 }
 
 const QUICK_ACTIONS = [
@@ -69,11 +76,19 @@ export default function AssistantLauncher({
   triggerSound,
   placement = 'global-bottom-left',
   defaultOpen = false,
+  onAction,
 }: AssistantLauncherProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [messages, setMessages] = useState<Message[]>(loadStoredMessages);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Mirror the action handler in a ref so streaming callbacks stay stable.
+  const onActionRef = useRef(onAction);
+  useEffect(() => {
+    onActionRef.current = onAction;
+  }, [onAction]);
+
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [aiState, setAiState] = useState<'idle' | 'thinking' | 'responding' | 'success' | 'error'>('idle');
@@ -209,6 +224,15 @@ export default function AssistantLauncher({
             setAiState('responding');
             setAssistantContent({ content: full });
           },
+          onSources: (items: AskTwinSourceRef[]) => {
+            setAssistantContent({
+              sources: items.map((i) => ({ title: i.title, window: sourceWindowFor(i.title) })),
+            });
+          },
+          onFollowups: (items) => {
+            setAssistantContent({ followUps: items });
+          },
+          onAction: (action) => onActionRef.current?.(action),
         });
 
         setAssistantContent({ content: reply || 'No verified information available.', streaming: false });
@@ -462,6 +486,42 @@ export default function AssistantLauncher({
                     </button>
                   </div>
                 )}
+                {/* Verified knowledge sources behind this answer */}
+                {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && !msg.streaming && (
+                  <div className="flex flex-wrap gap-1.5 pl-1">
+                    {msg.sources.slice(0, 4).map((src) =>
+                      src.window ? (
+                        <button
+                          key={src.title}
+                          onClick={() =>
+                            onActionRef.current?.({ type: 'open_window', window: src.window! })
+                          }
+                          className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-md border transition-all cursor-pointer ${
+                            isLight
+                              ? 'border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
+                              : 'border-zinc-800 bg-zinc-900/60 text-zinc-500 hover:border-indigo-500/40 hover:text-indigo-300'
+                          }`}
+                          title={`Open ${src.window} window`}
+                        >
+                          <FileText className="w-3 h-3" />
+                          {src.title.length > 28 ? `${src.title.slice(0, 28)}…` : src.title}
+                        </button>
+                      ) : (
+                        <span
+                          key={src.title}
+                          className={`flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-md border ${
+                            isLight
+                              ? 'border-slate-200 bg-slate-50 text-slate-400'
+                              : 'border-zinc-800/70 bg-zinc-900/40 text-zinc-600'
+                          }`}
+                        >
+                          <FileText className="w-3 h-3" />
+                          {src.title.length > 28 ? `${src.title.slice(0, 28)}…` : src.title}
+                        </span>
+                      )
+                    )}
+                  </div>
+                )}
               </motion.div>
             )
         )}
@@ -472,9 +532,11 @@ export default function AssistantLauncher({
           .reverse()
           .find((m) => m.role === 'assistant' && m.content && !m.streaming);
         const showSuggestions = !!lastDone && !isLoading && lastDone.id !== 'welcome' && messages.length > 1;
+        // Prefer model-generated follow-ups; fall back to the static trio.
+        const suggestions = lastDone?.followUps?.length ? lastDone.followUps : FOLLOW_UPS;
         return showSuggestions ? (
           <div className="flex flex-wrap gap-2 pl-1 pt-0.5">
-            {FOLLOW_UPS.map((q) => (
+            {suggestions.map((q) => (
               <button
                 key={q}
                 onClick={() => sendMessage(q)}
@@ -580,12 +642,17 @@ export default function AssistantLauncher({
           aria-label="Chat input"
         />
         <button
-          onClick={() => sendMessage()}
-          disabled={!input.trim() || isLoading}
-          className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all cursor-pointer active:scale-95"
-          aria-label="Send message"
+          onClick={() => (isLoading ? abortRef.current?.abort() : sendMessage())}
+          disabled={!isLoading && !input.trim()}
+          className={`shrink-0 w-10 h-10 rounded-xl text-white flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+            isLoading
+              ? 'bg-red-500/90 hover:bg-red-500'
+              : 'bg-indigo-500 hover:bg-indigo-400'
+          }`}
+          aria-label={isLoading ? 'Stop generating' : 'Send message'}
+          title={isLoading ? 'Stop generating' : 'Send'}
         >
-          <Send className="w-4 h-4" />
+          {isLoading ? <Square className="w-3.5 h-3.5 fill-current" /> : <Send className="w-4 h-4" />}
         </button>
       </div>
     </div>

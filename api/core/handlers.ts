@@ -4,11 +4,29 @@
  */
 import { clamp } from './security.js';
 import { ApiError, escapeHtml } from './security.js';
-import { buildAskTwinSystemPrompt, buildBriefPrompt, buildContactAnalysisPrompt } from './prompts.js';
-import { streamGroqChat, groqChat, type GroqMessage } from './groq.js';
+import {
+  buildAskTwinSystemPrompt,
+  buildBriefPrompt,
+  buildContactAnalysisPrompt,
+  CONTINUATION_SYSTEM_PROMPT,
+} from './prompts.js';
+import {
+  streamGroqChatEvents,
+  groqChat,
+  MODEL_DEFAULT,
+  MODEL_FAST,
+  type GroqMessage,
+  type GroqToolCall,
+} from './groq.js';
 import { getCache, setCache } from './cache.js';
 import { parseMediumRSS, type MediumStory } from './rssParser.js';
 import { getEnv } from './env.js';
+import {
+  TOOL_SCHEMAS,
+  SERVER_TOOL_NAMES,
+  validateClientAction,
+  type AssistantAction,
+} from './tools.js';
 
 export { ApiError };
 export type { MediumStory };
@@ -19,6 +37,13 @@ export interface HistoryMessage {
   role: 'user' | 'assistant';
   content: string;
 }
+
+/** Typed SSE frames emitted by streamAskTwin (serialized verbatim by adapters). */
+export type AskTwinEvent =
+  | { type: 'delta'; delta: string }
+  | { type: 'sources'; items: Array<{ title: string }> }
+  | { type: 'action'; action: AssistantAction }
+  | { type: 'followups'; items: string[] };
 
 /** Minimal contract the host implements to supply RAG context (Node-only). */
 export interface RagSearcher {
@@ -44,24 +69,97 @@ export function validateAskTwinInput(rawMessage: unknown, rawHistory: unknown): 
   return message;
 }
 
+// ─── Model routing ───────────────────────────────────────────────────────────
+
+/** Micro-intents that never need a 120B reasoning model (see prompt tiers). */
+const MICRO_INTENT_RE =
+  /\b(email|e-?mail address|phone|whatsapp|linkedin|portfolio|resume|cv|x\/twitter|instagram|contact info|hello|hi|hey|good (morning|afternoon|evening)|thanks|thank you)\b/i;
+
+/** Anything wanting live data or screen actions must stay on the flagship. */
+const TOOL_INTENT_RE =
+  /\b(stars?|repos?|repositor|latest|recent|open|show|switch|launch|apply|theme|mode|articl|wrote|publish|count)\b/i;
+
+/** Questions that unambiguously need a live-data fetch on the first turn. */
+const LIVE_DATA_RE = /\b(stars?|forks?|repos?|repositor|articl(es)?|published?|wrote)\b/i;
+
 /**
- * Validates input and streams assistant deltas for /api/ask-twin.
+ * Cheap heuristic router: tiny direct-answer queries go to the fast small
+ * model; everything else keeps the flagship. Never routes when the query
+ * looks like a multi-part or technical discussion.
+ */
+export function pickModel(message: string): string {
+  const m = message.trim();
+  if (m.length <= 90 && MICRO_INTENT_RE.test(m) && !TOOL_INTENT_RE.test(m)) return MODEL_FAST;
+  return MODEL_DEFAULT;
+}
+
+// ─── Server-side tool execution ──────────────────────────────────────────────
+
+function safeParseToolArgs(rawArgs: unknown): Record<string, unknown> {
+  if (typeof rawArgs !== 'string' || !rawArgs.trim()) return {};
+  try {
+    const parsed = JSON.parse(rawArgs);
+    return typeof parsed === 'object' && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function executeServerTool(name: string, args: Record<string, unknown>): Promise<string> {
+  if (name === 'get_live_github_repos') {
+    void args;
+    const entry = await getGithubRepos();
+    const compact = entry.data.slice(0, 10).map((r) => ({
+      name: r.name,
+      stars: r.stargazers_count,
+      forks: r.forks_count,
+      language: r.language,
+      description: clamp(r.description, 160),
+      url: r.html_url,
+      topics: r.topics.slice(0, 5),
+    }));
+    return JSON.stringify({ retrieved_at: new Date().toISOString(), repositories: compact });
+  }
+  if (name === 'get_recent_medium_stories') {
+    void args;
+    const entry = await getMediumStories();
+    const compact = entry.data.slice(0, 8).map((s: MediumStory) => ({
+      title: s.title,
+      url: s.link,
+      published: s.date,
+      category: s.category,
+      excerpt: clamp(s.excerpt, 160),
+    }));
+    return JSON.stringify({ retrieved_at: new Date().toISOString(), articles: compact });
+  }
+  return JSON.stringify({ error: 'unknown_tool' });
+}
+
+const MAX_TOOL_TURNS = 4;
+
+/**
+ * Validates input and streams typed events for /api/ask-twin:
+ * RAG source refs → streamed answer deltas → dispatched OS actions →
+ * generated follow-up suggestions.
  */
 export async function* streamAskTwin(
   rawMessage: unknown,
   rawHistory: unknown,
   rag?: RagSearcher
-): AsyncGenerator<string> {
+): AsyncGenerator<AskTwinEvent> {
   const message = validateAskTwinInput(rawMessage, rawHistory);
 
   const history: GroqMessage[] = Array.isArray(rawHistory)
-    ? rawHistory.slice(-20).map((h: any) => ({
-        role: h?.role === 'user' ? ('user' as const) : ('assistant' as const),
-        content: clamp(h?.content, 4000),
-      }))
+    ? (rawHistory.slice(-20) as any[])
+        .filter((h) => h && typeof h === 'object')
+        .map((h: any) => ({
+          role: h?.role === 'user' ? ('user' as const) : ('assistant' as const),
+          content: clamp(h?.content, 4000),
+        }))
     : [];
 
   let systemPrompt = buildAskTwinSystemPrompt();
+  const sources: Array<{ title: string }> = [];
   if (rag) {
     try {
       // Blend the latest user turn into the query so follow-ups like
@@ -74,10 +172,14 @@ export async function* streamAskTwin(
         : message;
       const docs = rag.searchKnowledge(searchQuery, { topK: 6, featuredOnly: false });
       if (docs.length > 0) {
+        sources.push(...docs.map((d) => ({ title: d.title })));
+        // Capped tightly: on Groq free tiers every prompt token counts
+        // against an 8k TPM budget, so context bloat directly costs
+        // availability.
         const context = docs
-          .map((d) => `## ${d.title}\n${clamp(d.content, 4000)}`)
+          .map((d) => `## ${d.title}\n${clamp(d.content, 1800)}`)
           .join('\n\n---\n\n')
-          .slice(0, 24_000);
+          .slice(0, 10_000);
         systemPrompt = buildAskTwinSystemPrompt(context);
       }
     } catch (err) {
@@ -85,11 +187,119 @@ export async function* streamAskTwin(
     }
   }
 
-  yield* streamGroqChat([
+  // Source chips reach the UI immediately, before the first token lands.
+  if (sources.length > 0) yield { type: 'sources', items: sources };
+
+  const model = pickModel(message);
+  let conversation: GroqMessage[] = [
     { role: 'system', content: systemPrompt },
     ...history,
     { role: 'user', content: `<user_message>\n${message}\n</user_message>` },
-  ]);
+  ];
+
+  // Agentic loop: stream each turn; when the model requests tools, execute
+  // them (server-side data fetches here, client OS actions as validated
+  // events) and let the model continue with the results.
+  let fullAnswer = '';
+  for (let turn = 0; ; turn++) {
+    const toolsAvailable = turn < MAX_TOOL_TURNS;
+    const requestedTools: GroqToolCall[] = [];
+
+    for await (const ev of streamGroqChatEvents(conversation, {
+      temperature: 0.6,
+      maxTokens: 1000,
+      model,
+      tools: toolsAvailable ? TOOL_SCHEMAS : undefined,
+      // Live-data questions force a first tool call so answers are never
+      // guessed from stale memory.
+      toolChoice: turn === 0 && LIVE_DATA_RE.test(message) ? 'required' : 'auto',
+    })) {
+      if (ev.type === 'text') {
+        fullAnswer += ev.delta;
+        yield { type: 'delta', delta: ev.delta };
+      } else {
+        requestedTools.push(...ev.toolCalls);
+      }
+    }
+
+    if (requestedTools.length === 0 || !toolsAvailable) break;
+
+    conversation.push({
+      role: 'assistant',
+      content: '',
+      tool_calls: requestedTools.map((t) => ({
+        id: t.id,
+        type: 'function',
+        function: { name: t.function.name, arguments: t.function.arguments },
+      })),
+    });
+
+    for (const call of requestedTools) {
+      const name = call.function.name;
+      let result: string;
+      const action = validateClientAction(name, safeParseToolArgs(call.function.arguments));
+      if (action) {
+        yield { type: 'action', action };
+        result = JSON.stringify({
+          status: 'dispatched',
+          detail: 'The action executed on the visitor’s screen.',
+        });
+      } else if (SERVER_TOOL_NAMES.has(name)) {
+        try {
+          result = await executeServerTool(name, safeParseToolArgs(call.function.arguments));
+        } catch (err) {
+          console.error(`[ask-twin] server tool ${name} failed:`, err);
+          result = JSON.stringify({ error: 'tool_unavailable', hint: 'Answer from verified static knowledge instead.' });
+        }
+      } else {
+        result = JSON.stringify({ error: 'unknown_tool' });
+      }
+      conversation.push({
+        role: 'tool',
+        tool_call_id: call.id,
+        content: clamp(result, 4000),
+      });
+    }
+
+    // Continuation turns swap the multi-kilobyte knowledge prompt for a
+    // compact one — tool results are already in context and this keeps
+    // agentic loops inside tight TPM budgets.
+    conversation = [ { role: 'system', content: CONTINUATION_SYSTEM_PROMPT }, ...conversation.slice(1) ];
+  }
+
+  // Contextual follow-ups — generated after the answer so they never block
+  // perceived latency. Best-effort: silently skipped on any failure.
+  try {
+    if (fullAnswer.trim()) {
+      // No json_mode: reasoning models truncate under tight token caps and
+      // Groq then hard-rejects the invalid JSON. Lenient parsing instead.
+      const raw = await groqChat(
+        [
+          {
+            role: 'user',
+            content: `Based on this exchange about Farhan Kabir, suggest exactly 3 short follow-up questions (max 9 words each) the visitor would plausibly ask next. Vary the angle (depth, proof, practical next step). Respond ONLY with a JSON object: {"items":["...","...","..."]}
+
+User asked: ${clamp(message, 300)}
+Assistant answered: ${clamp(fullAnswer, 1200)}`,
+          },
+        ],
+        { model: MODEL_FAST, temperature: 0.9, maxTokens: 400, timeoutMs: 10_000 }
+      );
+      // Lenient extraction — some models wrap JSON in prose or code fences.
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+      if (Array.isArray(parsed?.items)) {
+        const items = parsed.items
+          .filter((s: unknown): s is string => typeof s === 'string')
+          .map((s: string) => s.replace(/^["'\d.)\-\s]+/, '').trim())
+          .filter((s: string) => s.length > 3 && s.length <= 120)
+          .slice(0, 3);
+        if (items.length > 0) yield { type: 'followups', items };
+      }
+    }
+  } catch {
+    // Follow-ups are cosmetic — never fail the stream over them.
+  }
 }
 
 // ─── summarize-brief ─────────────────────────────────────────────────────────

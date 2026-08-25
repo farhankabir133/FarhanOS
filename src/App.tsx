@@ -28,6 +28,12 @@ const ProfTimelineWindow = lazy(() => import('./os/windows/ProfTimelineWindow'))
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
 import { getApiBaseUrl } from './utils/apiConfig';
 import { askTwin } from './utils/askTwin';
+import {
+  isOpenableExternalUrl,
+  isOsTheme,
+  isOsWindowId,
+  type AssistantAction,
+} from './utils/osActions';
 
 
 export default function App() {
@@ -374,6 +380,32 @@ export default function App() {
     setFocusedWindow(windowId);
     setWindowReady(prev => ({ ...prev, [windowId]: false }));
   }, []);
+
+  // Executes OS actions requested by the AI assistant (tool-calling bridge).
+  // Every variant is allowlist-validated; the server validates too, this is
+  // the client-side second gate.
+  const handleAssistantAction = useCallback((action: AssistantAction) => {
+    switch (action.type) {
+      case 'open_window':
+        if (isOsWindowId(action.window!)) {
+          if (viewMode !== 'os') setViewMode('os');
+          startTransition(() => openWindow(action.window!));
+          triggerSound(900, 0.05);
+        }
+        break;
+      case 'switch_theme':
+        if (isOsTheme(action.theme!)) {
+          setTheme(action.theme);
+          triggerSound(750, 0.03);
+        }
+        break;
+      case 'open_link':
+        if (isOpenableExternalUrl(action.url)) {
+          window.open(action.url, '_blank', 'noopener,noreferrer');
+        }
+        break;
+    }
+  }, [viewMode, openWindow]);
 
   const closeWindow = useCallback((windowId: string) => {
     triggerSound(400, 0.06);
@@ -1492,6 +1524,7 @@ export default function App() {
       theme={theme}
       triggerSound={triggerSound}
       placement={viewMode === 'landing' ? 'landing-left' : 'global-bottom-left'}
+      onAction={handleAssistantAction}
     />
     </Suspense>
   </div>

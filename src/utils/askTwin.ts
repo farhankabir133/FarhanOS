@@ -5,26 +5,48 @@ export interface AskTwinHistoryMessage {
   content: string;
 }
 
+export interface AskTwinSourceRef {
+  title: string;
+}
+
+export interface AssistantAction {
+  type: 'open_window' | 'switch_theme' | 'open_link';
+  window?: string;
+  theme?: string;
+  url?: string;
+}
+
 export interface AskTwinOptions {
   message: string;
   history: AskTwinHistoryMessage[];
   onDelta?: (fullText: string) => void;
+  onSources?: (items: AskTwinSourceRef[]) => void;
+  onFollowups?: (items: string[]) => void;
+  onAction?: (action: AssistantAction) => void;
   signal?: AbortSignal;
 }
 
 /**
  * Parses an SSE byte stream, tolerating frames split across read() chunks.
- * Returns the accumulated text of all `delta` fields.
+ * Handles typed frames (sources/actions/followups/errors) alongside plain
+ * `{ delta }` text frames. Returns the accumulated answer text.
  */
 async function consumeSseStream(
   body: ReadableStream<Uint8Array>,
-  onDelta?: (fullText: string) => void
+  handlers: {
+    onDelta?: (fullText: string) => void;
+    onSources?: (items: AskTwinSourceRef[]) => void;
+    onFollowups?: (items: string[]) => void;
+    onAction?: (action: AssistantAction) => void;
+  }
 ): Promise<string> {
+  const { onDelta, onSources, onFollowups, onAction } = handlers;
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let streamed = '';
   let sseBuffer = '';
   let pendingData = '';
+  let streamError: string | null = null;
 
   // Batch onDelta calls — Groq emits tokens faster than React should re-render.
   const FLUSH_MS = 60;
@@ -40,6 +62,26 @@ async function consumeSseStream(
     if (payload === '[DONE]') return;
     try {
       const json = JSON.parse(payload);
+
+      // Typed control frames (new protocol). Legacy clients ignore these
+      // because they only look for `delta`.
+      if (json.type === 'action' && json.action && onAction) {
+        onAction(json.action);
+        return;
+      }
+      if (json.type === 'sources' && Array.isArray(json.items)) {
+        onSources?.(json.items.filter((i: unknown) => i && typeof (i as any).title === 'string'));
+        return;
+      }
+      if (json.type === 'followups' && Array.isArray(json.items)) {
+        onFollowups?.(json.items.filter((i: unknown): i is string => typeof i === 'string'));
+        return;
+      }
+      if (typeof json.error === 'string') {
+        streamError = json.error;
+        return;
+      }
+
       const delta = json.delta;
       if (typeof delta === 'string' && delta) {
         streamed += delta;
@@ -84,6 +126,9 @@ async function consumeSseStream(
   // Guarantee the final text is delivered even if a flush was pending.
   if (onDelta && streamed) flushNow();
 
+  // Surface backend errors sent as SSE frames instead of dropping them.
+  if (streamError && !streamed) throw new Error(streamError);
+
   return streamed;
 }
 
@@ -97,6 +142,9 @@ export async function askTwin({
   message,
   history,
   onDelta,
+  onSources,
+  onFollowups,
+  onAction,
   signal,
 }: AskTwinOptions): Promise<string> {
   const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
@@ -120,7 +168,7 @@ export async function askTwin({
   const contentType = res.headers.get('content-type') || '';
 
   if (contentType.includes('text/event-stream') && res.body) {
-    const streamed = await consumeSseStream(res.body, onDelta);
+    const streamed = await consumeSseStream(res.body, { onDelta, onSources, onFollowups, onAction });
     if (streamed) return streamed;
     throw new Error('Empty response stream.');
   }

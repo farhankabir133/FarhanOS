@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { streamGroqChat, groqChat } from './groq.ts';
+import { streamGroqChat, streamGroqChatEvents, groqChat } from './groq.ts';
 
 function sseResponse(frames: string[], status = 200): Response {
   const encoder = new TextEncoder();
@@ -88,6 +88,76 @@ describe('streamGroqChat', () => {
     await expect(async () => {
       for await (const d of streamGroqChat([{ role: 'user', content: 'hi' }])) void d;
     }).rejects.toMatchObject({ status: 503 });
+  });
+});
+
+describe('streamGroqChatEvents (tools)', () => {
+  beforeEach(() => {
+    process.env.GROQ_API_KEY = 'test-key';
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.GROQ_API_KEY;
+  });
+
+  it('merges fragmented tool_call deltas into a single event', async () => {
+    const frames = [
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_9","type":"function","function":{"name":"open_os_","arguments":""}}]}}]}\n\n',
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"window","arguments":"{\\"window\\":"}}]}}]}\n\n',
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\"projects\\"}"}}]}}]}\n\n',
+      'data: [DONE]\n\n',
+    ];
+    vi.stubGlobal('fetch', vi.fn(async () => sseResponse(frames)));
+
+    const events = [];
+    for await (const ev of streamGroqChatEvents([{ role: 'user', content: 'open projects' }])) {
+      events.push(ev);
+    }
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      type: 'tool_calls',
+      toolCalls: [
+        {
+          id: 'call_9',
+          type: 'function',
+          function: { name: 'open_os_window', arguments: '{"window":"projects"}' },
+        },
+      ],
+    });
+  });
+
+  it('passes model and tools through in the request body', async () => {
+    const fetchMock = vi.fn(async () => sseResponse(baseFrames));
+    vi.stubGlobal('fetch', fetchMock);
+
+    for await (const _ev of streamGroqChatEvents([{ role: 'user', content: 'hi' }], {
+      model: 'openai/gpt-oss-20b',
+      tools: [
+        {
+          type: 'function',
+          function: { name: 't1', description: 'd', parameters: { type: 'object', properties: {} } },
+        },
+      ],
+    })) {
+      void _ev;
+    }
+
+    const payload = JSON.parse(String((fetchMock.mock.calls[0] as any)[1].body));
+    expect(payload.model).toBe('openai/gpt-oss-20b');
+    expect(payload.tools).toHaveLength(1);
+    expect(payload.tool_choice).toBe('auto');
+  });
+
+  it('yields text deltas unchanged when no tools are requested', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => sseResponse(baseFrames)));
+    const events = [];
+    for await (const ev of streamGroqChatEvents([{ role: 'user', content: 'hi' }])) {
+      events.push(ev);
+    }
+    expect(events).toEqual([
+      { type: 'text', delta: 'Hel' },
+      { type: 'text', delta: 'lo' },
+    ]);
   });
 });
 
