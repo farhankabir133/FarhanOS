@@ -5,6 +5,13 @@ type AssistantGlyphProps = React.SVGProps<SVGSVGElement> & {
   size?: number;
 };
 
+/**
+ * Farhan's Personal Assistant mark — a custom "orbit F" monogram.
+ * A calligraphic F enclosed by an orbital ring whose top-right gap hosts
+ * a four-point spark (the animated core). Class hooks (`glyph-core`,
+ * `glyph-node`, `glyph-node-inner`) are consumed by index.css state
+ * animations and must not be renamed.
+ */
 export function AssistantGlyph({ state = 'idle', size = 64, className = '', ...props }: AssistantGlyphProps) {
   const stateClass = state !== 'idle' ? `glyph-${state}` : 'glyph-idle';
 
@@ -19,41 +26,59 @@ export function AssistantGlyph({ state = 'idle', size = 64, className = '', ...p
     >
       <defs>
         <filter id="glyph-glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feGaussianBlur stdDeviation="1.4" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
         <linearGradient id="glyph-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0.6" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.55" />
         </linearGradient>
       </defs>
 
-      <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.85">
-        <path d="M 32 17 L 42.1 21.9 L 47 32 L 42.1 42.1 L 32 47 L 21.9 42.1 L 17 32 L 21.9 21.9 Z" />
-        <path d="M 32 25 L 39 32 L 32 39 L 25 32 Z" strokeWidth="1.5" />
-        <line x1="32" y1="25" x2="32" y2="17" />
-        <line x1="39" y1="32" x2="47" y2="32" />
-        <line x1="32" y1="39" x2="32" y2="47" />
-        <line x1="25" y1="32" x2="17" y2="32" />
+      {/* Orbital ring — opens at the top-right to cradle the spark */}
+      <path
+        d="M 52.7 28.4 A 21 21 0 1 1 35.6 11.3"
+        stroke="url(#glyph-gradient)"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      {/* Counterweight accent arc, bottom-left */}
+      <path
+        d="M 21.4 54.6 A 25 25 0 0 1 9.3 21.4"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        opacity="0.3"
+      />
+
+      {/* Monogram: hooked-stroke F */}
+      <g
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        opacity="0.95"
+      >
+        <path d="M24.5 18.5 V42 Q24.5 46.5 29.5 46.5" />
+        <path d="M24.5 18.5 H38.5" />
+        <path d="M24.5 31.5 H33.5" />
       </g>
 
-      <circle cx="32" cy="17" r="1.8" fill="currentColor" className="glyph-node" />
-      <circle cx="47" cy="32" r="1.8" fill="currentColor" className="glyph-node" />
-      <circle cx="32" cy="47" r="1.8" fill="currentColor" className="glyph-node" />
-      <circle cx="17" cy="32" r="1.8" fill="currentColor" className="glyph-node" />
+      {/* Nodes at the ring termini */}
+      <circle cx="35.6" cy="11.3" r="1.8" fill="currentColor" className="glyph-node" />
+      <circle cx="52.7" cy="28.4" r="1.5" fill="currentColor" className="glyph-node-inner" />
 
-      <circle cx="32" cy="25" r="1.5" fill="currentColor" className="glyph-node-inner" />
-      <circle cx="39" cy="32" r="1.5" fill="currentColor" className="glyph-node-inner" />
-      <circle cx="32" cy="39" r="1.5" fill="currentColor" className="glyph-node-inner" />
-      <circle cx="25" cy="32" r="1.5" fill="currentColor" className="glyph-node-inner" />
-
-      <circle cx="32" cy="32" r="2.2" fill="currentColor" className="glyph-core" filter="url(#glyph-glow)" />
-
-      <path d="M 29 29 L 35 35" stroke="currentColor" strokeWidth="0.8" opacity="0.4" />
-      <path d="M 35 29 L 29 35" stroke="currentColor" strokeWidth="0.8" opacity="0.4" />
+      {/* Four-point spark — the living core of the mark */}
+      <path
+        d="M46.9 10.75 Q46.9 17.15 53.3 17.15 Q46.9 17.15 46.9 23.55 Q46.9 17.15 40.5 17.15 Q46.9 17.15 46.9 10.75 Z"
+        fill="currentColor"
+        className="glyph-core"
+        filter="url(#glyph-glow)"
+      />
     </svg>
   );
 }

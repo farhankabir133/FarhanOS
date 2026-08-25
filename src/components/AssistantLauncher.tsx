@@ -45,7 +45,7 @@ const WELCOME_MESSAGE: Message = {
   id: 'welcome',
   role: 'assistant',
   content:
-    'Systems fully operational. I am Farhan\'s certified neural clone. Query clinical pipelines, NLP architectures, or engineering profiles.',
+    "Systems fully operational. I am Farhan's personal AI — his certified neural clone. Query clinical pipelines, NLP architectures, or engineering profiles.",
   timestamp: new Date(),
 };
 
@@ -389,7 +389,7 @@ export default function AssistantLauncher({
               />
             </div>
             <h3 className={`text-xl font-bold mb-2 tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-              Neural Assistant
+              Farhan's Personal Assistant
             </h3>
             <p className={`text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'} max-w-xs mx-auto`}>
               Query research, architecture, or engineering profiles. All responses derive from verified portfolio intelligence.
@@ -580,7 +580,7 @@ export default function AssistantLauncher({
         </div>
         <div className={`flex flex-col ${compact ? 'min-w-0' : ''}`}>
           <span className={`text-sm font-bold tracking-tight ${compact ? 'truncate' : ''} ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
-            Neural Assistant
+            Farhan's Personal Assistant
           </span>
           <span className={`text-[10px] text-emerald-400 font-mono font-medium ${compact ? 'hidden min-[420px]:inline' : ''}`}>Online</span>
         </div>
@@ -661,7 +661,7 @@ export default function AssistantLauncher({
   const dialogProps = {
     role: 'dialog' as const,
     'aria-modal': true as const,
-    'aria-label': 'Neural Assistant',
+    'aria-label': "Farhan's Personal Assistant",
   };
 
   return (
@@ -736,7 +736,7 @@ export default function AssistantLauncher({
           will-change-transform
           active:scale-90
         `}
-        aria-label="Open Neural Assistant"
+        aria-label="Open Farhan's Personal Assistant"
         aria-expanded={isOpen}
       >
         <motion.div
