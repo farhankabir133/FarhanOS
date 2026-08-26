@@ -1,8 +1,8 @@
 import React from 'react';
-import { type Article } from '../types';
+import { type Article, type Theme } from '../types';
 
 export interface LandingPageContextType {
-  theme: 'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light';
+  theme: Theme;
   isWarping: boolean;
   onLaunchOS: () => void;
   onOpenWindowDirectly: (windowId: string) => void;
@@ -14,22 +14,6 @@ export interface LandingPageContextType {
   setActiveTab: (tab: 'All' | 'AI/ML' | 'Frontend' | 'Backend' | 'Database' | 'DevOps') => void;
   activeTestimonial: number;
   setActiveTestimonial: (idx: number | ((prev: number) => number)) => void;
-  formName: string;
-  setFormName: (v: string) => void;
-  formEmail: string;
-  setFormEmail: (v: string) => void;
-  formSubject: string;
-  setFormSubject: (v: string) => void;
-  formMessage: string;
-  setFormMessage: (v: string) => void;
-  formErrors: Record<string, string>;
-  setFormErrors: (e: Record<string, string>) => void;
-  formSubmitted: boolean;
-  setFormSubmitted: (v: boolean) => void;
-  formLoading: boolean;
-  setFormLoading: (v: boolean) => void;
-  formSubmitError: string | null;
-  setFormSubmitError: (e: string | null) => void;
   styleSet: Record<string, string>;
   filteredSkills: any[];
   testimonials: any[];
@@ -37,7 +21,6 @@ export interface LandingPageContextType {
   timelineRef: React.RefObject<HTMLDivElement>;
   progressLineRef: React.RefObject<HTMLDivElement>;
   handleAnchorClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
-  handleContactSubmit: (e: React.FormEvent) => void;
   scrollToTop: () => void;
 }
 

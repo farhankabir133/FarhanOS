@@ -3,7 +3,7 @@ import {
   Sparkle, Download, PhoneCall, Menu, X, Github, Linkedin, Instagram, User
 } from 'lucide-react';
 import { portfolioData } from '../data/portfolioData';
-import { Article } from '../types';
+import { Article, Theme } from '../types';
 const ThreeWormhole = lazy(() => import('./ThreeWormhole'));
 // Hoisted so LazySection's effect deps see a stable identity across renders.
 const loadBelowFold = () => import('./LandingBelowFold');
@@ -13,11 +13,8 @@ import avatarImg from '../../assets/avatar.png';
 import avatar288 from '../../assets/avatar-288.png';
 import avatarImgWebp from '../../assets/avatar.webp';
 import avatarImgAvif from '../../assets/avatar.avif';
-import avatar144Avif from '../../assets/avatar-144.avif';
-import avatar288Avif from '../../assets/avatar-288.avif';
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { LazySection } from './LazySection';
-import LandingBelowFold from './LandingBelowFold';
 import { LandingPageContext, LandingPageContextType } from './LandingPageContext';
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -34,7 +31,7 @@ const MediumIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 interface LandingPageProps {
   isWarping: boolean;
-  theme: 'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light';
+  theme: Theme;
   onLaunchOS: () => void;
   onOpenWindowDirectly: (winId: string) => void;
   articles?: Article[];
@@ -63,16 +60,6 @@ export default function LandingPage({
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);
-
-  // Form State
-  const [formName, setFormName] = useState('');
-  const [formEmail, setFormEmail] = useState('');
-  const [formSubject, setFormSubject] = useState('');
-  const [formMessage, setFormMessage] = useState('');
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [formSubmitted, setFormSubmitted] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
-  const [formSubmitError, setFormSubmitError] = useState<string | null>(null);
 
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const progressLineRef = useRef<HTMLDivElement | null>(null);
@@ -297,104 +284,25 @@ export default function LandingPage({
     return false;
   }), [activeTab]);
 
-  // Handle Contact Form Submit
-  const handleContactSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Simple Validations
-    const errors: Record<string, string> = {};
-    if (!formName.trim()) errors.name = 'Name is required';
-    if (!formEmail.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formEmail)) {
-      errors.email = 'Please provide a valid email';
-    }
-    if (!formSubject.trim()) errors.subject = 'Subject is required';
-    if (!formMessage.trim()) errors.message = 'Message details cannot be empty';
-
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
-    setFormErrors({});
-    setFormSubmitError(null);
-    setFormLoading(true);
-
-    const apiUrl = getApiBaseUrl();
-
-    // Execute real API delivery to the backend
-    try {
-      const res = await fetch(`${apiUrl}/api/contact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formName,
-          email: formEmail,
-          subject: formSubject,
-          message: formMessage,
-        }),
-      });
-
-      let data: { error?: string } = {};
-      try {
-        data = await res.json();
-      } catch {
-        // non-JSON error body (e.g. gateway HTML page)
-      }
-
-      if (!res.ok) {
-        throw new Error(data.error || `Transmission failed (${res.status}).`);
-      }
-
-      setFormLoading(false);
-      setFormSubmitted(true);
-      setFormSubmitError(null);
-
-      // Clear inputs
-      setFormName('');
-      setFormEmail('');
-      setFormSubject('');
-      setFormMessage('');
-    } catch (err) {
-      console.warn('Message transmission failed:', err);
-      // Keep form values intact so the user can retry without retyping.
-      setFormLoading(false);
-      setFormSubmitted(false);
-      setFormSubmitError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Transmission failed. Your message was NOT delivered — please retry or email farhankabir133@gmail.com directly.'
-      );
-    }
-  }, [formName, formEmail, formSubject, formMessage]);
-
   // Stable context value: LandingBelowFold re-renders only when its actual
   // inputs change, not on every LandingPage state tick.
+  // Form state has been moved into LandingBelowFold to prevent re-renders
+  // of the expensive ThreeWormhole 3D scene on every keystroke.
   const contextValue = useMemo(() => ({
     theme, isWarping, onLaunchOS, onOpenWindowDirectly,
     articles, onOpenArticleDirectly, prefersReducedMotion,
     showBackToTop, activeTab, setActiveTab,
     activeTestimonial, setActiveTestimonial,
-    formName, setFormName, formEmail, setFormEmail,
-    formSubject, setFormSubject, formMessage, setFormMessage,
-    formErrors, setFormErrors, formSubmitted, setFormSubmitted,
-    formLoading, setFormLoading,
-    formSubmitError, setFormSubmitError,
     styleSet, filteredSkills, testimonials, certifications,
     timelineRef, progressLineRef,
-    handleAnchorClick, handleContactSubmit, scrollToTop,
+    handleAnchorClick, scrollToTop,
   }), [
     theme, isWarping, onLaunchOS, onOpenWindowDirectly,
     articles, onOpenArticleDirectly, prefersReducedMotion,
     showBackToTop, activeTab,
     activeTestimonial,
-    formName, formEmail, formSubject, formMessage,
-    formErrors, formSubmitted, formLoading, formSubmitError,
     styleSet, filteredSkills,
-    handleAnchorClick, handleContactSubmit, scrollToTop,
+    handleAnchorClick, scrollToTop,
   ]);
 
   return (
@@ -402,6 +310,13 @@ export default function LandingPage({
       ref={containerRef}
       className="relative min-h-screen flex flex-col w-full select-text bg-transparent md:pl-20 pb-16 sm:pb-20"
     >
+      {/* Skip link for keyboard users */}
+      <a
+        href="#hero-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[200] focus:px-4 focus:py-2 focus:rounded focus:bg-indigo-600 focus:text-white focus:text-xs focus:font-mono"
+      >
+        Skip to main content
+      </a>
       {/* 3D background starfield simulation */}
       <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
         <ThreeWormhole isWarping={isWarping} theme={theme} />
@@ -430,6 +345,7 @@ export default function LandingPage({
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="site-mobile-hamburger md:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
             aria-label="Toggle menu"
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
@@ -517,7 +433,7 @@ export default function LandingPage({
       )}
 
       {/* SECTION 1: HERO / INTRODUCTION */}
-      <section className="relative min-h-[calc(100vh-64px)] flex flex-col justify-center items-center px-6 md:px-12 py-16 text-center select-none z-10">
+      <section id="hero-content" className="relative min-h-[calc(100vh-64px)] flex flex-col justify-center items-center px-6 md:px-12 py-16 text-center select-none z-10">
         
         {/* Glowing border portrait frame */}
         <div 
@@ -639,6 +555,7 @@ export default function LandingPage({
               onClick={() => {}}
               className="p-2 rounded-lg border border-zinc-850 hover:border-zinc-700 bg-zinc-950/50 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer hover:scale-115 active:scale-95"
               title={social.title}
+              aria-label={social.title}
             >
               <social.Icon className="w-3.5 h-3.5" />
             </a>
@@ -647,7 +564,7 @@ export default function LandingPage({
 
         {/* Float design indicators — fully responsive across all screen sizes */}
         <div className="absolute bottom-5 xs:bottom-6 sm:bottom-8 md:bottom-10 lg:bottom-12 xl:bottom-14 2xl:bottom-16 3xl:bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 animate-pulse z-10">
-          <span className="text-[7.5px] xs:text-[8px] sm:text-[9px] md:text-[9.5px] lg:text-[10px] xl:text-[10px] 2xl:text-[11px] 3xl:text-[12px] font-mono text-zinc-600 tracking-widest uppercase whitespace-nowrap select-none">
+          <span className="text-[10px] xs:text-[10px] sm:text-[10px] md:text-[10px] lg:text-[10px] xl:text-[10px] 2xl:text-[11px] 3xl:text-[12px] font-mono text-zinc-600 tracking-widest uppercase whitespace-nowrap select-none">
             SCROLL FOR DIAGNOSTICS
           </span>
           <div className="w-px xs:h-4 sm:h-5 md:h-6 lg:h-7 xl:h-7 2xl:h-8 3xl:h-9 bg-zinc-800 animate-pulse-height" />

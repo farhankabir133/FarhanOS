@@ -197,6 +197,11 @@ body {
   }
 }
 
+/* Explicit float-particle class (ensures animation runs even if @theme utility is stripped) */
+.animate-float-particle {
+  animation: float-particle 4s ease-in-out infinite;
+}
+
 .animate-wave {
   display: inline-block;
   animation: wave 2.5s ease-in-out infinite;
@@ -259,25 +264,23 @@ body {
   border-radius: 4px;
 }
 
-/* Global text justification */
-p, li, blockquote {
-  text-align: justify;
-  text-justify: inter-word;
-}
-
 /* Keep terminal/code text left-aligned */
 .font-mono, code, pre, kbd, .terminal-text {
   text-align: left;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Intentionally disables non-essential animations and transitions globally
-     for users who have requested reduced motion in their system settings. */
+  /* Disables decorative animations for users who prefer reduced motion.
+     Preserves focus/hover transitions for accessibility. */
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Preserve essential interactive transitions */
+  :where(a, button, [role='button']):hover,
+  :where(a, button, [role='button']):focus-visible {
+    transition-duration: 150ms !important;
   }
 }
 
@@ -351,21 +354,6 @@ p, li, blockquote {
   50% { opacity: 1; filter: drop-shadow(0 0 3px #F59E0B); }
 }
 
-/* Reduced motion for glyph */
-@media (prefers-reduced-motion: reduce) {
-  .glyph-thinking .glyph-node,
-  .glyph-thinking .glyph-node-inner,
-  .glyph-thinking .glyph-core,
-  .glyph-responding .glyph-node,
-  .glyph-responding .glyph-node-inner,
-  .glyph-responding .glyph-core,
-  .glyph-error .glyph-node,
-  .glyph-error .glyph-node-inner,
-  .glyph-error .glyph-core {
-    animation: none !important;
-  }
-}
-
 /* Idle glyph breathing animation */
 .glyph-idle .glyph-core {
   animation: glyph-idle-breathe 3s ease-in-out infinite;
@@ -387,7 +375,7 @@ p, li, blockquote {
   50% { opacity: 1; }
 }
 
-/* Reduced motion for glyph */
+/* Reduced motion for all glyphs (consolidated) */
 @media (prefers-reduced-motion: reduce) {
   .glyph-thinking .glyph-node,
   .glyph-thinking .glyph-node-inner,
@@ -395,6 +383,9 @@ p, li, blockquote {
   .glyph-responding .glyph-node,
   .glyph-responding .glyph-node-inner,
   .glyph-responding .glyph-core,
+  .glyph-success .glyph-node,
+  .glyph-success .glyph-node-inner,
+  .glyph-success .glyph-core,
   .glyph-error .glyph-node,
   .glyph-error .glyph-node-inner,
   .glyph-error .glyph-core,
@@ -491,16 +482,6 @@ p, li, blockquote {
 @media (hover: none) and (pointer: coarse) {
   .assistant-bubble {
     max-width: 88% !important;
-  }
-}
-
-/* Reduced motion for assistant */
-@media (prefers-reduced-motion: reduce) {
-  .assistant-chat-window,
-  .assistant-float-btn,
-  .assistant-bubble {
-    transition: none !important;
-    animation: none !important;
   }
 }
 

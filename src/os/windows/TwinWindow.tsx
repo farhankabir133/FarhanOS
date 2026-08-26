@@ -5,6 +5,7 @@ import { StyleSet } from '../../types';
 interface TwinMessage {
   role: 'user' | 'assistant';
   content: string;
+  timestamp?: number;
 }
 
 interface TwinWindowProps {
@@ -63,6 +64,13 @@ export default function TwinWindow({
               )}
             </div>
 
+            {/* Message timestamp */}
+            {m.timestamp && (
+              <span className="text-[8px] text-zinc-600 font-mono ml-1">
+                {new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' }).format(new Date(m.timestamp))}
+              </span>
+            )}
+
             {/* Synth TTS play button for model messages */}
             {m.role === 'assistant' && (
               <button
@@ -93,7 +101,7 @@ export default function TwinWindow({
         {twinLoading && (
           <div className="flex items-center gap-2 text-purple-400 animate-pulse font-mono text-[10px]">
             <Cpu className="w-3.5 h-3.5 animate-spin" />
-            <span>FarhanTwin thinking processes synchronized...</span>
+            <span>FarhanTwin processing query…</span>
           </div>
         )}
       </div>
@@ -118,13 +126,15 @@ export default function TwinWindow({
 
       {/* Chat Input deck */}
       <div className="flex items-center gap-2 mt-auto border-t border-zinc-800/40 pt-2 select-none">
+        <label htmlFor="twin-chat-input" className="sr-only">Chat input</label>
         <input
+          id="twin-chat-input"
           type="text"
           value={twinInput}
           onChange={(e) => setTwinInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendTwinMessage()}
           placeholder="Inquire about clinical studies, model performance parameters..."
-          className="flex-1 scroll-p-2 bg-black/60 border border-zinc-800 rounded-lg py-2 px-3 focus:outline-hidden focus:border-purple-500/50 text-[11px] text-slate-100 placeholder-zinc-500"
+          className="flex-1 scroll-p-2 bg-black/60 border border-zinc-800 rounded-lg py-2 px-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-purple-500/50 text-[11px] text-slate-100 placeholder-zinc-500"
         />
         <button
           onClick={handleSendTwinMessage}

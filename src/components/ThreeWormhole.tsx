@@ -556,8 +556,11 @@ export default function ThreeWormhole({ isWarping, theme = 'dark' }: ThreeWormho
         pCol[idx]=base[0]*br; pCol[idx+1]=base[1]*br; pCol[idx+2]=base[2]*br;
       }
       pMaterial.size = warping ? Math.min(0.6,pMaterial.size+0.015) : Math.max(0.4,pMaterial.size-0.01);
-      particleGeometry.attributes.position.needsUpdate=true;
-      particleGeometry.attributes.color.needsUpdate=true;
+      // Only flag buffers for upload when particles have moved
+      if (warping || bhPhase > 0) {
+        particleGeometry.attributes.position.needsUpdate = true;
+        particleGeometry.attributes.color.needsUpdate = true;
+      }
 
       // ── Cosmic dust drift ────────────────────────────────────────────────────
       const dPos = dustGeo.attributes.position.array as Float32Array;

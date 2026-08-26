@@ -1,3 +1,5 @@
+export type Theme = 'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light';
+
 export interface Project {
   id: string;
   title: string;

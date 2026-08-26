@@ -23,7 +23,7 @@ const MediumIcon = (props: React.SVGProps<SVGSVGElement>) => (
 interface TimelineCardProps {
   item: any;
   idx: number;
-  theme: 'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light';
+  theme: import('../types').Theme;
   prefersReducedMotion: boolean;
 }
 
@@ -32,7 +32,7 @@ function TimelineCard({ item, idx, theme, prefersReducedMotion }: TimelineCardPr
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.95 }}
+      initial={prefersReducedMotion ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 50, scale: 0.95 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -43,8 +43,8 @@ function TimelineCard({ item, idx, theme, prefersReducedMotion }: TimelineCardPr
         initial={{ scale: 0 }}
         whileInView={{ scale: 1 }}
         viewport={{ once: true, margin: "-80px" }}
-        transition={{ type: "spring", stiffness: 300, damping: 20, delay: idx * 0.1 }}
-        className="absolute left-[21px] md:left-1/2 -translate-x-1/2 flex items-center justify-center z-20"
+                transition={{ type: "spring", stiffness: 300, damping: 20, delay: Math.min(idx * 0.06, 0.3) }}
+                className="absolute left-[21px] md:left-1/2 -translate-x-1/2 flex items-center justify-center z-20"
       >
         <div className="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center shadow-lg border-cyan-400/80 scale-100">
           <motion.span 
@@ -140,15 +140,76 @@ function LandingBelowFold() {
     articles, onOpenArticleDirectly, prefersReducedMotion,
     showBackToTop, activeTab, setActiveTab,
     activeTestimonial, setActiveTestimonial,
-    formName, setFormName, formEmail, setFormEmail,
-    formSubject, setFormSubject, formMessage, setFormMessage,
-    formErrors, setFormErrors, formSubmitted, setFormSubmitted,
-    formLoading, setFormLoading,
-    formSubmitError, setFormSubmitError,
     styleSet, filteredSkills, testimonials, certifications,
     timelineRef, progressLineRef,
-    handleAnchorClick, handleContactSubmit, scrollToTop,
+    handleAnchorClick, scrollToTop,
   } = ctx;
+
+  // Form state — lives here instead of LandingPage to prevent
+  // re-rendering the expensive ThreeWormhole 3D scene on every keystroke.
+  const [formName, setFormName] = React.useState('');
+  const [formEmail, setFormEmail] = React.useState('');
+  const [formSubject, setFormSubject] = React.useState('');
+  const [formMessage, setFormMessage] = React.useState('');
+  const [formErrors, setFormErrors] = React.useState<Record<string, string>>({});
+  const [formSubmitted, setFormSubmitted] = React.useState(false);
+  const [formLoading, setFormLoading] = React.useState(false);
+  const [formSubmitError, setFormSubmitError] = React.useState<string | null>(null);
+
+  const handleContactSubmit = React.useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors: Record<string, string> = {};
+    if (!formName.trim()) errors.name = 'Name is required';
+    if (!formEmail.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formEmail)) {
+      errors.email = 'Please provide a valid email';
+    }
+    if (!formSubject.trim()) errors.subject = 'Subject is required';
+    if (!formMessage.trim()) errors.message = 'Message details cannot be empty';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setFormErrors({});
+    setFormSubmitError(null);
+    setFormLoading(true);
+
+    const apiUrl = (await import('../utils/apiConfig')).getApiBaseUrl();
+
+    try {
+      const res = await fetch(`${apiUrl}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formName, email: formEmail, subject: formSubject, message: formMessage }),
+      });
+
+      let data: { error?: string } = {};
+      try { data = await res.json(); } catch { /* non-JSON */ }
+
+      if (!res.ok) throw new Error(data.error || `Transmission failed (${res.status}).`);
+
+      setFormLoading(false);
+      setFormSubmitted(true);
+      setFormSubmitError(null);
+      setFormName('');
+      setFormEmail('');
+      setFormSubject('');
+      setFormMessage('');
+    } catch (err) {
+      console.warn('Message transmission failed:', err);
+      setFormLoading(false);
+      setFormSubmitted(false);
+      setFormSubmitError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Transmission failed. Your message was NOT delivered — please retry or email farhankabir133@gmail.com directly.'
+      );
+    }
+  }, [formName, formEmail, formSubject, formMessage]);
 
   return (
     <>
@@ -239,7 +300,7 @@ function LandingBelowFold() {
           className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono"
         >
           <span className="w-2.5 h-2.5 rounded bg-sky-400 shadow-[0_0_8px_#38bdf8]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>02 // SKILLOBSERVATION OBSERVATION</h2>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>02 // SKILL OBSERVATION</h2>
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">MATRIX FILTERS FULLY LOADED</span>
         </motion.div>
 
@@ -257,7 +318,7 @@ function LandingBelowFold() {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              onClick={() => { setActiveTab(cat); ; }}
+                onClick={() => setActiveTab(cat)}
               className={`px-3 py-1.5 rounded-lg border transition-all cursor-pointer font-bold ${
                 activeTab === cat ? styleSet.activeTabBtn : styleSet.tabBtn
               }`}
@@ -286,7 +347,14 @@ function LandingBelowFold() {
                 <span className={`font-bold ${theme === 'light' ? 'text-slate-700' : 'text-slate-200'}`}>{skill.name}</span>
                 <span className="text-zinc-550 font-semibold">{skill.weight * 20}%</span>
               </div>
-              <div className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden">
+              <div
+                role="progressbar"
+                aria-valuenow={skill.weight * 20}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`${skill.name}: ${skill.weight * 20}%`}
+                className="w-full h-1 bg-zinc-950 rounded-full overflow-hidden"
+              >
                 <motion.div 
                   initial={{ width: 0 }}
                   whileInView={{ width: `${skill.weight * 20}%` }}
@@ -317,7 +385,7 @@ function LandingBelowFold() {
         </motion.div>
 
         {/* Timeline representation */}
-        <div className="relative border-l border-zinc-900/80 ml-3 md:ml-6 space-y-12">
+        <div className="relative border-l border-zinc-900/80 ml-5 md:ml-6 space-y-12">
           {portfolioData.timeline.map((item, i) => {
             const isLeft = i % 2 === 0;
             return (
@@ -624,7 +692,7 @@ function LandingBelowFold() {
         {/* Section title */}
         <div className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono">
           <span className="w-2.5 h-2.5 rounded bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04.5 // NEURAL RESEARCH INDEX</h2>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>05 // NEURAL RESEARCH INDEX</h2>
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">PEER-REVIEWED PUBLICATIONS</span>
         </div>
 
@@ -638,7 +706,7 @@ function LandingBelowFold() {
               year: 2026,
               publisher: "ISEE",
               abstract: "Tackling climate-resilient energy prediction by fusing CNN-LSTM models with urban heat island features. This paper presents a deep learning-based predictive modeling framework for forecasting energy consumption in climate-resilient urban structures. By integrating Convolutional Neural Networks (CNN) with Long Short-Term Memory (LSTM) architectures and augmenting them with urban heat island geospatial features, the model captures complex spatial-temporal dependencies that traditional approaches miss. The framework is validated against projected climate scenarios, demonstrating robust generalization across extreme weather events and urban morphology variations.",
-              link: "#",
+              link: "#research",
               image: "/research-images/energy-consumption-prediction.svg",
               color: "from-amber-600 to-emerald-600",
               badge: "NEWLY ACCEPTED @ ISEE 2026"
@@ -650,7 +718,7 @@ function LandingBelowFold() {
               year: 2026,
               publisher: "ISEE",
               abstract: "Engineering an end-to-end smart-building workflow utilizing computer vision, digital twins, and model-predictive control. This paper proposes an integrated framework that combines real-time computer vision occupancy detection, Building Information Modeling (BIM) digital twin synchronization, and Model-Predictive Control (MPC) to continuously monitor and optimize operational energy efficiency in commercial buildings. The system fuses visual spatial data with structural BIM repositories to generate actionable energy insights, reducing wasted consumption without compromising occupant comfort.",
-              link: "#",
+              link: "#research",
               image: "/research-images/cv-bim-energy-efficiency.svg",
               color: "from-cyan-600 to-blue-600",
               badge: "PUBLISHING SOON @ ISEE 2026"
@@ -778,7 +846,7 @@ function LandingBelowFold() {
           className="flex items-center gap-3 border-b border-zinc-900/60 pb-3 font-mono"
         >
           <span className="w-2.5 h-2.5 rounded bg-amber-500 shadow-[0_0_8px_#f59e0b]" />
-          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04.5 // MEDIUM WRITING SYNDICATE</h2>
+          <h2 className={`text-xs font-black tracking-widest uppercase ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>04 // MEDIUM WRITING SYNDICATE</h2>
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">DYNAMIC RSS CHANNELS ACTIVE</span>
         </motion.div>
 
@@ -791,7 +859,8 @@ function LandingBelowFold() {
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="text-center py-10 bg-zinc-950/20 border border-zinc-900/80 rounded-3xl p-6 font-mono text-zinc-550 text-xs"
           >
-            ⏳ Synchronizing narrative telemetry vectors...
+            <span className="text-zinc-400">⏳ Synchronizing narrative telemetry vectors…</span>
+            <span className="block mt-2 text-[10px] text-zinc-600">Articles will appear once the feed is loaded.</span>
           </motion.div>
         ) : (
           <motion.div 
@@ -1134,8 +1203,8 @@ function LandingBelowFold() {
                 }}
                 onClick={() => {
                   setActiveTestimonial(idx);
-                  ;
                 }}
+                aria-label={`Go to testimonial ${idx + 1}`}
                 className={`w-2 h-2 rounded-full transition-colors ${
                   activeTestimonial === idx ? 'bg-indigo-400' : 'bg-zinc-700'
                 }`}

@@ -81,6 +81,15 @@ export function useTerminalBoot({
     }, revealMs);
   }, [revealMs, schedule]);
 
+  /** Skip boot: cancel typing, cancel timers, jump straight to reveal. */
+  const skipBoot = useCallback(() => {
+    if (revealedRef.current) return;
+    if (engineRef.current) engineRef.current.cancel();
+    for (const id of timersRef.current) clearTimeout(id);
+    timersRef.current = [];
+    beginReveal();
+  }, [beginReveal]);
+
   // App readiness signal: window load, or a hard safety cap.
   useEffect(() => {
     const markReady = () => {
@@ -155,5 +164,5 @@ export function useTerminalBoot({
     };
   }, []);
 
-  return { phase, reduced, setLineRef };
+  return { phase, reduced, setLineRef, skipBoot };
 }

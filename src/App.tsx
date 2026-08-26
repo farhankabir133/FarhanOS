@@ -10,7 +10,7 @@ import {
 import { FarhanAIIcon } from './components/FarhanAIIcon';
 import ClockText from './components/Clock';
 import { portfolioData } from './data/portfolioData';
-import { Project, Paper, TimelineEvent, Article } from './types';
+import { Project, Paper, TimelineEvent, Article, Theme } from './types';
 import LandingPage from './components/LandingPage';
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
 const BuildsWindow = lazy(() => import('./os/windows/BuildsWindow'));
@@ -54,50 +54,58 @@ export default function App() {
   }, [viewMode]);
 
   // OS System States
-  const [theme, setTheme] = useState<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'>('dark');
+  const [theme, setTheme] = useState<Theme>('dark');
   
   // Window Management States
   // Each open window is represented by its unique id
   const [openWindows, setOpenWindows] = useState<string[]>(['twin']); 
   const [minimizedWindows, setMinimizedWindows] = useState<string[]>([]);
   const [focusedWindow, setFocusedWindow] = useState<string>('twin');
-  const [windowPositions, setWindowPositions] = useState<Record<string, { x: number; y: number; isMaximized: boolean }>>({
-    twin: { x: 50, y: 70, isMaximized: false },
-    projects: { x: 120, y: 140, isMaximized: false },
-    research: { x: 180, y: 90, isMaximized: false },
-    github: { x: 220, y: 160, isMaximized: false },
-    writing: { x: 80, y: 220, isMaximized: false },
-    garden: { x: 260, y: 40, isMaximized: false },
-    resume: { x: 300, y: 200, isMaximized: false },
-    timeline: { x: 140, y: 300, isMaximized: false },
-    skills: { x: 400, y: 80, isMaximized: false },
-    brief: { x: 350, y: 150, isMaximized: false },
-    builds: { x: 200, y: 350, isMaximized: false },
-    whiteboard: { x: 240, y: 110, isMaximized: false },
-    profTimeline: { x: 160, y: 240, isMaximized: false },
+  const [windowPositions, setWindowPositions] = useState<Record<string, { x: number; y: number; isMaximized: boolean }>>(() => {
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
+    const baseX = Math.min(50, vw - 400);
+    const baseY = Math.min(70, vh - 300);
+    return {
+      twin: { x: baseX, y: baseY, isMaximized: false },
+      projects: { x: baseX + 70, y: baseY + 70, isMaximized: false },
+      research: { x: baseX + 130, y: baseY + 20, isMaximized: false },
+      github: { x: baseX + 170, y: baseY + 90, isMaximized: false },
+      writing: { x: baseX + 30, y: baseY + 150, isMaximized: false },
+      garden: { x: baseX + 210, y: baseY - 30, isMaximized: false },
+      resume: { x: baseX + 250, y: baseY + 130, isMaximized: false },
+      timeline: { x: baseX + 90, y: baseY + 230, isMaximized: false },
+      skills: { x: baseX + 350, y: baseY + 10, isMaximized: false },
+      brief: { x: baseX + 300, y: baseY + 80, isMaximized: false },
+      builds: { x: baseX + 150, y: baseY + 280, isMaximized: false },
+      whiteboard: { x: baseX + 190, y: baseY + 40, isMaximized: false },
+      profTimeline: { x: baseX + 110, y: baseY + 170, isMaximized: false },
+    };
   });
   const [windowReady, setWindowReady] = useState<Record<string, boolean>>({});
 
   const osTimelineProgressLineRef = useRef<HTMLDivElement | null>(null);
 
-  // Dynamic window width for responsiveness
+  // Dynamic window width for responsiveness (debounced)
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      setWindowWidth(prev => {
-        if (prev !== window.innerWidth) {
-          return window.innerWidth;
-        }
-        return prev;
-      });
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setWindowWidth(window.innerWidth);
+      }, 150);
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const cycleTheme = useCallback(() => {
-    const themes: Array<'dark' | 'cyberpunk' | 'ai' | 'terminal' | 'light'> = ['dark', 'cyberpunk', 'ai', 'terminal', 'light'];
+    const themes: Theme[] = ['dark', 'cyberpunk', 'ai', 'terminal', 'light'];
     const nextIdx = (themes.indexOf(theme) + 1) % themes.length;
     setTheme(themes[nextIdx]);
     triggerSound(750, 0.03);
@@ -880,6 +888,7 @@ export default function App() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="site-mobile-hamburger md:hidden flex items-center justify-center w-8 h-8 rounded text-zinc-300 hover:text-white cursor-pointer"
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
             </button>
@@ -887,7 +896,7 @@ export default function App() {
             <nav className="site-desktop-nav hidden md:flex items-center gap-4 text-zinc-400 font-medium select-none">
               <button onClick={() => { setCommandPaletteOpen(true); triggerSound(800, 0.03); }} className="hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer">
                 <Search className="w-3.5 h-3.5" />
-                <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-0.5">Cmd+K</kbd></span>
+                <span>Search <kbd className="text-[10px] font-mono text-zinc-600 bg-zinc-900 border border-zinc-800 rounded px-1 ml-0.5">{typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘K' : 'Ctrl+K'}</kbd></span>
               </button>
               <button onClick={runTourCycle} className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer text-purple-400 hover:text-purple-300">
                 <Sparkles className="w-3.5 h-3.5" />
@@ -996,7 +1005,7 @@ export default function App() {
 
       {/* 3. AI SITE GUIDED TOUR STATUS ALERTER */}
       {isTourActive && (
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-full max-w-xl bg-purple-950/80 backdrop-blur-2xl border-2 border-purple-500/50 p-4 rounded-xl shadow-[0_10px_40px_rgba(168,85,247,0.3)] z-[999] flex items-start gap-4 select-text animate-bounce-short">
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 w-full max-w-xl bg-purple-950/80 backdrop-blur-2xl border-2 border-purple-500/50 p-4 rounded-xl shadow-[0_10px_40px_rgba(168,85,247,0.3)] z-[999] flex items-start gap-4 select-text" style={{ animation: 'none' }}>
           <div className="p-2.5 bg-purple-500/20 rounded-lg border border-purple-400/40 text-purple-300">
             <Sparkles className="w-5 h-5 text-purple-400 animate-spin-slow" />
           </div>
@@ -1047,6 +1056,7 @@ export default function App() {
                 role="button"
                 tabIndex={0}
                 aria-label={`Open ${ico.label}`}
+                aria-pressed={openWindows.includes(ico.id)}
                 onClick={() => openWindow(ico.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -1347,7 +1357,7 @@ export default function App() {
       <footer className="h-16 bg-black/45 backdrop-blur-2xl border-t border-zinc-800/40 flex items-center justify-center relative select-none">
         
         {/* Dynamic task bar container of apps */}
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-zinc-950/65 border border-zinc-800/60 rounded-2xl shadow-xl max-w-[95vw] overflow-x-auto scrollbar-none select-none">
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-zinc-950/65 border border-zinc-800/60 rounded-2xl shadow-xl max-w-[95vw] overflow-x-auto scrollbar-none select-none" style={{ scrollSnapType: 'x mandatory' }}>
           {desktopIcons.map((ico) => {
             const ActiveIcon = ico.icon;
             const isOpen = openWindows.includes(ico.id);
@@ -1387,6 +1397,9 @@ export default function App() {
             );
           })}
         </div>
+
+        {/* Mobile dock scroll indicator */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#090a10] to-transparent pointer-events-none md:hidden" />
 
         {/* Global quick launch commands */}
         <div className="absolute right-4 hidden md:flex items-center gap-1.5">

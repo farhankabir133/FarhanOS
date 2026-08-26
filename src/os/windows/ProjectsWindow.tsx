@@ -23,6 +23,7 @@ export default function ProjectsWindow({ styleSet, selectedProject, setSelectedP
             <button
               key={cat}
               onClick={() => { setSelectedProject(portfolioData.projects.find(p => p.category === cat) || portfolioData.projects[0]); triggerSound(800, 0.02); }}
+              aria-pressed={selectedProject.category === cat}
               className={`text-[10px] text-left px-2 py-1.5 rounded-md capitalize transition-all cursor-pointer ${selectedProject.category === cat ? 'bg-zinc-950 text-sky-400 border border-zinc-800 font-bold' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               🎨 {cat}
@@ -39,6 +40,7 @@ export default function ProjectsWindow({ styleSet, selectedProject, setSelectedP
               className={`w-full text-[10px] text-left p-2 rounded-md border flex flex-col gap-0.5 transition-colors cursor-pointer ${selectedProject.id === p.id ? 'bg-sky-500/10 border-sky-500/30 text-sky-300' : 'bg-transparent border-zinc-900 text-zinc-400 hover:bg-zinc-950'}`}
             >
               <span className="font-bold truncate">{p.title}</span>
+              {selectedProject.id === p.id && <span className="sr-only">(selected)</span>}
               <span className="text-[9px] opacity-75">{p.category}</span>
             </button>
           ))}
@@ -54,13 +56,20 @@ export default function ProjectsWindow({ styleSet, selectedProject, setSelectedP
             <span className="text-[10px] text-zinc-500 font-mono tracking-wide">TIMELINE: {selectedProject.timeline}</span>
           </div>
           <div className="flex items-center gap-1.5 select-none">
-            <button onClick={() => triggerSound(1000, 0.05)} className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1">
-              <GitBranch className="w-3 h-3" />
-              <span>Code</span>
-            </button>
+            {selectedProject.githubUrl ? (
+              <a href={selectedProject.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1">
+                <GitBranch className="w-3 h-3" />
+                <span>Code</span>
+              </a>
+            ) : (
+              <span className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-600 flex items-center gap-1 cursor-not-allowed">
+                <GitBranch className="w-3 h-3" />
+                <span>Code</span>
+              </span>
+            )}
             <button onClick={() => { triggerSound(1100, 0.05); openWindow('brief'); }} className="p-1 px-2.5 rounded bg-sky-500/10 border border-sky-500/20 text-[10px] text-sky-300 hover:text-sky-200 flex items-center gap-1">
               <Rocket className="w-3 h-3" />
-              <span>Deploy</span>
+              <span>Start Project</span>
             </button>
           </div>
         </div>

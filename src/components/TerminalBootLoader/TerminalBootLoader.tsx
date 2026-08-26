@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { TerminalWindow } from './TerminalWindow';
 import { Background } from './Background';
@@ -14,10 +15,16 @@ export interface TerminalBootLoaderProps {
 }
 
 export function TerminalBootLoader({ children, onComplete }: TerminalBootLoaderProps) {
-  const { phase, reduced, setLineRef } = useTerminalBoot({
+  const { phase, reduced, setLineRef, skipBoot } = useTerminalBoot({
     script: BOOT_SCRIPT,
     onComplete,
   });
+  const [showSkip, setShowSkip] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSkip(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (phase === 'done') {
     return <>{children}</>;
@@ -57,6 +64,16 @@ export function TerminalBootLoader({ children, onComplete }: TerminalBootLoaderP
           <p className="mt-4 font-mono text-[11px] tracking-wide text-slate-400">
             secure remote session · {WORKSTATION_HOST}
           </p>
+
+          {showSkip && (
+            <button
+              onClick={skipBoot}
+              className="mt-6 px-4 py-1.5 rounded-lg border border-zinc-700/50 bg-zinc-900/50 text-[10px] font-mono text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/60 transition-all cursor-pointer"
+              aria-label="Skip boot sequence"
+            >
+              Skip Boot →
+            </button>
+          )}
         </div>
 
         <div className="sr-only" role="status" aria-live="polite">

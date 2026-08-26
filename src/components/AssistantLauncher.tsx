@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import {
   X, Send, ChevronRight, Copy, Check, Volume2, VolumeX,
   RefreshCw, Sparkles,
@@ -330,6 +330,8 @@ export default function AssistantLauncher({
     setIsPressed(false);
   };
 
+  const prefersReducedMotion = useReducedMotion();
+
   const motionStyle = isHovering ? { x: mousePosition.x, y: mousePosition.y } : {};
 
   const handleClose = useCallback(() => {
@@ -391,7 +393,7 @@ export default function AssistantLauncher({
             <h3 className={`text-xl font-bold mb-2 tracking-tight ${isLight ? 'text-slate-800' : 'text-slate-100'}`}>
               Farhan's Personal Assistant
             </h3>
-            <p className={`text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'} max-w-xs mx-auto`}>
+            <p id="assistant-dialog-description" className={`text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-zinc-400'} max-w-xs mx-auto`}>
               Query research, architecture, or engineering profiles. All responses derive from verified portfolio intelligence.
             </p>
           </div>
@@ -662,6 +664,7 @@ export default function AssistantLauncher({
     role: 'dialog' as const,
     'aria-modal': true as const,
     'aria-label': "Farhan's Personal Assistant",
+    'aria-describedby': 'assistant-dialog-description',
   };
 
   return (
@@ -751,7 +754,7 @@ export default function AssistantLauncher({
             type: 'spring',
             stiffness: 300,
             damping: 20,
-            y: {
+            y: prefersReducedMotion ? undefined : {
               duration: 3.5,
               repeat: Infinity,
               ease: 'easeInOut',
@@ -766,21 +769,25 @@ export default function AssistantLauncher({
           className="absolute inset-0 rounded-2xl"
         >
           {/* Breathing glow */}
-          <motion.div
-            className="absolute inset-0 rounded-2xl bg-indigo-500/10 opacity-0"
-            animate={{ opacity: isHovering ? [0.4, 0.8, 0.4] : 0 }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          {!prefersReducedMotion && (
+            <motion.div
+              className="absolute inset-0 rounded-2xl bg-indigo-500/10 opacity-0"
+              animate={{ opacity: isHovering ? [0.4, 0.8, 0.4] : 0 }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          )}
 
           {/* Halo ring */}
-          <motion.div
-            className="absolute inset-[-6px] rounded-3xl border border-indigo-400/0"
-            animate={{
-              scale: isHovering ? [1, 1.08, 1] : 1,
-              opacity: isHovering ? [0.3, 0.7, 0.3] : 0,
-            }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          {!prefersReducedMotion && (
+            <motion.div
+              className="absolute inset-[-6px] rounded-3xl border border-indigo-400/0"
+              animate={{
+                scale: isHovering ? [1, 1.08, 1] : 1,
+                opacity: isHovering ? [0.3, 0.7, 0.3] : 0,
+              }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          )}
         </motion.div>
 
         {/* Glyph */}
@@ -792,7 +799,8 @@ export default function AssistantLauncher({
         />
 
         {/* Status dot */}
-        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-zinc-950 shadow-lg z-20" />
+        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-zinc-950 shadow-lg z-20" aria-hidden="true" />
+        <span className="sr-only">Online</span>
       </button>
     </div>
   );
