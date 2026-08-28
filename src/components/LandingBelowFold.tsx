@@ -3,10 +3,12 @@ import { motion } from 'motion/react';
 import {
   Check, ChevronLeft, ChevronRight, Clock, Award, Quote,
   Github, Linkedin, ExternalLink, Mail, MapPin, User,
-  Instagram, RefreshCw, Send, ArrowUp
+  Instagram, RefreshCw, Send, ArrowUp,
+  ChevronDown, Layers, Globe, Rocket, Star, GitFork
 } from 'lucide-react';
 import { portfolioData } from '../data/portfolioData';
 import { useLandingPage } from './LandingPageContext';
+import { track } from '../utils/analytics';
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -133,6 +135,285 @@ function TimelineCard({ item, idx, theme, prefersReducedMotion }: TimelineCardPr
   );
 }
 
+// Unique visual identity per project (cycled across the list) so every
+// card showcases its name with a distinct accent + animated motif.
+const INNOVATION_ACCENTS = [
+  { from: '#6366f1', to: '#22d3ee', glow: 'rgba(99,102,241,0.35)', soft: '#c7d2fe' },
+  { from: '#f472b6', to: '#a855f7', glow: 'rgba(244,114,182,0.30)', soft: '#fbcfe8' },
+  { from: '#34d399', to: '#22d3ee', glow: 'rgba(52,211,153,0.30)', soft: '#bbf7d0' },
+  { from: '#fbbf24', to: '#f97316', glow: 'rgba(251,191,36,0.30)', soft: '#fde68a' },
+  { from: '#60a5fa', to: '#818cf8', glow: 'rgba(96,165,250,0.30)', soft: '#bfdbfe' },
+  { from: '#f87171', to: '#fb7185', glow: 'rgba(248,113,113,0.30)', soft: '#fecaca' },
+  { from: '#2dd4bf', to: '#3b82f6', glow: 'rgba(45,212,191,0.30)', soft: '#99f6e4' },
+  { from: '#c084fc', to: '#6366f1', glow: 'rgba(192,132,252,0.30)', soft: '#e9d5ff' }
+];
+
+const MOTIF_TYPES = ['orbit', 'grid', 'wave', 'pulse', 'scan', 'prism'] as const;
+type MotifType = (typeof MOTIF_TYPES)[number];
+
+function InnovationMotif({ type, color, animate }: { type: MotifType; color: string; animate: boolean }) {
+  const common = { className: 'absolute right-3 top-3 w-16 h-16 opacity-40 pointer-events-none', fill: 'none', stroke: color };
+  if (type === 'orbit') {
+    return (
+      <svg viewBox="0 0 64 64" {...common}>
+        <circle cx="32" cy="32" r="10" strokeOpacity="0.5" />
+        <motion.g animate={animate ? { rotate: 360 } : {}} transition={{ duration: 14, repeat: Infinity, ease: 'linear' }} style={{ originX: '32px', originY: '32px' }}>
+          <ellipse cx="32" cy="32" rx="26" ry="12" />
+          <circle cx="58" cy="32" r="3" fill={color} stroke="none" />
+        </motion.g>
+      </svg>
+    );
+  }
+  if (type === 'grid') {
+    return (
+      <svg viewBox="0 0 64 64" {...common}>
+        {[0, 1, 2, 3].map((r) => [0, 1, 2, 3].map((c) => (
+          <rect key={`${r}-${c}`} x={10 + c * 12} y={10 + r * 12} width="8" height="8" rx="2" strokeOpacity="0.5" />
+        )))}
+      </svg>
+    );
+  }
+  if (type === 'wave') {
+    return (
+      <svg viewBox="0 0 64 64" {...common}>
+        <motion.path animate={animate ? { d: ['M4 40 Q 16 20 32 40 T 60 40', 'M4 40 Q 16 60 32 40 T 60 40', 'M4 40 Q 16 20 32 40 T 60 40'] } : {}} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }} strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  if (type === 'pulse') {
+    return (
+      <svg viewBox="0 0 64 64" {...common}>
+        <motion.path animate={animate ? { d: ['M4 32 H18 L24 14 L32 50 L40 24 L46 32 H60', 'M4 32 H16 L22 44 L30 20 L38 40 L44 32 H60', 'M4 32 H18 L24 14 L32 50 L40 24 L46 32 H60'] } : {}} transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }} strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  if (type === 'scan') {
+    return (
+      <svg viewBox="0 0 64 64" {...common}>
+        <rect x="10" y="10" width="44" height="44" rx="6" strokeOpacity="0.5" />
+        <motion.line animate={animate ? { y1: [12, 52, 12], y2: [12, 52, 12] } : {}} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} x1="10" x2="54" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 64 64" {...common}>
+      <motion.path animate={animate ? { rotate: 360 } : {}} transition={{ duration: 12, repeat: Infinity, ease: 'linear' }} style={{ originX: '32px', originY: '32px' }} d="M32 6 L58 32 L32 58 L6 32 Z" strokeOpacity="0.5" />
+      <circle cx="32" cy="32" r="6" fill={color} stroke="none" />
+    </svg>
+  );
+}
+
+interface RepoStats {
+  stars: number;
+  forks: number;
+  language: string | null;
+}
+
+interface InnovationCardProps {
+  project: import('../types').Project;
+  index: number;
+  accent: (typeof INNOVATION_ACCENTS)[number];
+  motif: MotifType;
+  theme: import('../types').Theme;
+  styleSet: Record<string, string>;
+  prefersReducedMotion: boolean;
+  onOpenWindowDirectly: (windowId: string) => void;
+  repo?: RepoStats;
+}
+
+function InnovationCard({ project, index, accent, motif, theme, styleSet, prefersReducedMotion, onOpenWindowDirectly, repo }: InnovationCardProps) {
+  const [expanded, setExpanded] = React.useState(false);
+  const links = portfolioData.projectLinks?.[project.id] ?? {};
+  const monogram = project.title.replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || project.title.slice(0, 2).toUpperCase();
+  const isLight = theme === 'light';
+
+  return (
+    <motion.div
+      initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 40, scale: 0.97 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22, delay: (index % 2) * 0.08 }}
+      whileHover={prefersReducedMotion ? {} : { y: -10 }}
+      className={`group relative overflow-hidden rounded-3xl border p-6 flex flex-col justify-between transition-colors duration-300 ${
+        isLight ? 'bg-white/85 border-slate-200 hover:border-indigo-300 shadow-lg' : 'bg-[#0b0c14]/65 border-zinc-900/80 hover:border-zinc-700'
+      }`}
+    >
+      {/* Accent glow + motif */}
+      <div
+        className="pointer-events-none absolute -top-16 -right-16 h-44 w-44 rounded-full blur-3xl opacity-40 group-hover:opacity-70 transition-opacity duration-500"
+        style={{ background: `radial-gradient(circle, ${accent.glow}, transparent 70%)` }}
+      />
+      <InnovationMotif type={motif} color={accent.from} animate={!prefersReducedMotion} />
+
+      {/* Header */}
+      <div className="relative">
+        <div className="flex items-center justify-between mb-5">
+          <motion.div
+            initial={prefersReducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 18, delay: 0.1 }}
+            className="flex h-12 w-12 items-center justify-center rounded-2xl text-base font-black text-white shadow-lg"
+            style={{ background: `linear-gradient(135deg, ${accent.from}, ${accent.to})` }}
+          >
+            {monogram}
+          </motion.div>
+          <div className="flex items-center gap-2">
+            <span className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${styleSet.badgeStyle}`}>
+              {project.category}
+            </span>
+            <span className="text-[9px] text-zinc-500 font-mono font-semibold whitespace-nowrap">{project.timeline}</span>
+          </div>
+        </div>
+
+        {/* Unique title treatment */}
+        <h3
+          className="text-lg md:text-xl font-extrabold leading-tight tracking-tight"
+          style={{
+            background: `linear-gradient(120deg, ${accent.from}, ${accent.to})`,
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            color: 'transparent'
+          }}
+        >
+          {project.title}
+        </h3>
+        <p className="mt-2 text-[11px] sm:text-xs text-zinc-400 font-sans leading-relaxed select-text">
+          {project.description}
+        </p>
+      </div>
+
+      {/* Metrics dashboard */}
+      <div className="my-4 grid grid-cols-3 gap-2 rounded-xl border border-zinc-900/80 bg-black/40 p-2.5 text-center font-mono">
+        {project.metrics.map((m, idx) => (
+          <div key={m.label} className="p-1">
+            <span className="block text-[9.5px] font-bold" style={{ color: accent.from }}>{m.value}</span>
+            <span className="mt-0.5 block text-[7px] uppercase tracking-tight text-zinc-500 line-clamp-1">{m.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Tech stack */}
+      <div className="mb-4 flex flex-wrap gap-1">
+        {project.techStack.map((tech) => (
+          <span key={tech} className="text-[8.5px] font-mono rounded bg-zinc-950 border border-zinc-900/40 px-1.5 py-0.5 text-zinc-500">
+            {tech}
+          </span>
+        ))}
+      </div>
+
+      {/* Live repo stats */}
+      {repo && (
+        <div className="mb-4 flex items-center gap-3 text-[9px] font-mono text-zinc-500">
+          <span className="flex items-center gap-1" title="GitHub stars">
+            <Star className="w-3 h-3 text-amber-400" />
+            {repo.stars.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1" title="GitHub forks">
+            <GitFork className="w-3 h-3 text-zinc-400" />
+            {repo.forks.toLocaleString()}
+          </span>
+          {repo.language && (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              {repo.language}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Expandable details */}
+      <motion.div
+        initial={false}
+        animate={{ height: expanded ? 'auto' : 0, opacity: expanded ? 1 : 0 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+        className="overflow-hidden"
+      >
+        <div className="space-y-3 rounded-xl border border-zinc-900/70 bg-black/30 p-3 text-[10px] leading-relaxed">
+          <div>
+            <span className="font-mono font-bold uppercase tracking-wider" style={{ color: accent.soft }}>Problem</span>
+            <p className="text-zinc-400 mt-0.5">{project.problem}</p>
+          </div>
+          <div>
+            <span className="font-mono font-bold uppercase tracking-wider" style={{ color: accent.soft }}>Solution</span>
+            <p className="text-zinc-400 mt-0.5">{project.solution}</p>
+          </div>
+          <div>
+            <span className="font-mono font-bold uppercase tracking-wider" style={{ color: accent.soft }}>Architecture</span>
+            <p className="text-zinc-400 mt-0.5">{project.architecture}</p>
+          </div>
+          <div>
+            <span className="font-mono font-bold uppercase tracking-wider" style={{ color: accent.soft }}>Roadmap</span>
+            <ul className="mt-1 flex flex-wrap gap-1">
+              {project.roadmap.map((r) => (
+                <li key={r} className="rounded-full border border-zinc-800 bg-zinc-950 px-2 py-0.5 text-[8.5px] text-zinc-400">{r}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Action bar */}
+      <div className="mt-4 flex items-center gap-2 select-none border-t border-zinc-900/60 pt-4">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-1 rounded-xl border border-zinc-800/80 bg-zinc-950 px-3 py-2.5 text-[10px] font-mono font-bold text-zinc-300 transition-colors hover:text-white hover:border-zinc-700"
+        >
+          <Layers className="h-3.5 w-3.5" />
+          {expanded ? 'HIDE' : 'DETAILS'}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </motion.button>
+
+        <motion.a
+          whileHover={{ scale: 1.08, rotate: -4 }}
+          whileTap={{ scale: 0.95 }}
+          href={links.github || 'https://github.com/farhankabir133'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-xl border border-zinc-850 bg-zinc-950/60 p-2.5 text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white"
+          title="View source on GitHub"
+        >
+          <Github className="h-3.5 w-3.5" />
+        </motion.a>
+
+        {links.demo ? (
+          <motion.a
+            whileHover={{ scale: 1.08, rotate: 4 }}
+            whileTap={{ scale: 0.95 }}
+            href={links.demo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-zinc-850 bg-zinc-950/60 p-2.5 text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white"
+            title="Open live demo"
+          >
+            <Globe className="h-3.5 w-3.5" />
+          </motion.a>
+        ) : (
+          <span
+            className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-2.5 text-zinc-700"
+            title="Live deployment coming soon"
+          >
+            <Globe className="h-3.5 w-3.5" />
+          </span>
+        )}
+
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => onOpenWindowDirectly('projects')}
+          className="ml-auto flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[10px] font-mono font-bold text-white transition-transform"
+          style={{ background: `linear-gradient(135deg, ${accent.from}, ${accent.to})` }}
+        >
+          <Rocket className="h-3.5 w-3.5" />
+          OPEN OS
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
 function LandingBelowFold() {
   const ctx = useLandingPage();
   const {
@@ -155,6 +436,57 @@ function LandingBelowFold() {
   const [formSubmitted, setFormSubmitted] = React.useState(false);
   const [formLoading, setFormLoading] = React.useState(false);
   const [formSubmitError, setFormSubmitError] = React.useState<string | null>(null);
+
+  // Feature 4: live GitHub repo stats per project card.
+  const [repoStats, setRepoStats] = React.useState<Record<string, RepoStats>>({});
+  const [activeCategory, setActiveCategory] = React.useState<string>('All');
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const slugFor = (id: string) => {
+      const url = portfolioData.projectLinks?.[id]?.github;
+      if (!url) return null;
+      const parts = url.split('/').filter(Boolean);
+      return parts[parts.length - 1]?.toLowerCase() ?? null;
+    };
+    fetch('/api/github-repos')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((repos: Array<{ name: string; stargazers_count?: number; forks_count?: number; language?: string | null }>) => {
+        if (cancelled || !Array.isArray(repos)) return;
+        const byName: Record<string, (typeof repos)[number]> = {};
+        repos.forEach((r) => { byName[r.name.toLowerCase()] = r; });
+        const map: Record<string, RepoStats> = {};
+        portfolioData.projects.forEach((p) => {
+          const slug = slugFor(p.id);
+          const r = slug ? byName[slug] : undefined;
+          if (r) {
+            map[p.id] = {
+              stars: typeof r.stargazers_count === 'number' ? r.stargazers_count : 0,
+              forks: typeof r.forks_count === 'number' ? r.forks_count : 0,
+              language: r.language ?? null,
+            };
+          }
+        });
+        setRepoStats(map);
+      })
+      .catch(() => { /* offline / no backend — stats simply stay hidden */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const categories = React.useMemo(
+    () => ['All', ...Array.from(new Set(portfolioData.projects.map((p) => p.category)))],
+    [],
+  );
+  const visibleProjects = React.useMemo(
+    () => (activeCategory === 'All'
+      ? portfolioData.projects
+      : portfolioData.projects.filter((p) => p.category === activeCategory)),
+    [activeCategory],
+  );
+
+  React.useEffect(() => {
+    track('portfolio_filter', { category: activeCategory });
+  }, [activeCategory]);
 
   const handleContactSubmit = React.useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -559,129 +891,44 @@ function LandingBelowFold() {
           <span className="text-[9px] text-zinc-500 ml-auto uppercase hidden sm:inline">SANDBOX RUNTIMES SYNCHRONIZED</span>
         </motion.div>
 
-        {/* Project grid */}
+        {/* Category filter tabs */}
+        <div className="flex flex-wrap gap-2 font-mono">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`text-[9px] uppercase tracking-wider px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                activeCategory === cat
+                  ? 'border-sky-500/50 bg-sky-500/10 text-sky-300'
+                  : 'border-zinc-800 bg-zinc-950/40 text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Project grid — interactive innovation cards */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ type: "spring", stiffness: 300, damping: 20, staggerChildren: 0.15, delayChildren: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         >
-          {portfolioData.projects.map((project) => (
-            <motion.div 
+          {visibleProjects.map((project, i) => (
+            <InnovationCard
               key={project.id}
-              whileHover={{ y: -8, scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="bg-[#0b0c14]/55 border border-zinc-900/80 p-6 rounded-3xl flex flex-col justify-between hover:border-indigo-500/30 hover:shadow-[0_10px_35px_rgba(99,102,241,0.05)] transition-all duration-300 group select-text"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-4 font-mono">
-                  <motion.span 
-                    initial={{ opacity: 0, scale: 0 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true, margin: "-80px" }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    className={`text-[8.5px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${styleSet.badgeStyle}`}
-                  >
-                    {project.category}
-                  </motion.span>
-                  <motion.span 
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true, margin: "-80px" }}
-                    className="text-[9px] text-zinc-550 font-semibold"
-                  >
-                    {project.timeline}
-                  </motion.span>
-                </div>
-
-                <motion.h3 
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className={`text-sm md:text-base font-extrabold group-hover:text-indigo-400 transition-colors leading-tight ${theme === 'light' ? 'text-slate-800' : 'text-white'}`}
-                >
-                  {project.title}
-                </motion.h3>
-
-                <motion.p 
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="text-[11px] sm:text-xs text-zinc-400 font-sans mt-3.5 leading-relaxed"
-                >
-                  {project.description}
-                </motion.p>
-
-                {/* Dashboard style metrics */}
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-80px" }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="grid grid-cols-3 gap-2 my-4 bg-black/40 border border-zinc-900/80 p-2.5 rounded-xl text-center font-mono"
-                >
-                  {project.metrics.map((m, idx) => (
-                    <motion.div 
-                      key={m.label}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true, margin: "-80px" }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20, delay: idx * 0.1 }}
-                      className="p-1"
-                    >
-                      <span className={`text-[9.5px] font-bold block ${theme === 'light' ? 'text-indigo-650' : 'text-[#00ffcc]'}`}>{m.value}</span>
-                      <span className="text-[7.2px] text-zinc-500 block uppercase tracking-tight mt-0.5 line-clamp-1">{m.label}</span>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-zinc-900/60 select-none">
-                <div className="flex flex-wrap gap-1">
-                  {project.techStack.map((tech, idx) => (
-                    <motion.span 
-                      key={tech}
-                      initial={{ opacity: 0, scale: 0 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true, margin: "-80px" }}
-                      transition={{ type: "spring", stiffness: 400, damping: 20, delay: idx * 0.05 }}
-                      className="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-900/40 text-zinc-500"
-                    >
-                      {tech}
-                    </motion.span>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    onClick={() => { onOpenWindowDirectly('projects'); }}
-                    className="flex-1 text-center py-2.5 rounded-xl border border-zinc-800/80 bg-zinc-950 text-[10px] font-mono text-zinc-350 hover:text-white hover:border-zinc-750 transition-all cursor-pointer font-bold"
-                  >
-                    DEPLOY SIMULATOR SCREEN →
-                  </motion.button>
-                  
-                  <motion.a 
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    href="https://github.com/farhankabir133" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    onClick={() => {}}
-                    className="p-2.5 rounded-xl border border-zinc-850 hover:border-zinc-700 bg-zinc-950/60 hover:bg-zinc-900/60 text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
-                    title="View Source on GitHub"
-                  >
-                    <Github className="w-3.5 h-3.5" />
-                  </motion.a>
-                </div>
-              </div>
-            </motion.div>
+              project={project}
+              index={i}
+              accent={INNOVATION_ACCENTS[i % INNOVATION_ACCENTS.length]}
+              motif={MOTIF_TYPES[i % MOTIF_TYPES.length]}
+              theme={theme}
+              styleSet={styleSet}
+              prefersReducedMotion={prefersReducedMotion}
+              onOpenWindowDirectly={onOpenWindowDirectly}
+              repo={repoStats[project.id]}
+            />
           ))}
         </motion.div>
       </section>

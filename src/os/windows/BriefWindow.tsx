@@ -1,4 +1,5 @@
-import { Cpu, Workflow, Check, RefreshCw } from 'lucide-react';
+import { Cpu, Workflow, Check, RefreshCw, Calendar } from 'lucide-react';
+import { siteConfig } from '../../config/site';
 
 interface BriefForm {
   projectType: string;
@@ -34,6 +35,18 @@ export default function BriefWindow({
         <span className="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] px-1.5 py-0.5 rounded font-mono uppercase">INTELLIGENT INTAKE PROCESS</span>
         <h3 className="text-xs font-black text-white mt-1">Initiate Feasibility Evaluation Strategy</h3>
       </div>
+
+      {siteConfig.calendlyUrl && (
+        <a
+          href={siteConfig.calendlyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 w-full bg-sky-600 hover:bg-sky-500 text-white border border-sky-400 py-2 rounded-lg text-[10.5px] cursor-pointer font-bold tracking-tight"
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Book a Call Instead</span>
+        </a>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Configuration Parameter Fields */}
@@ -148,24 +161,53 @@ export default function BriefWindow({
           </div>
 
           {briefSummary && (
-            <div className="border-t border-zinc-900 pt-2 text-[10px] flex items-center justify-between mt-4">
+            <div className="border-t border-zinc-900 pt-2 text-[10px] flex items-center justify-between mt-4 gap-2 flex-wrap">
               <span className="text-zinc-500 flex items-center gap-1 font-mono">
                 <Check className="w-3 h-3 text-emerald-400" /> API SECURE Rails
               </span>
-              <button
-                onClick={handleDispatchBrief}
-                disabled={briefDispatchLoading || !briefForm.email.trim()}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-850 disabled:text-zinc-500 disabled:border-zinc-800 text-white font-bold p-1 px-3 border border-emerald-400 disabled:border-transparent rounded text-[9.5px] cursor-pointer flex items-center gap-1.5"
-              >
-                {briefDispatchLoading ? (
-                  <>
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                    <span>Transmitting...</span>
-                  </>
-                ) : (
-                  <span>Dispatch Brief</span>
+              <div className="flex items-center gap-2">
+                {siteConfig.formspreeId && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await fetch(`https://formspree.io/f/${siteConfig.formspreeId}`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                          body: JSON.stringify({
+                            email: briefForm.email,
+                            projectType: briefForm.projectType,
+                            budget: briefForm.budget,
+                            timeline: briefForm.timeline,
+                            goals: briefForm.goals,
+                            comments: briefForm.comments,
+                            summary: briefSummary,
+                          }),
+                        });
+                        alert('Brief sent via Formspree.');
+                      } catch {
+                        alert('Formspree delivery failed — please use Dispatch Brief or email directly.');
+                      }
+                    }}
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold p-1 px-3 border border-zinc-700 rounded text-[9.5px] cursor-pointer"
+                  >
+                    Send via Formspree
+                  </button>
                 )}
-              </button>
+                <button
+                  onClick={handleDispatchBrief}
+                  disabled={briefDispatchLoading || !briefForm.email.trim()}
+                  className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-850 disabled:text-zinc-500 disabled:border-zinc-800 text-white font-bold p-1 px-3 border border-emerald-400 disabled:border-transparent rounded text-[9.5px] cursor-pointer flex items-center gap-1.5"
+                >
+                  {briefDispatchLoading ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>Transmitting...</span>
+                    </>
+                  ) : (
+                    <span>Dispatch Brief</span>
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>

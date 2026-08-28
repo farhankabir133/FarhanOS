@@ -36,6 +36,9 @@ export default defineConfig(() => {
     build: {
       cssCodeSplit: true,
       sourcemap: false,
+      // three.js (3D wormhole) is inherently large; split out and silence the
+      // default 500KB warning rather than bundling it into the entry chunk.
+      chunkSizeWarningLimit: 900,
       rollupOptions: {
         output: {
           // Function form so heavy libs actually split (object form left

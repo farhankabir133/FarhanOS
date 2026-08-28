@@ -102,6 +102,7 @@ export interface PortfolioData {
   learningNow: string;
   thinkingAbout: string;
   projects: Project[];
+  projectLinks: Record<string, { github?: string; demo?: string }>;
   papers: Paper[];
   timeline: TimelineEvent[];
   professionalTimeline: ProfessionalTimelineEvent[];
@@ -110,6 +111,8 @@ export interface PortfolioData {
   skills: SkillNode[];
   gardenNodes: GardenNode[];
   gardenLinks: GardenLink[];
+  certifications: { title: string; issuer: string; date: string; skills: string[] }[];
+  testimonials: { text: string; author: string; role: string; initials: string }[];
 }
 
 export interface GitHubRepo {

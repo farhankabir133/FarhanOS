@@ -14,6 +14,8 @@ export const OS_WINDOW_IDS = [
   'builds',
   'whiteboard',
   'profTimeline',
+  'about',
+  'settings',
 ] as const;
 
 export type OsWindowId = (typeof OS_WINDOW_IDS)[number];
@@ -43,6 +45,7 @@ const SOURCE_WINDOW_RULES: Array<[RegExp, OsWindowId]> = [
   [/\b(garden|mind ?map|focus areas)\b/i, 'garden'],
   [/\b(whiteboard|sketch|ideation)\b/i, 'whiteboard'],
   [/\b(build log|builds)\b/i, 'builds'],
+  [/\b(about|story|bio|who is|background|value|mission)\b/i, 'about'],
   [/\b(project|saas|product|typerush|ink home|safeside|rankflow|omniva|buildsafe|autospark|exam survival|buddy-?script)\b/i, 'projects'],
 ];
 

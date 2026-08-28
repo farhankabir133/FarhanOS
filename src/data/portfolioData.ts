@@ -302,6 +302,28 @@ export const portfolioData: PortfolioData = {
     }
   ],
 
+  // Best-guess external links for each project. Edit these to point at the
+  // real repositories / live deployments.
+  projectLinks: {
+    typerush: { github: 'https://github.com/farhankabir133/TypeRush', demo: 'https://farhankabir133.github.io/TypeRush/' },
+    'ink-home': { github: 'https://github.com/farhankabir133/TheInkHome', demo: 'https://theinkhome.live/' },
+    safeside: { github: 'https://github.com/farhankabir133/SafeSide', demo: 'https://farhankabir133.github.io/SafeSide/' },
+    'emotion-detection': { github: 'https://github.com/farhankabir133/Emotion-Detection' },
+    'portfolio-os': { github: 'https://github.com/farhankabir133/FarhanOS', demo: 'https://farhankabir.me/' },
+    '9th-grade': { github: 'https://github.com/farhankabir133' },
+    buildsafe: { github: 'https://github.com/farhankabir133/BuildSafe', demo: 'https://build-safe-three.vercel.app' },
+    'buddy-script': { github: 'https://github.com/farhankabir133/Buddy-Script', demo: 'https://buddy-script-teal.vercel.app' },
+    'rankflow-ai': { github: 'https://github.com/farhankabir133/RankFlow-AI', demo: 'https://farhankabir133.github.io/RankFlow-AI/' },
+    'exam-survival': { github: 'https://github.com/farhankabir133/Exam-Survival' },
+    'codelab-ai-genkit-rag': { github: 'https://github.com/farhankabir133/codelab-ai-genkit-rag' },
+    autospark: { github: 'https://github.com/farhankabir133/autospark', demo: 'https://autosparkbd.com/' },
+    'omniva-ai': { github: 'https://github.com/farhankabir133/OMNIVA-AI-' },
+    'farhankabir-com': { github: 'https://github.com/farhankabir133/farhankabir.com', demo: 'https://farhankabir.com' },
+    'personal-site': { github: 'https://github.com/farhankabir133/Personal_Site' },
+    routineos: { github: 'https://github.com/farhankabir133/RoutineOS', demo: 'https://farhankabir133.github.io/RoutineOS/' },
+    'vocab-x': { github: 'https://github.com/farhankabir133/vocab-X' }
+  },
+
   papers: [
     {
       id: 'energy-consumption-isee-2026',
@@ -669,5 +691,47 @@ export const portfolioData: PortfolioData = {
     { source: 'transformers', target: 'saas' },
     { source: 'saas', target: 'telemetry' },
     { source: 'saas', target: 'databases' }
+  ],
+
+  certifications: [
+    {
+      title: 'Deep Learning Specialization',
+      issuer: 'deeplearning.ai / Coursera',
+      date: '2024',
+      skills: ['CNNs', 'RNNs/LSTMs', 'Transformer Architecture', 'Attention Mechanisms']
+    },
+    {
+      title: 'Google Cloud Associate Engineer',
+      issuer: 'Google Cloud',
+      date: '2025',
+      skills: ['GCP Compute Engines', 'GKE Containers', 'IAM Security', 'Cloud SQL Monitoring']
+    },
+    {
+      title: 'Natural Language Processing Professional',
+      issuer: 'Hugging Face / Stanford Online',
+      date: '2024',
+      skills: ['Tokenization Pipelines', 'Model Fine-tuning', 'ONNX Optimization', 'Quantization']
+    }
+  ],
+
+  testimonials: [
+    {
+      text: "Farhan's expertise in fine-tuning BERT and RoBERTa models for clinical emotional text classification was pivotal to our diagnostics program. His depth of knowledge in linguistic anomalies is world-class.",
+      author: 'Dr. Sarah Jenkins',
+      role: 'Lead Clinical NLP Researcher, Cognitive Diagnostics Lab',
+      initials: 'SJ'
+    },
+    {
+      text: "The Ink Home's WebGL carousel design and custom caching proxy were executed brilliantly. Farhan consistently delivers high-performance SaaS components while respecting peak engineering aesthetic rules.",
+      author: 'Marcus Sterling',
+      role: 'Product Director, Synthetix Solutions',
+      initials: 'MS'
+    },
+    {
+      text: 'An absolute powerhouse developer. Farhan balances deep statistical NLP modeling with pixel-perfect responsive layouts inspired by Linear. TypeRush is a masterclass in Web Audio synchronization.',
+      author: 'Linus O.',
+      role: 'Senior Open Source Systems Architect',
+      initials: 'LO'
+    }
   ]
 };

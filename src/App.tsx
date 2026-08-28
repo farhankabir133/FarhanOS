@@ -5,13 +5,17 @@ import {
   Calendar, Award, Search,
   Maximize2, Minimize2, X, Menu, Sparkles,
   Rocket, Compass, PhoneCall, Palette,
-  Clock, FileSpreadsheet
+  Clock, FileSpreadsheet, Settings, User, Volume2, VolumeX
 } from 'lucide-react';
 import { FarhanAIIcon } from './components/FarhanAIIcon';
 import ClockText from './components/Clock';
 import { portfolioData } from './data/portfolioData';
 import { Project, Paper, TimelineEvent, Article, Theme } from './types';
 import LandingPage from './components/LandingPage';
+import { playSound, setMuted as setMutedSound } from './utils/sound';
+import { loadOsState, saveOsState, clearOsState, type PersistedOsState } from './utils/osState';
+import { track } from './utils/analytics';
+import { siteConfig } from './config/site';
 const Whiteboard = lazy(() => import('./components/Whiteboard'));
 const BuildsWindow = lazy(() => import('./os/windows/BuildsWindow'));
 const TimelineWindow = lazy(() => import('./os/windows/TimelineWindow'));
@@ -25,6 +29,31 @@ const WritingWindow = lazy(() => import('./os/windows/WritingWindow'));
 const TwinWindow = lazy(() => import('./os/windows/TwinWindow'));
 const BriefWindow = lazy(() => import('./os/windows/BriefWindow'));
 const ProfTimelineWindow = lazy(() => import('./os/windows/ProfTimelineWindow'));
+const AboutWindow = lazy(() => import('./os/windows/AboutWindow'));
+const SettingsWindow = lazy(() => import('./os/windows/SettingsWindow'));
+
+// Warm the module cache when a visitor hovers an icon, so opening the window
+// feels instant (feature 7: prefetch-on-hover).
+const windowImportMap: Record<string, () => Promise<unknown>> = {
+  whiteboard: () => import('./components/Whiteboard'),
+  builds: () => import('./os/windows/BuildsWindow'),
+  timeline: () => import('./os/windows/TimelineWindow'),
+  resume: () => import('./os/windows/ResumeWindow'),
+  github: () => import('./os/windows/GithubWindow'),
+  garden: () => import('./os/windows/GardenWindow'),
+  skills: () => import('./os/windows/SkillsWindow'),
+  projects: () => import('./os/windows/ProjectsWindow'),
+  research: () => import('./os/windows/ResearchWindow'),
+  writing: () => import('./os/windows/WritingWindow'),
+  twin: () => import('./os/windows/TwinWindow'),
+  brief: () => import('./os/windows/BriefWindow'),
+  profTimeline: () => import('./os/windows/ProfTimelineWindow'),
+  about: () => import('./os/windows/AboutWindow'),
+  settings: () => import('./os/windows/SettingsWindow'),
+};
+const prefetchWindow = (id: string) => {
+  windowImportMap[id]?.().catch(() => {});
+};
 import { speakTextClient, getAskTwinFallback, generateClientBriefSummary } from './utils/aiFallback';
 import { getApiBaseUrl } from './utils/apiConfig';
 import { askTwin } from './utils/askTwin';
@@ -42,6 +71,9 @@ export default function App() {
   const [isWarping, setIsWarping] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Restore the visitor's saved OS session (theme, layout, accent, wallpaper).
+  const initialOs = useMemo(() => loadOsState(), []);
+
   useEffect(() => {
     if (viewMode === 'os') {
       document.documentElement.classList.add('os-mode');
@@ -54,11 +86,15 @@ export default function App() {
   }, [viewMode]);
 
   // OS System States
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>((initialOs.theme as Theme) || 'dark');
   
   // Window Management States
   // Each open window is represented by its unique id
-  const [openWindows, setOpenWindows] = useState<string[]>(['twin']); 
+  const [openWindows, setOpenWindows] = useState<string[]>(
+    initialOs.openWindows && initialOs.openWindows.length
+      ? initialOs.openWindows
+      : ['twin'],
+  );
   const [minimizedWindows, setMinimizedWindows] = useState<string[]>([]);
   const [focusedWindow, setFocusedWindow] = useState<string>('twin');
   const [windowPositions, setWindowPositions] = useState<Record<string, { x: number; y: number; isMaximized: boolean }>>(() => {
@@ -66,7 +102,7 @@ export default function App() {
     const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
     const baseX = Math.min(50, vw - 400);
     const baseY = Math.min(70, vh - 300);
-    return {
+    const defaults: Record<string, { x: number; y: number; isMaximized: boolean }> = {
       twin: { x: baseX, y: baseY, isMaximized: false },
       projects: { x: baseX + 70, y: baseY + 70, isMaximized: false },
       research: { x: baseX + 130, y: baseY + 20, isMaximized: false },
@@ -81,6 +117,12 @@ export default function App() {
       whiteboard: { x: baseX + 190, y: baseY + 40, isMaximized: false },
       profTimeline: { x: baseX + 110, y: baseY + 170, isMaximized: false },
     };
+    if (initialOs.windowPositions) {
+      for (const k of Object.keys(initialOs.windowPositions)) {
+        if (initialOs.windowPositions[k]) defaults[k] = initialOs.windowPositions[k];
+      }
+    }
+    return defaults;
   });
   const [windowReady, setWindowReady] = useState<Record<string, boolean>>({});
 
@@ -174,12 +216,13 @@ export default function App() {
 
   // Ask Twin AI State
   const [twinInput, setTwinInput] = useState('');
-  const [twinMessages, setTwinMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; audio?: string }>>([
+  const [twinMessages, setTwinMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; audio?: string; sources?: { title: string }[] }>>([
     { role: 'assistant', content: "Systems fully operational. I am Farhan's certified neural clone. Feel free to enquire about my NLP predictive pipelines, clinical depression research, full-stack architectures, or project command maps." }
   ]);
   const [twinLoading, setTwinLoading] = useState(false);
   const [playingMessageIndex, setPlayingMessageIndex] = useState<number | null>(null);
   const [currentTTSAudio, setCurrentTTSAudio] = useState<{ stop: () => void } | null>(null);
+  const twinSourcesRef = useRef<{ title: string }[]>([]);
 
   // Mission Brief State
   const [briefForm, setBriefForm] = useState({
@@ -206,7 +249,68 @@ export default function App() {
   // Draggable State Management (Simple manual drag handler to avoid external libraries complexity)
   const [draggedWindow, setDraggedWindow] = useState<string | null>(null);
 
-  const triggerSound = useCallback((_freq: number = 800, _dur: number = 0.03) => {}, []);
+  // Sound engine + visitor customization (persisted)
+  const [muted, setMutedState] = useState<boolean>(() => initialOs.muted);
+  const [accent, setAccentState] = useState<string | null>(initialOs.accent ?? null);
+  const [wallpaper, setWallpaperState] = useState<string | null>(initialOs.wallpaper ?? null);
+
+  const triggerSound = useCallback((freq: number = 800, dur: number = 0.05) => {
+    playSound(freq, dur);
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    setMutedState((prev) => {
+      const next = !prev;
+      setMutedSound(next);
+      triggerSound(next ? 200 : 700, 0.05);
+      return next;
+    });
+  }, [triggerSound]);
+
+  const changeAccent = useCallback((hex: string | null) => {
+    setAccentState(hex);
+    if (hex) {
+      document.documentElement.style.setProperty('--user-accent', hex);
+    } else {
+      document.documentElement.style.removeProperty('--user-accent');
+    }
+  }, []);
+
+  const changeWallpaper = useCallback((url: string | null) => {
+    setWallpaperState(url);
+  }, []);
+
+  const resetLayout = useCallback(() => {
+    setWindowPositions({
+      twin: { x: 50, y: 70, isMaximized: false },
+    });
+    setOpenWindows(['twin']);
+    triggerSound(600, 0.06);
+  }, [triggerSound]);
+
+  const resetAll = useCallback(() => {
+    clearOsState();
+    changeAccent(null);
+    changeWallpaper(null);
+    setMutedSound(false);
+    setMutedState(false);
+    setTheme('dark');
+    resetLayout();
+    triggerSound(500, 0.08);
+  }, [changeAccent, changeWallpaper, resetLayout, triggerSound]);
+
+  // Persist OS session state (debounced inside saveOsState).
+  useEffect(() => {
+    saveOsState({
+      theme,
+      openWindows,
+      windowPositions,
+      muted,
+      accent,
+      wallpaper,
+    });
+  }, [theme, openWindows, windowPositions, muted, accent, wallpaper]);
+
 
   const handleWarpAndEnter = useCallback(() => {
     if (isWarping) return;
@@ -387,6 +491,29 @@ export default function App() {
     setMinimizedWindows(prev => prev.filter(w => w !== windowId));
     setFocusedWindow(windowId);
     setWindowReady(prev => ({ ...prev, [windowId]: false }));
+    track('window_open', { window: windowId });
+  }, []);
+
+  // Apply persisted accent + mute on first paint (the setters only run on change).
+  useEffect(() => {
+    if (accent) {
+      document.documentElement.style.setProperty('--user-accent', accent);
+    }
+    setMutedSound(initialOs.muted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Feature 8: privacy-friendly analytics (Plausible) — only loads when a domain is configured.
+  useEffect(() => {
+    if (!siteConfig.plausibleDomain) return;
+    if (document.getElementById('plausible-script')) return;
+    const s = document.createElement('script');
+    s.id = 'plausible-script';
+    s.defer = true;
+    s.src = 'https://plausible.io/js/script.outbound-links.js';
+    s.setAttribute('data-domain', siteConfig.plausibleDomain);
+    document.head.appendChild(s);
+    track('pageview');
   }, []);
 
   // Executes OS actions requested by the AI assistant (tool-calling bridge).
@@ -504,15 +631,20 @@ export default function App() {
             }
             return [...prev, { role: 'assistant' as const, content: fullText }];
           });
-        }
+        },
+        onSources: (items) => {
+          twinSourcesRef.current = items;
+        },
       });
 
+      const sources = twinSourcesRef.current.length ? twinSourcesRef.current : undefined;
+      twinSourcesRef.current = [];
       setTwinMessages(prev => {
         const withoutPartial =
           prev[prev.length - 1]?.role === 'assistant'
             ? prev.slice(0, -1)
             : prev;
-        return [...withoutPartial, { role: 'assistant' as const, content: reply }];
+        return [...withoutPartial, { role: 'assistant' as const, content: reply, sources }];
       });
       setTwinLoading(false);
       speakText(reply, twinMessages.length + 1);
@@ -767,6 +899,8 @@ export default function App() {
     { id: 'brief', label: 'Mission Brief', icon: Rocket, color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
     { id: 'builds', label: 'Release Logs', icon: Layers, color: 'text-teal-400 bg-teal-500/10 border-teal-500/20' },
     { id: 'whiteboard', label: 'Ideation Pad', icon: Palette, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+    { id: 'about', label: 'About Farhan', icon: User, color: 'text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/20' },
+    { id: 'settings', label: 'Preferences', icon: Settings, color: 'text-slate-300 bg-zinc-500/10 border-zinc-500/20' },
   ], []);
 
   // Theme styling definitions mapping
@@ -867,9 +1001,18 @@ export default function App() {
           <header className="h-10 bg-black/40 backdrop-blur-md border-b border-zinc-800/40 flex items-center justify-between px-4 z-[99] select-none text-xs font-mono">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 cursor-pointer font-bold tracking-tight text-white hover:opacity-85" onClick={() => triggerSound(900, 0.05)}>
-                <span className="w-2 h-2 rounded bg-sky-400 opacity-90 shadow-[0_0_6px_#38bdf8]" />
+                <span
+                  className="w-2 h-2 rounded opacity-90"
+                  style={{ background: 'var(--user-accent, #38bdf8)', boxShadow: '0 0 6px var(--user-accent, #38bdf8)' }}
+                />
                 <span>FarhanOS</span>
                 <span className="text-[9px] text-sky-400 px-1 border border-sky-500/20 rounded font-mono font-medium">BETA</span>
+                {siteConfig.openToWork && (
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    OPEN TO WORK
+                  </span>
+                )}
               </div>
 
               {/* Portal route back trigger */}
@@ -932,6 +1075,16 @@ export default function App() {
             >
               <Palette className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
               <span>Theme: {theme}</span>
+            </button>
+
+            {/* Mute toggle — visible on all breakpoints */}
+            <button
+              onClick={toggleMute}
+              className="flex items-center gap-1.5 bg-zinc-950/60 border border-zinc-800/40 rounded px-2 py-1 text-[10px] text-zinc-300 hover:text-white capitalize cursor-pointer active:scale-95 transition-all"
+              title={muted ? 'Unmute sound effects' : 'Mute sound effects'}
+              aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
+            >
+              {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-sky-400" />}
             </button>
 
               <div className="hidden sm:flex items-center gap-1.5 text-zinc-400 font-mono tracking-wider font-semibold bg-zinc-950/45 border border-zinc-800/40 px-2 py-0.5 rounded select-none">
@@ -1035,7 +1188,15 @@ export default function App() {
 
       {/* 4. MAIN WORKSPACE / MONITOR AREA */}
       <main id="main-content" tabIndex={-1} className="flex-1 relative overflow-auto p-4 md:p-6 scrollbar-none">
-        
+
+        {/* Visitor wallpaper layer */}
+        {wallpaper && (
+          <div
+            className="absolute inset-0 pointer-events-none -z-20 bg-cover bg-center opacity-30"
+            style={{ backgroundImage: `url(${wallpaper})` }}
+          />
+        )}
+
         {/* Dynamic ambient grid particle network background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden select-none -z-10 opacity-35">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:4rem_4rem]" />
@@ -1058,6 +1219,8 @@ export default function App() {
                 aria-label={`Open ${ico.label}`}
                 aria-pressed={openWindows.includes(ico.id)}
                 onClick={() => openWindow(ico.id)}
+                onMouseEnter={() => prefetchWindow(ico.id)}
+                onFocus={() => prefetchWindow(ico.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -1342,6 +1505,30 @@ export default function App() {
                 {winId === 'builds' && (
                   <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading build diagnostics...</div>}>
                     <BuildsWindow />
+                  </Suspense>
+                )}
+
+                {/* M. ABOUT / PERSONAL STORY */}
+                {winId === 'about' && (
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading profile...</div>}>
+                    <AboutWindow styleSet={styleSet} />
+                  </Suspense>
+                )}
+
+                {/* N. VISITOR PREFERENCES / CUSTOMIZATION */}
+                {winId === 'settings' && (
+                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading preferences...</div>}>
+                    <SettingsWindow
+                      styleSet={styleSet}
+                      muted={muted}
+                      onToggleMute={toggleMute}
+                      accent={accent}
+                      onAccentChange={changeAccent}
+                      wallpaper={wallpaper}
+                      onWallpaperChange={changeWallpaper}
+                      onResetLayout={resetLayout}
+                      onResetAll={resetAll}
+                    />
                   </Suspense>
                 )}
 
