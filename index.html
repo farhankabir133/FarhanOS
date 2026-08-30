@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
+  <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#090a10" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="author" content="Farhan Kabir" />
@@ -85,10 +85,29 @@
       }
     ]
   }
-  </script>
+</script>
+<script>
+  // Sync theme with system preference on first load
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const savedTheme = localStorage.getItem('farhanos-theme');
+  const theme = savedTheme ? savedTheme : (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+  
+  // Persist theme choice
+  document.documentElement.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const newTheme = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('farhanos-theme', newTheme);
+  });
+</script>
 </head>
 
 <body>
+  <!-- Skip to main content link for screen readers -->
+  <a href="#__next" class="sr-only focus-visible-focus:not(sr-only):focus:focus-visible:in-block focus-color:#38bdf8 focus-bg:#090a10 focus-padding:8px focus-z-index:9999">
+    Skip to main content
+  </a>
   <div id="root">
     <noscript>
       <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#090a10;color:#e4e4e7;font-family:system-ui,sans-serif;padding:2rem;text-align:center">

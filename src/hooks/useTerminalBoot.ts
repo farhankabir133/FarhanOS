@@ -90,7 +90,7 @@ export function useTerminalBoot({
     beginReveal();
   }, [beginReveal]);
 
-  // App readiness signal: window load, or a hard safety cap.
+  // App readiness signal: window load, hard safety cap, or idle callback.
   useEffect(() => {
     const markReady = () => {
       appReadyRef.current = true;
@@ -101,6 +101,14 @@ export function useTerminalBoot({
       window.addEventListener('load', markReady, { once: true });
     }
     const cap = setTimeout(markReady, maxDurationMs);
+    // Use requestIdleCallback to run non-critical setup after main thread clears
+    if ('requestIdleCallback' in window) {
+      const idle = requestIdleCallback(markReady, { timeout: maxDurationMs });
+      return () => {
+        window.removeEventListener('load', markReady);
+        cancelIdleCallback(idle);
+      };
+    }
     return () => {
       window.removeEventListener('load', markReady);
       clearTimeout(cap);

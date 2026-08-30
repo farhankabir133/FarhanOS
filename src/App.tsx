@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback, startTransition } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback, startTransition, useId } from 'react';
 const AssistantLauncher = lazy(() => import('./components/AssistantLauncher'));
 import {
   Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText,
@@ -150,6 +150,7 @@ export default function App() {
     const themes: Theme[] = ['dark', 'cyberpunk', 'ai', 'terminal', 'light'];
     const nextIdx = (themes.indexOf(theme) + 1) % themes.length;
     setTheme(themes[nextIdx]);
+    document.getElementById('farhanos-announcer')!.textContent = `Theme changed to ${themes[nextIdx]}`;
     triggerSound(750, 0.03);
   }, [theme]);
 
@@ -484,6 +485,7 @@ export default function App() {
   // Opening & Focusing a window
   const openWindow = useCallback((windowId: string) => {
     triggerSound(700, 0.05);
+    document.getElementById('farhanos-announcer')!.textContent = `Window ${windowId} opened`;
     setOpenWindows(prev => {
       if (prev.includes(windowId)) return prev;
       return [...prev, windowId];
@@ -531,7 +533,8 @@ export default function App() {
       case 'switch_theme':
         if (isOsTheme(action.theme!)) {
           setTheme(action.theme);
-          triggerSound(750, 0.03);
+    document.getElementById('farhanos-announcer')!.textContent = `Theme changed to ${action.theme}`;
+    triggerSound(750, 0.03);
         }
         break;
       case 'open_link':
@@ -560,6 +563,7 @@ export default function App() {
     });
     setFocusedWindow(prev => {
       const rest = openWindows.filter(w => w !== windowId && !minimizedWindows.includes(w));
+      document.getElementById('farhanos-announcer')!.textContent = `Window ${windowId} closed`;
       return rest.length > 0 ? rest[rest.length - 1] : prev;
     });
   }, [openWindows, minimizedWindows]);
@@ -978,6 +982,8 @@ export default function App() {
 
   return (
     <div className={`w-full ${viewMode === 'os' ? 'h-full overflow-hidden select-none' : 'min-h-screen'} ${styleSet.bg} transition-colors duration-500 flex flex-col relative`}>
+      <div className="hidden" aria-live="polite" aria-atomic="true" id="farhanos-announcer" />
+      <div className="hidden" aria-live="polite" aria-atomic="true" id="farhanos-announcer-window" />
       {viewMode === 'landing' ? (
         <LandingPage
           isWarping={isWarping}
@@ -1058,7 +1064,7 @@ export default function App() {
               {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
                 <button 
                   key={t}
-                  onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
+                  onClick={() => { setTheme(t as any); triggerSound(750, 0.03); document.getElementById('farhanos-announcer')!.textContent = `Theme changed to ${t}`; }}
                   className={`text-[10px] px-1.5 py-0.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
                   {t}
@@ -1137,7 +1143,7 @@ export default function App() {
                       {['dark', 'cyberpunk', 'ai', 'terminal', 'light'].map((t) => (
                         <button
                           key={t}
-                          onClick={() => { setTheme(t as any); triggerSound(750, 0.03); }}
+                          onClick={() => { setTheme(t as any); triggerSound(750, 0.03); document.getElementById('farhanos-announcer')!.textContent = `Theme changed to ${t}`; }}
                           className={`text-[11px] px-2 py-1.5 rounded capitalize transition-all cursor-pointer ${theme === t ? 'bg-[#181926] text-white font-bold border border-zinc-700/60' : 'text-zinc-500 hover:text-zinc-300 bg-zinc-900/40'}`}
                         >
                           {t}

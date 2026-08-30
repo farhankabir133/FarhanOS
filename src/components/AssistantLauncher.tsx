@@ -144,7 +144,14 @@ export default function AssistantLauncher({
       };
       updateHeight();
       window.addEventListener('resize', updateHeight);
-      return () => window.removeEventListener('resize', updateHeight);
+      // Scroll input into view when sheet opens, with slight delay for render
+      const scrollId = setTimeout(() => {
+        inputRef.current?.scrollIntoView({ block: 'end', inline: 'nearest' });
+      }, 100);
+      return () => {
+        window.removeEventListener('resize', updateHeight);
+        clearTimeout(scrollId);
+      };
     }
   }, [isOpen]);
 
@@ -642,6 +649,8 @@ export default function AssistantLauncher({
           className={`flex-1 resize-none rounded-xl px-4 py-3 text-[13px] outline-none border transition-all ${inputGlass}`}
           style={{ minHeight: '44px', maxHeight: '120px' }}
           aria-label="Chat input"
+          inputMode="text"
+          enterKeyHint="send"
         />
         <button
           onClick={() => (isLoading ? abortRef.current?.abort() : sendMessage())}
@@ -686,7 +695,7 @@ export default function AssistantLauncher({
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              className="assistant-mobile-sheet fixed inset-x-0 bottom-0 z-[9998] w-full h-[85vh] rounded-t-2xl border border-b-0 bg-zinc-950/97 backdrop-blur-2xl overflow-hidden flex flex-col"
+              className="assistant-mobile-sheet fixed inset-x-0 bottom-0 z-[9998] w-full h-[90vh] rounded-t-2xl border border-b-0 bg-zinc-950/97 backdrop-blur-2xl overflow-hidden flex flex-col"
               style={{
                 paddingTop: 'env(safe-area-inset-top)',
                 paddingBottom: 'env(safe-area-inset-bottom)',
@@ -705,7 +714,7 @@ export default function AssistantLauncher({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25, mass: 0.8 }}
-              className="assistant-desktop-window assistant-chat-window flex w-[35vw] min-w-[320px] max-h-[70vh] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
+              className="assistant-desktop-window assistant-chat-window flex w-[90vw] md:w-[35vw] lg:w-[400px] max-w-[600px] min-w-[320px] max-h-[70vh] flex-col rounded-2xl border backdrop-blur-2xl overflow-hidden"
               {...dialogProps}
             >
               {headerBar(false)}

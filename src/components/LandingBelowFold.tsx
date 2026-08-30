@@ -1838,6 +1838,7 @@ function LandingBelowFold() {
               ? 'bg-white/80 border-slate-300 text-slate-700 hover:bg-slate-50' 
               : 'bg-zinc-950/80 border-zinc-850 text-zinc-400 hover:text-white hover:border-[#00ffcc]/35'
           }`}
+          aria-label="Back to top"
           title="Back to Top"
         >
           <ArrowUp className="w-4 h-4" />

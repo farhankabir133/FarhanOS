@@ -264,6 +264,14 @@ body {
   border-radius: 4px;
 }
 
+/* Ensure focus rings are visible on interactive elements when not using a mouse */
+@media (hover: hover) and (pointer: fine) {
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+}
+
 /* Keep terminal/code text left-aligned */
 .font-mono, code, pre, kbd, .terminal-text {
   text-align: left;
@@ -286,9 +294,25 @@ body {
 
 /* Performance Utilities */
 
-/* Mobile touch optimization */
-.touch-manipulation {
-  touch-action: manipulation;
+/* Fluid font scaling — clamp-based text sizes for all devices */
+html {
+  font-size: clamp(14px, 0.875rem + 0.5vw, 18px);
+}
+
+/* Hover vs touch differentiation */
+@media (hover: hover) {
+  .hover-lift:hover { transform: translateY(-4px); transition: transform 0.15s ease-out; }
+}
+@media (hover: none) {
+  .hover-lift:active { transform: scale(0.98); transition: transform 0.08s ease-out; }
+}
+
+/* Mobile touch optimization — expanded tap targets */
+@media (pointer: coarse) {
+  button, a, [role="button"], [tabindex] {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* Glyph state animations */
