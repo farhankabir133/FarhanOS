@@ -61,6 +61,18 @@ input, button, select, textarea {
   overscroll-behavior: none;
 }
 
+/* Performance: content-visibility for below-fold sections */
+section[id] {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 600px;
+}
+
+/* Exceptions for sections that need immediate rendering */
+section:first-of-type,
+section#hero-content {
+  content-visibility: visible;
+}
+
 body {
   /* Prevent system fonts scaling */
   -webkit-text-size-adjust: 100%;

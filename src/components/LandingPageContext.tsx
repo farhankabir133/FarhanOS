@@ -14,6 +14,8 @@ export interface LandingPageContextType {
   setActiveTab: (tab: 'All' | 'AI/ML' | 'Frontend' | 'Backend' | 'Database' | 'DevOps') => void;
   activeTestimonial: number;
   setActiveTestimonial: (idx: number | ((prev: number) => number)) => void;
+  testimonialPaused: boolean;
+  setTestimonialPaused: (paused: boolean) => void;
   styleSet: Record<string, string>;
   filteredSkills: any[];
   testimonials: any[];

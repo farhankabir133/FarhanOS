@@ -16,6 +16,7 @@ import avatarImgAvif from '../../assets/avatar.avif';
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { LazySection } from './LazySection';
 import { LandingPageContext, LandingPageContextType } from './LandingPageContext';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -52,6 +53,12 @@ export default function LandingPage({
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [testimonialPaused, setTestimonialPaused] = useState(false);
+
+  const mobileMenuRef = useFocusTrap({
+    enabled: mobileMenuOpen,
+    onEscape: () => setMobileMenuOpen(false),
+  });
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -127,11 +134,13 @@ export default function LandingPage({
     }
   }, []);
 
-  // Auto-play Testimonials — deferred to after LCP
+  // Auto-play Testimonials — deferred to after LCP, respects pause state
   useEffect(() => {
     const startRotation = () => {
       const timer = setInterval(() => {
-        setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+        if (!testimonialPaused) {
+          setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
+        }
       }, 8000);
       return () => clearInterval(timer);
     };
@@ -149,7 +158,7 @@ export default function LandingPage({
       scheduledCancel?.();
       stopRotation?.();
     };
-  }, []);
+  }, [testimonialPaused]);
 
   // Theme Config mapper
   const getThemeStyles = useCallback(() => {
@@ -157,71 +166,71 @@ export default function LandingPage({
       case 'cyberpunk':
         return {
           textPrimary: 'text-[#00ffcc]',
-          textSecondary: 'text-pink-400',
+          textSecondary: 'text-pink-300',
           borderAccent: 'border-pink-500/20 hover:border-pink-500/50',
           btnPrimary: 'bg-pink-600 hover:bg-pink-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.3)] border border-pink-400/50',
-          btnSecondary: 'border-pink-500/30 text-pink-300 hover:bg-pink-550/10 bg-black/60',
+          btnSecondary: 'border-pink-500/30 text-pink-200 hover:bg-pink-550/10 bg-black/60',
           statCardGlow: 'hover:border-pink-500/40 hover:shadow-[0_0_25px_rgba(236,72,153,0.15)]',
           skillBar: 'from-pink-500 to-[#00ffcc]',
           activeTabBtn: 'bg-pink-600 text-white border-pink-500',
-          tabBtn: 'text-pink-400 border-pink-500/20 hover:border-pink-500/40 bg-zinc-950/40',
-          badgeStyle: 'bg-pink-500/10 border border-pink-500/20 text-pink-300',
+          tabBtn: 'text-pink-300 border-pink-500/20 hover:border-pink-500/40 bg-zinc-950/40',
+          badgeStyle: 'bg-pink-500/10 border border-pink-500/20 text-pink-200',
           gradientBg: 'from-pink-500/5 via-purple-500/2 to-transparent',
         };
       case 'ai':
         return {
-          textPrimary: 'text-purple-300',
-          textSecondary: 'text-cyan-400',
+          textPrimary: 'text-purple-200',
+          textSecondary: 'text-cyan-300',
           borderAccent: 'border-purple-500/20 hover:border-cyan-400/40',
           btnPrimary: 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] border border-purple-400/40',
-          btnSecondary: 'border-purple-500/30 text-cyan-200 hover:bg-purple-950/40 bg-black/60',
+          btnSecondary: 'border-purple-500/30 text-cyan-100 hover:bg-purple-950/40 bg-black/60',
           statCardGlow: 'hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.15)]',
           skillBar: 'from-purple-500 to-cyan-400',
           activeTabBtn: 'bg-purple-600 text-white border-purple-500',
-          tabBtn: 'text-purple-300 border-purple-500/20 hover:border-purple-500/40 bg-zinc-950/40',
-          badgeStyle: 'bg-purple-500/10 border border-purple-500/20 text-purple-300',
+          tabBtn: 'text-purple-200 border-purple-500/20 hover:border-purple-500/40 bg-zinc-950/40',
+          badgeStyle: 'bg-purple-500/10 border border-purple-500/20 text-purple-200',
           gradientBg: 'from-purple-500/5 via-indigo-500/2 to-transparent',
         };
       case 'terminal':
         return {
           textPrimary: 'text-[#33ff33]',
-          textSecondary: 'text-[#16a34a]',
+          textSecondary: 'text-[#22c55e]',
           borderAccent: 'border-[#33ff33]/20 hover:border-[#33ff33]/50',
           btnPrimary: 'bg-[#33ff33] text-black hover:bg-[#33ff33]/85 shadow-[0_0_15px_rgba(51,255,51,0.3)] border border-[#33ff33]/50',
           btnSecondary: 'border-[#33ff33]/30 text-[#33ff33] hover:bg-[#33ff33]/10 bg-black/60',
           statCardGlow: 'hover:border-[#33ff33]/50 hover:shadow-[0_0_25px_rgba(51,255,51,0.2)]',
-          skillBar: 'from-[#16a34a] to-[#33ff33]',
+          skillBar: 'from-[#22c55e] to-[#33ff33]',
           activeTabBtn: 'bg-zinc-900 text-[#33ff33] border-[#33ff33]',
-          tabBtn: 'text-[#33ff33]/80 border-[#33ff33]/20 hover:border-[#33ff33]/40 bg-black/40',
+          tabBtn: 'text-[#33ff33] border-[#33ff33]/20 hover:border-[#33ff33]/40 bg-black/40',
           badgeStyle: 'bg-emerald-950/20 border border-[#33ff33]/20 text-[#33ff33]',
           gradientBg: 'from-[#33ff33]/3 to-transparent',
         };
       case 'light':
         return {
-          textPrimary: 'text-indigo-600',
-          textSecondary: 'text-sky-600',
+          textPrimary: 'text-indigo-700',
+          textSecondary: 'text-sky-700',
           borderAccent: 'border-slate-300 hover:border-indigo-400',
           btnPrimary: 'bg-slate-900 hover:bg-slate-800 text-white shadow-md',
           btnSecondary: 'border-slate-300 text-slate-700 hover:bg-slate-100 bg-white',
           statCardGlow: 'hover:border-indigo-400 hover:shadow-lg',
           skillBar: 'from-indigo-500 to-sky-500',
           activeTabBtn: 'bg-indigo-650 text-white border-indigo-650',
-          tabBtn: 'text-slate-600 border-slate-200 hover:border-slate-350 bg-slate-50',
-          badgeStyle: 'bg-indigo-50 border border-indigo-100 text-indigo-600',
+          tabBtn: 'text-slate-700 border-slate-200 hover:border-slate-350 bg-slate-50',
+          badgeStyle: 'bg-indigo-50 border border-indigo-100 text-indigo-700',
           gradientBg: 'from-indigo-500/3 via-purple-500/1 to-transparent',
         };
       default: // dark mode
         return {
-          textPrimary: 'text-sky-400',
-          textSecondary: 'text-indigo-400',
+          textPrimary: 'text-sky-300',
+          textSecondary: 'text-indigo-300',
           borderAccent: 'border-zinc-800/80 hover:border-[#00ffcc]/30',
           btnPrimary: 'bg-indigo-650 hover:bg-indigo-600 text-white shadow-lg shadow-indigo-950/50 border border-indigo-400/40',
-          btnSecondary: 'border-zinc-800 text-zinc-300 hover:bg-zinc-900/60 bg-black/60',
+          btnSecondary: 'border-zinc-800 text-zinc-200 hover:bg-zinc-900/60 bg-black/60',
           statCardGlow: 'hover:border-indigo-500/30 hover:shadow-[0_0_25px_rgba(99,102,241,0.08)]',
           skillBar: 'from-indigo-500 to-sky-400',
           activeTabBtn: 'bg-indigo-650 text-white border-indigo-500',
-          tabBtn: 'text-zinc-400 border-zinc-800 hover:border-zinc-700 bg-zinc-950/40',
-          badgeStyle: 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-300',
+          tabBtn: 'text-zinc-300 border-zinc-800 hover:border-zinc-700 bg-zinc-950/40',
+          badgeStyle: 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-200',
           gradientBg: 'from-indigo-500/5 via-purple-500/2 to-transparent',
         };
     }
@@ -255,6 +264,7 @@ export default function LandingPage({
     articles, onOpenArticleDirectly, prefersReducedMotion,
     showBackToTop, activeTab, setActiveTab,
     activeTestimonial, setActiveTestimonial,
+    testimonialPaused, setTestimonialPaused,
     styleSet, filteredSkills, testimonials, certifications,
     timelineRef, progressLineRef,
     handleAnchorClick, scrollToTop,
@@ -262,7 +272,7 @@ export default function LandingPage({
     theme, isWarping, onLaunchOS, onOpenWindowDirectly,
     articles, onOpenArticleDirectly, prefersReducedMotion,
     showBackToTop, activeTab,
-    activeTestimonial,
+    activeTestimonial, testimonialPaused,
     styleSet, filteredSkills,
     handleAnchorClick, scrollToTop,
   ]);
@@ -350,7 +360,7 @@ export default function LandingPage({
       {mobileMenuOpen && (
         <div className="site-mobile-overlay fixed inset-0 z-[9999] md:hidden">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-72 bg-zinc-950/95 border-l border-zinc-800/60 shadow-2xl flex flex-col">
+          <div ref={mobileMenuRef} className="absolute right-0 top-0 h-full w-72 bg-zinc-950/95 border-l border-zinc-800/60 shadow-2xl flex flex-col">
             <div className="flex items-center justify-between px-4 h-14 border-b border-zinc-800/40">
               <span className="text-xs font-mono font-bold text-white tracking-tight">NAVIGATION</span>
               <button
