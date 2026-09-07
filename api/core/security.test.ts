@@ -23,6 +23,8 @@ describe('isAllowedOrigin', () => {
   });
 
   it('allows production and www origins', () => {
+    expect(isAllowedOrigin('https://farhankabir.tech')).toBe(true);
+    expect(isAllowedOrigin('https://www.farhankabir.tech')).toBe(true);
     expect(isAllowedOrigin('https://farhankabir.me')).toBe(true);
     expect(isAllowedOrigin('https://www.farhankabir.me')).toBe(true);
   });

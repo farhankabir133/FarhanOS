@@ -435,7 +435,7 @@ export interface ContactResult {
 }
 
 const CONTACT_RECIPIENT = 'farhankabir236@gmail.com';
-const CONTACT_FROM = 'Farhan Kabir <contact@farhankabir.me>';
+const CONTACT_FROM = 'Farhan Kabir <contact@farhankabir.tech>';
 
 function dhakaTimestamp(): string {
   return (

@@ -54,6 +54,7 @@ const LINK_ALLOWLIST = [
   'https://x.com/fkh_236',
   'https://www.instagram.com/_farhan_kabir/',
   'https://gravatar.com/fk133',
+  'https://farhankabir.tech',
   'https://farhankabir.me',
 ];
 

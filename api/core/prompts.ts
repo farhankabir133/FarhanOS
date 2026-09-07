@@ -105,7 +105,7 @@ Contact & Transmission Directories:
 - X/Twitter: https://x.com/fkh_236
 - Instagram: https://www.instagram.com/_farhan_kabir/
 - Gravatar: https://gravatar.com/fk133
-- Portfolio: https://farhankabir.me
+- Portfolio: https://farhankabir.tech
 - Location: Rajshahi, Bangladesh (UTC+6)
 
 Skills Graph: PyTorch (5), Large Language Models (5), Clinical NLP Pipelines (5), Hugging Face & BERT (5), React/Next.js (5), Node.js & Express (5), PostgreSQL (5), Docker (5), Git & Linux (5), Tailwind CSS v4 (5), Go (4), Redis (4), Academic Research (5), Mental Health Tech (5)`;

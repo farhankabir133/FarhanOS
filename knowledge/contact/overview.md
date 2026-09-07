@@ -78,7 +78,7 @@ featured: true
 
 ## Portfolio & Location
 
-- **Portfolio:** https://farhankabir.me
+- **Portfolio:** https://farhankabir.tech
 - **Location:** Rajshahi, Bangladesh (UTC+6)
 
 ## Availability

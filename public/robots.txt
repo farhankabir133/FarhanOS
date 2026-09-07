@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://farhankabir.me/sitemap.xml
+Sitemap: https://farhankabir.tech/sitemap.xml

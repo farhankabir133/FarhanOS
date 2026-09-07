@@ -21,7 +21,7 @@ export const siteConfig = {
   plausibleDomain: (env.VITE_PLAUSIBLE_DOMAIN as string | undefined) || '',
 
   // Canonical production domain (used for sharing / OG).
-  canonicalDomain: (env.VITE_CANONICAL_DOMAIN as string | undefined) || 'farhankabir.me',
+  canonicalDomain: (env.VITE_CANONICAL_DOMAIN as string | undefined) || 'farhankabir.tech',
 };
 
 export type SiteConfig = typeof siteConfig;

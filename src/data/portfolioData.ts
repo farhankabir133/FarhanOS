@@ -343,7 +343,7 @@ export const portfolioData: PortfolioData = {
     'ink-home': { github: 'https://github.com/farhankabir133/TheInkHome', demo: 'https://theinkhome.live/' },
     safeside: { github: 'https://github.com/farhankabir133/SafeSide', demo: 'https://farhankabir133.github.io/SafeSide/' },
     'emotion-detection': { github: 'https://github.com/farhankabir133/Emotion-Detection' },
-    'portfolio-os': { github: 'https://github.com/farhankabir133/FarhanOS', demo: 'https://farhankabir.me/' },
+    'portfolio-os': { github: 'https://github.com/farhankabir133/FarhanOS', demo: 'https://farhankabir.tech/' },
     '9th-grade': { github: 'https://github.com/farhankabir133' },
     buildsafe: { github: 'https://github.com/farhankabir133/BuildSafe', demo: 'https://build-safe-three.vercel.app' },
     'buddy-script': { github: 'https://github.com/farhankabir133/Buddy-Script', demo: 'https://buddy-script-teal.vercel.app' },

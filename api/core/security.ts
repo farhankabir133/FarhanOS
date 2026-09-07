@@ -12,6 +12,8 @@ export class ApiError extends Error {
 }
 
 const ALLOWED_ORIGINS = [
+  'https://farhankabir.tech',
+  'https://www.farhankabir.tech',
   'https://farhankabir.me',
   'https://www.farhankabir.me',
 ];

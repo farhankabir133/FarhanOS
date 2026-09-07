@@ -193,7 +193,7 @@ export function getAskTwinFallback(
       "X/Twitter — https://x.com/fkh_236, " +
       "Instagram — https://www.instagram.com/_farhan_kabir/, " +
       "Gravatar — https://gravatar.com/fk133, " +
-      "Portfolio — https://farhankabir.me. " +
+      "Portfolio — https://farhankabir.tech. " +
       "Location: Rajshahi, Bangladesh (UTC+6). " +
       "I am highly interested in roles related to clinical NLP, Agentic workflows, and Full-Stack AI engineering."
     );
