@@ -28,6 +28,8 @@ export const OS_WINDOW_IDS = [
   'builds',
   'whiteboard',
   'profTimeline',
+  'about',
+  'settings',
 ] as const;
 
 export type OsWindowId = (typeof OS_WINDOW_IDS)[number];

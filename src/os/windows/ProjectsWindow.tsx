@@ -1,4 +1,4 @@
-import { GitBranch, Rocket } from 'lucide-react';
+import { GitBranch, Rocket, Globe } from 'lucide-react';
 import { portfolioData } from '../../data/portfolioData';
 import { Project, StyleSet } from '../../types';
 
@@ -56,8 +56,8 @@ export default function ProjectsWindow({ styleSet, selectedProject, setSelectedP
             <span className="text-[10px] text-zinc-500 font-mono tracking-wide">TIMELINE: {selectedProject.timeline}</span>
           </div>
           <div className="flex items-center gap-1.5 select-none">
-            {selectedProject.githubUrl ? (
-              <a href={selectedProject.githubUrl} target="_blank" rel="noopener noreferrer" className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1">
+            {portfolioData.projectLinks[selectedProject.id]?.github ? (
+              <a href={portfolioData.projectLinks[selectedProject.id].github} target="_blank" rel="noopener noreferrer" className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1">
                 <GitBranch className="w-3 h-3" />
                 <span>Code</span>
               </a>
@@ -65,6 +65,17 @@ export default function ProjectsWindow({ styleSet, selectedProject, setSelectedP
               <span className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-600 flex items-center gap-1 cursor-not-allowed">
                 <GitBranch className="w-3 h-3" />
                 <span>Code</span>
+              </span>
+            )}
+            {portfolioData.projectLinks[selectedProject.id]?.demo ? (
+              <a href={portfolioData.projectLinks[selectedProject.id].demo} target="_blank" rel="noopener noreferrer" className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 hover:text-white flex items-center gap-1">
+                <Globe className="w-3 h-3" />
+                <span>Live</span>
+              </a>
+            ) : (
+              <span className="p-1 px-2.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-600 flex items-center gap-1 cursor-not-allowed">
+                <Globe className="w-3 h-3" />
+                <span>Live</span>
               </span>
             )}
             <button onClick={() => { triggerSound(1100, 0.05); openWindow('brief'); }} className="p-1 px-2.5 rounded bg-sky-500/10 border border-sky-500/20 text-[10px] text-sky-300 hover:text-sky-200 flex items-center gap-1">

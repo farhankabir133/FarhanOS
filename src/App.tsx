@@ -180,7 +180,7 @@ export default function App() {
   useEffect(() => {
     const fetchMediumStories = async () => {
       try {
-        const res = await fetch('/api/medium-stories');
+        const res = await fetch(`${getApiBaseUrl()}/api/medium-stories`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {

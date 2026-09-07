@@ -9,6 +9,7 @@ import {
 import { portfolioData } from '../data/portfolioData';
 import { useLandingPage } from './LandingPageContext';
 import { track } from '../utils/analytics';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -449,7 +450,7 @@ function LandingBelowFold() {
       const parts = url.split('/').filter(Boolean);
       return parts[parts.length - 1]?.toLowerCase() ?? null;
     };
-    fetch('/api/github-repos')
+    fetch(`${getApiBaseUrl()}/api/github-repos`)
       .then((r) => (r.ok ? r.json() : []))
       .then((repos: Array<{ name: string; stargazers_count?: number; forks_count?: number; language?: string | null }>) => {
         if (cancelled || !Array.isArray(repos)) return;
