@@ -26,7 +26,7 @@ export default function ResumeWindow({ styleSet, resumeAudience, setResumeAudien
           <span>Print Resume Draft</span>
         </button>
         <a
-          href="/resume/Full-Stack-Agentic-AI/updated/Resume.pdf"
+          href="/resume/Senior Full Stack Engineer/Resume.pdf"
           download
           onClick={() => triggerSound(1100, 0.05)}
           className="bg-pink-500/10 text-pink-300 border border-pink-500/30 hover:text-white px-2.5 py-1 rounded text-[10px] flex items-center gap-1 cursor-pointer font-bold mt-2 sm:mt-0"
