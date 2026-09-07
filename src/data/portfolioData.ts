@@ -13,7 +13,7 @@ export const portfolioData: PortfolioData = {
   projects: [
     {
       id: '9th-grade',
-      title: '9th Grade',
+      title: '9Th-Grade AI',
       description: 'An interactive educational web platform designed for middle school students, featuring adaptive quizzes, progress tracking dashboards, and gamified learning paths covering math, science, and language arts.',
       category: 'Education',
       techStack: ['React', 'TailwindCSS', 'Firebase', 'Node.js', 'Recharts'],
@@ -344,7 +344,7 @@ export const portfolioData: PortfolioData = {
     safeside: { github: 'https://github.com/farhankabir133/SafeSide', demo: 'https://farhankabir133.github.io/SafeSide/' },
     'emotion-detection': { github: 'https://github.com/farhankabir133/Emotion-Detection' },
     'portfolio-os': { github: 'https://github.com/farhankabir133/FarhanOS', demo: 'https://farhankabir.tech/' },
-    '9th-grade': { github: 'https://github.com/farhankabir133' },
+    '9th-grade': { github: 'https://github.com/9thgradeai/9th-grade-ai-next', demo: 'https://9th-grade-ai.vercel.app/' },
     buildsafe: { github: 'https://github.com/farhankabir133/BuildSafe', demo: 'https://build-safe-three.vercel.app' },
     'buddy-script': { github: 'https://github.com/farhankabir133/Buddy-Script', demo: 'https://buddy-script-teal.vercel.app' },
     'rankflow-ai': { github: 'https://github.com/farhankabir133/RankFlow-AI', demo: 'https://farhankabir133.github.io/RankFlow-AI/' },
