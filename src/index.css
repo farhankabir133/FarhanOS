@@ -41,6 +41,8 @@ html, body, #root {
   -webkit-text-size-adjust: 100%;
   font-family: var(--font-sans);
   background-color: #090a10;
+  letter-spacing: -0.025em;
+  line-height: 1.625;
 }
 
 input, button, select, textarea {
@@ -63,6 +65,8 @@ body {
   /* Prevent system fonts scaling */
   -webkit-text-size-adjust: 100%;
   font-family: var(--font-sans);
+  letter-spacing: -0.025em;
+  line-height: 1.625;
 }
 
 /* Custom Tailwind v4 Theme & Keyframes Definitions */
