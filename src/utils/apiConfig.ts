@@ -19,7 +19,9 @@ export const getApiBaseUrl = (): string => {
       hostname.startsWith('10.') ||
       hostname.endsWith('.local') ||
       hostname === 'farhankabir.tech' ||
+      hostname === 'www.farhankabir.tech' ||
       hostname === 'farhankabir.me' ||
+      hostname === 'www.farhankabir.me' ||
       hostname.endsWith('.vercel.app') ||
       hostname.endsWith('.github.io')
     ) {
