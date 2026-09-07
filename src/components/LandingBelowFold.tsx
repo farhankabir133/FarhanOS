@@ -367,30 +367,26 @@ function InnovationCard({ project, index, accent, motif, theme, styleSet, prefer
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </motion.button>
 
-        <motion.a
-          whileHover={{ scale: 1.08, rotate: -4 }}
-          whileTap={{ scale: 0.95 }}
+        <a
           href={links.github || 'https://github.com/farhankabir133'}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-xl border border-zinc-850 bg-zinc-950/60 p-2.5 text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white"
+          className="rounded-xl border border-zinc-850 bg-zinc-950/60 p-2.5 text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white inline-flex"
           title="View source on GitHub"
         >
           <Github className="h-3.5 w-3.5" />
-        </motion.a>
+        </a>
 
         {links.demo ? (
-          <motion.a
-            whileHover={{ scale: 1.08, rotate: 4 }}
-            whileTap={{ scale: 0.95 }}
+          <a
             href={links.demo}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl border border-zinc-850 bg-zinc-950/60 p-2.5 text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white"
+            className="rounded-xl border border-zinc-850 bg-zinc-950/60 p-2.5 text-zinc-400 transition-colors hover:border-zinc-700 hover:text-white inline-flex"
             title="Open live demo"
           >
             <Globe className="h-3.5 w-3.5" />
-          </motion.a>
+          </a>
         ) : (
           <span
             className="rounded-xl border border-zinc-900 bg-zinc-950/40 p-2.5 text-zinc-700"
