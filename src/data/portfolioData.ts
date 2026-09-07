@@ -12,21 +12,21 @@ export const portfolioData: PortfolioData = {
   
   projects: [
     {
-      id: 'typerush',
-      title: 'TypeRush',
-      description: 'An immersive, atmospheric typing survival game with real-time sound synthesis, particle effects, and adaptive visual themes.',
-      category: 'AI',
-      techStack: ['React 19', 'TailwindCSS', 'Web Audio API', 'Express', 'Groq API', 'Firebase'],
-      architecture: 'Zero-re-render character buffer ref grids running at stable 60fps, integrated with a server-side Groq API and real-time Firestore synchronization.',
-      timeline: 'Sep 2024 - Mar 2025',
+      id: '9th-grade',
+      title: '9th Grade',
+      description: 'An interactive educational web platform designed for middle school students, featuring adaptive quizzes, progress tracking dashboards, and gamified learning paths covering math, science, and language arts.',
+      category: 'Education',
+      techStack: ['React', 'TailwindCSS', 'Firebase', 'Node.js', 'Recharts'],
+      architecture: 'Firebase-backed SPA with serverless Cloud Functions for quiz scoring, progress persistence, and real-time leaderboard synchronization.',
+      timeline: 'Jun 2023 - Dec 2023',
       metrics: [
-        { label: 'Audio latency', value: '0ms (Vanilla)' },
-        { label: 'Matchmaking Sync', value: '<25ms' },
-        { label: 'Frame rate', value: '60fps' }
+        { label: 'Active Learners', value: '350+' },
+        { label: 'Quiz Accuracy', value: '94.2%' },
+        { label: 'Load Time', value: '<1.2s' }
       ],
-      problem: 'Traditional typing practice software lacks sensory engagement and interactive mechanics.',
-      solution: 'TypeRush translates text into kinetic physics bodies drifting towards cockpit shield barriers, utilizing Web Audio oscillators and AI-generated themes.',
-      roadmap: ['Real-time payload glitch attacks', 'WebAssembly client-side offline dictionary sync']
+      problem: 'Middle school students lacked engaging, interactive platforms that adapt to individual learning paces and provide visual progress feedback.',
+      solution: 'Built a gamified learning interface with adaptive quiz algorithms, streak tracking, and animated progress dashboards that motivate consistent study habits.',
+      roadmap: ['AI-powered question recommendations', 'Multi-player challenge mode']
     },
     {
       id: 'ink-home',
@@ -46,38 +46,21 @@ export const portfolioData: PortfolioData = {
       roadmap: ['WebGL spatial audio integration', 'Instant newsletter subscription via Substack API']
     },
     {
-      id: 'safeside',
-      title: 'SafeSide Predictor',
-      description: 'A tactical football analytics command center providing live match simulations, league databases, and deep Poisson risk modeling.',
-      category: 'SaaS',
-      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'Groq AI', 'Recharts'],
-      architecture: 'Express backend match simulation pipeline integrated with Supabase edge tables and a cron-scheduled prediction verification service.',
-      timeline: 'Mar 2025 - Present',
+      id: 'typerush',
+      title: 'TypeRush',
+      description: 'An immersive, atmospheric typing survival game with real-time sound synthesis, particle effects, and adaptive visual themes.',
+      category: 'AI',
+      techStack: ['React 19', 'TailwindCSS', 'Web Audio API', 'Express', 'Groq API', 'Firebase'],
+      architecture: 'Zero-re-render character buffer ref grids running at stable 60fps, integrated with a server-side Groq API and real-time Firestore synchronization.',
+      timeline: 'Sep 2024 - Mar 2025',
       metrics: [
-        { label: 'Poisson model F1', value: '0.88' },
-        { label: 'Live updates latency', value: '<150ms' },
-        { label: 'Prediction checks', value: 'Automated' }
+        { label: 'Audio latency', value: '0ms (Vanilla)' },
+        { label: 'Matchmaking Sync', value: '<25ms' },
+        { label: 'Frame rate', value: '60fps' }
       ],
-      problem: 'Football tactical analysis and predictions are highly fragmented, lacking real-time simulations and secure prediction logging.',
-      solution: 'SafeSide combines live result feeds from Football-Data API with Groq AI analysis and Supabase storage to automate match diagnostics.',
-      roadmap: ['Weather-impact modeling via OpenWeather API', 'Multi-league Poisson distribution charts']
-    },
-    {
-      id: 'emotion-detection',
-      title: 'Multimodal Emotion Recognizer',
-      description: 'A neural model correlating micro-shifts in vocal pitch with linguistic markers in real-time chat data to form high-fidelity emotional feedback loops.',
-      category: 'NLP',
-      techStack: ['Python', 'BERT', 'Wav2Vec 2.0', 'React', 'FastAPI'],
-      architecture: 'Bimodal architecture merging a spectrogram acoustic encoder with a transformer text classifier using an attention-weighted fusion layer.',
-      timeline: 'Feb 2023 - Oct 2023',
-      metrics: [
-        { label: 'Bimodal accuracy', value: '92.3%' },
-        { label: 'Speech inference', value: '18ms' },
-        { label: 'Dataset size', value: '50GB' }
-      ],
-      problem: 'Linguistic-only sentiment analysis fails to capture sarcasm, urgency, or vocalized psychological distress of remote clinical patients.',
-      solution: 'This project fuses audio tonal variance with text semantic embeddings, allowing diagnostic assistants to register non-verbal mood changes.',
-      roadmap: ['Edge deployment on mobile web views', 'Expansion to diagnostic indicators for pediatric developmental screens']
+      problem: 'Traditional typing practice software lacks sensory engagement and interactive mechanics.',
+      solution: 'TypeRush translates text into kinetic physics bodies drifting towards cockpit shield barriers, utilizing Web Audio oscillators and AI-generated themes.',
+      roadmap: ['Real-time payload glitch attacks', 'WebAssembly client-side offline dictionary sync']
     },
     {
       id: 'portfolio-os',
@@ -97,21 +80,21 @@ export const portfolioData: PortfolioData = {
        roadmap: ['Add support for complete sandboxed terminal commands', 'Introduce voice command parsing natively via browser audio APIs']
     },
     {
-      id: '9th-grade',
-      title: '9th Grade',
-      description: 'An interactive educational web platform designed for middle school students, featuring adaptive quizzes, progress tracking dashboards, and gamified learning paths covering math, science, and language arts.',
-      category: 'Education',
-      techStack: ['React', 'TailwindCSS', 'Firebase', 'Node.js', 'Recharts'],
-      architecture: 'Firebase-backed SPA with serverless Cloud Functions for quiz scoring, progress persistence, and real-time leaderboard synchronization.',
-      timeline: 'Jun 2023 - Dec 2023',
+      id: 'autospark',
+      title: 'AutoSpark',
+      description: 'An intelligent automation tool that connects APIs, spreadsheets, and databases to build no-code workflow automations with conditional logic and error handling.',
+      category: 'Automation',
+      techStack: ['React', 'Node.js', 'Redis', 'GraphQL', 'BullMQ'],
+      architecture: 'Redis-backed job queue with BullMQ workers executing API calls and data transformations, a real-time GraphQL subscription layer for workflow monitoring, and a React canvas editor for visual workflow construction.',
+      timeline: 'Sep 2024 - Dec 2024',
       metrics: [
-        { label: 'Active Learners', value: '350+' },
-        { label: 'Quiz Accuracy', value: '94.2%' },
-        { label: 'Load Time', value: '<1.2s' }
+        { label: 'Workflows created', value: '3.6k+' },
+        { label: 'Avg. execution time', value: '1.4s' },
+        { label: 'Success rate', value: '99.1%' }
       ],
-      problem: 'Middle school students lacked engaging, interactive platforms that adapt to individual learning paces and provide visual progress feedback.',
-      solution: 'Built a gamified learning interface with adaptive quiz algorithms, streak tracking, and animated progress dashboards that motivate consistent study habits.',
-      roadmap: ['AI-powered question recommendations', 'Multi-player challenge mode']
+      problem: 'No-code automation tools lack the flexibility to handle complex conditional logic and error recovery across heterogeneous data sources.',
+      solution: 'AutoSpark provides a visual workflow builder with branching logic, retry policies, and built-in connectors for popular APIs and databases.',
+      roadmap: ['Webhook triggers', 'Team collaboration features']
     },
     {
       id: 'buildsafe',
@@ -148,23 +131,6 @@ export const portfolioData: PortfolioData = {
       roadmap: ['Support for 5+ languages', 'Integration with VS Code extension marketplace']
     },
     {
-      id: 'rankflow-ai',
-      title: 'RankFlow AI',
-      description: 'A machine learning pipeline platform for automated model ranking and benchmarking, allowing teams to compare hundreds of model variants across standardized metrics.',
-      category: 'AI/ML',
-      techStack: ['Python', 'FastAPI', 'PostgreSQL', 'Docker', 'React'],
-      architecture: 'FastAPI orchestration service running isolated Docker containers per model variant, PostgreSQL timeseries storage for benchmark results, and a React dashboard for comparative visualizations.',
-      timeline: 'Mar 2025 - Jul 2025',
-      metrics: [
-        { label: 'Models ranked', value: '840+' },
-        { label: 'Benchmark throughput', value: '12/min' },
-        { label: 'Uptime', value: '99.7%' }
-      ],
-      problem: 'ML teams struggle to systematically track, compare, and reproduce model performance across experiments and iterations.',
-      solution: 'RankFlow AI automates the benchmarking pipeline, containerizing each model variant and producing standardized comparison reports with interactive charts.',
-      roadmap: ['Cloud-native deployment templates', 'Collaborative annotation layers']
-    },
-    {
       id: 'exam-survival',
       title: 'Exam-Survival',
       description: 'An adaptive exam preparation platform that uses spaced repetition algorithms and AI-generated mock exams to maximize retention and improve test scores in minimal time.',
@@ -182,6 +148,91 @@ export const portfolioData: PortfolioData = {
       roadmap: ['Image-based question recognition', 'Collaborative study rooms']
     },
     {
+      id: 'vault',
+      title: 'Vault',
+      description: 'A production-grade, full-stack file storage platform with real-email verification, rotating session security, and pluggable object storage.',
+      category: 'SaaS',
+      techStack: ['Next.js 16', 'Express 4', 'TypeScript', 'PostgreSQL 16', 'SendGrid Email', 'Docker'],
+      architecture: 'Two deployable halves in a monorepo: Express 4 + TypeScript backend with PostgreSQL, and Next.js 16 App Router + React 19 frontend. Defense-in-depth auth with rotating sessions, validated uploads, and structured logging.',
+      timeline: '2025 - Present',
+      metrics: [
+        { label: 'Test coverage', value: '95%+' },
+        { label: 'Auth security', value: 'Rotating sessions' },
+        { label: 'Storage', value: 'S3/Local pluggable' }
+      ],
+      problem: 'Existing file storage solutions lack proper email verification, session security, and production-grade compliance features.',
+      solution: 'Vault provides a secure, full-stack file storage service with real-email verification, rotating session tokens, expiring public links, and automated audit trails.',
+      roadmap: ['End-to-end encryption', 'Team workspaces and shared folders', 'File versioning and rollback']
+    },
+    {
+      id: 'fluent-ai',
+      title: 'FluentAI',
+      description: 'An AI-powered English communication coaching platform with multi-accent conversations, real-time pronunciation feedback, and professional roleplay scenarios.',
+      category: 'Education',
+      techStack: ['Next.js', 'React', 'Prisma', 'PostgreSQL', 'AI Coaching Engine'],
+      architecture: 'Next.js API routes with Prisma + PostgreSQL for data persistence, session auth, and an AI coaching engine supporting 6 English accents with adaptive learning paths.',
+      timeline: '2025 - Present',
+      metrics: [
+        { label: 'Accents supported', value: '6' },
+        { label: 'Roleplay scenarios', value: 'Professional' },
+        { label: 'Feedback type', value: 'Real-time' }
+      ],
+      problem: 'English learners lack immersive, adaptive practice environments that simulate real-world conversations with diverse accents.',
+      solution: 'FluentAI delivers AI-powered conversations with multiple accents, instant pronunciation/grammar feedback, and career-focused roleplay scenarios for practical skill building.',
+      roadmap: ['Mobile app launch', 'Certification tracking', 'Group practice sessions']
+    },
+    {
+      id: 'safeside',
+      title: 'SafeSide Predictor',
+      description: 'A tactical football analytics command center providing live match simulations, league databases, and deep Poisson risk modeling.',
+      category: 'SaaS',
+      techStack: ['React', 'Supabase', 'TailwindCSS', 'Express', 'Groq AI', 'Recharts'],
+      architecture: 'Express backend match simulation pipeline integrated with Supabase edge tables and a cron-scheduled prediction verification service.',
+      timeline: 'Mar 2025 - Present',
+      metrics: [
+        { label: 'Poisson model F1', value: '0.88' },
+        { label: 'Live updates latency', value: '<150ms' },
+        { label: 'Prediction checks', value: 'Automated' }
+      ],
+      problem: 'Football tactical analysis and predictions are highly fragmented, lacking real-time simulations and secure prediction logging.',
+      solution: 'SafeSide combines live result feeds from Football-Data API with Groq AI analysis and Supabase storage to automate match diagnostics.',
+      roadmap: ['Weather-impact modeling via OpenWeather API', 'Multi-league Poisson distribution charts']
+    },
+    {
+      id: 'emotion-detection',
+      title: 'Multimodal Emotion Recognizer',
+      description: 'A neural model correlating micro-shifts in vocal pitch with linguistic markers in real-time chat data to form high-fidelity emotional feedback loops.',
+      category: 'NLP',
+      techStack: ['Python', 'BERT', 'Wav2Vec 2.0', 'React', 'FastAPI'],
+      architecture: 'Bimodal architecture merging a spectrogram acoustic encoder with a transformer text classifier using an attention-weighted fusion layer.',
+      timeline: 'Feb 2023 - Oct 2023',
+      metrics: [
+        { label: 'Bimodal accuracy', value: '92.3%' },
+        { label: 'Speech inference', value: '18ms' },
+        { label: 'Dataset size', value: '50GB' }
+      ],
+      problem: 'Linguistic-only sentiment analysis fails to capture sarcasm, urgency, or vocalized psychological distress of remote clinical patients.',
+      solution: 'This project fuses audio tonal variance with text semantic embeddings, allowing diagnostic assistants to register non-verbal mood changes.',
+      roadmap: ['Edge deployment on mobile web views', 'Expansion to diagnostic indicators for pediatric developmental screens']
+    },
+    {
+      id: 'rankflow-ai',
+      title: 'RankFlow AI',
+      description: 'A machine learning pipeline platform for automated model ranking and benchmarking, allowing teams to compare hundreds of model variants across standardized metrics.',
+      category: 'AI/ML',
+      techStack: ['Python', 'FastAPI', 'PostgreSQL', 'Docker', 'React'],
+      architecture: 'FastAPI orchestration service running isolated Docker containers per model variant, PostgreSQL timeseries storage for benchmark results, and a React dashboard for comparative visualizations.',
+      timeline: 'Mar 2025 - Jul 2025',
+      metrics: [
+        { label: 'Models ranked', value: '840+' },
+        { label: 'Benchmark throughput', value: '12/min' },
+        { label: 'Uptime', value: '99.7%' }
+      ],
+      problem: 'ML teams struggle to systematically track, compare, and reproduce model performance across experiments and iterations.',
+      solution: 'RankFlow AI automates the benchmarking pipeline, containerizing each model variant and producing standardized comparison reports with interactive charts.',
+      roadmap: ['Cloud-native deployment templates', 'Collaborative annotation layers']
+    },
+    {
       id: 'codelab-ai-genkit-rag',
       title: 'codelab-ai-genkit-rag',
       description: 'A production-ready RAG (Retrieval-Augmented Generation) starter kit for building AI-powered search and answer engines over codebases and technical documentation.',
@@ -197,23 +248,6 @@ export const portfolioData: PortfolioData = {
       problem: 'Developers need AI assistants that can search and understand codebases rather than general-purpose chatbots.',
       solution: 'A modular RAG kit that embeds code into vector space and serves contextually relevant code snippets and explanations for natural language queries.',
       roadmap: ['Multi-repo aggregation', 'IDE plugin for inline suggestions']
-    },
-    {
-      id: 'autospark',
-      title: 'AutoSpark',
-      description: 'An intelligent automation tool that connects APIs, spreadsheets, and databases to build no-code workflow automations with conditional logic and error handling.',
-      category: 'Automation',
-      techStack: ['React', 'Node.js', 'Redis', 'GraphQL', 'BullMQ'],
-      architecture: 'Redis-backed job queue with BullMQ workers executing API calls and data transformations, a real-time GraphQL subscription layer for workflow monitoring, and a React canvas editor for visual workflow construction.',
-      timeline: 'Sep 2024 - Dec 2024',
-      metrics: [
-        { label: 'Workflows created', value: '3.6k+' },
-        { label: 'Avg. execution time', value: '1.4s' },
-        { label: 'Success rate', value: '99.1%' }
-      ],
-      problem: 'No-code automation tools lack the flexibility to handle complex conditional logic and error recovery across heterogeneous data sources.',
-      solution: 'AutoSpark provides a visual workflow builder with branching logic, retry policies, and built-in connectors for popular APIs and databases.',
-      roadmap: ['Webhook triggers', 'Team collaboration features']
     },
     {
       id: 'omniva-ai',
@@ -321,7 +355,9 @@ export const portfolioData: PortfolioData = {
     'farhankabir-com': { github: 'https://github.com/farhankabir133/farhankabir.com', demo: 'https://farhankabir.com' },
     'personal-site': { github: 'https://github.com/farhankabir133/Personal_Site' },
     routineos: { github: 'https://github.com/farhankabir133/RoutineOS', demo: 'https://farhankabir133.github.io/RoutineOS/' },
-    'vocab-x': { github: 'https://github.com/farhankabir133/vocab-X' }
+    'vocab-x': { github: 'https://github.com/farhankabir133/vocab-X' },
+    vault: { github: 'https://github.com/9thgradeai/filestorage' },
+    'fluent-ai': { github: 'https://github.com/9thgradeai/Fluent-AI' }
   },
 
   papers: [
