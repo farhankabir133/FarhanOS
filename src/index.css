@@ -73,21 +73,12 @@ section#hero-content {
   content-visibility: visible;
 }
 
-body {
-  /* Prevent system fonts scaling */
-  -webkit-text-size-adjust: 100%;
-  font-family: var(--font-sans);
-  letter-spacing: -0.025em;
-  line-height: 1.625;
-}
-
 /* Custom Tailwind v4 Theme & Keyframes Definitions */
 @theme {
   --font-sans: "ABC Favorit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   /* Non-standard 50-step intermediate colors used in the codebase */
   /* zinc intermediates */
-  --color-zinc-90: oklch(97.3% .002 286.375);
   --color-zinc-350: oklch(78.8% .0105 286.18);
   --color-zinc-550: oklch(49.7% .0165 285.86);
   --color-zinc-650: oklch(40.6% .015 285.8);
@@ -102,7 +93,6 @@ body {
   /* slate intermediates */
   --color-slate-105: oklch(96.5% .006 247.896);
   --color-slate-250: oklch(89.9% .0175 254.2);
-  --color-slate-650: oklch(40.9% .0435 257.284);
   --color-slate-850: oklch(24.35% .0415 262.893);
   /* indigo intermediates */
   --color-indigo-650: oklch(48.56% .242 277.26);
@@ -117,7 +107,6 @@ body {
   --animate-spin-reverse: spin-reverse 20s linear infinite;
   --animate-scale-up: scale-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   --animate-pulse-slow: pulse-slow 5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-bounce-short: bounce-short 1.2s ease-out;
   --animate-window-open: window-open 0.35s cubic-bezier(0.25, 1.1, 0.5, 1.1) forwards;
   --animate-fade-in: fade-in 0.4s ease-out forwards;
   --animate-float-particle: float-particle 4s ease-in-out infinite;
@@ -148,15 +137,6 @@ body {
     }
     50% {
       opacity: 0.15;
-    }
-  }
-
-  @keyframes bounce-short {
-    0%, 100% {
-      transform: translate(-50%, 0) translateZ(0);
-    }
-    50% {
-      transform: translate(-50%, -4px) translateZ(0);
     }
   }
 
@@ -289,7 +269,7 @@ body {
 }
 
 /* Keep terminal/code text left-aligned */
-.font-mono, code, pre, kbd, .terminal-text {
+.font-mono, code, pre, kbd {
   text-align: left;
 }
 
@@ -313,14 +293,6 @@ body {
 /* Fluid font scaling — clamp-based text sizes for all devices */
 html {
   font-size: clamp(14px, 0.875rem + 0.5vw, 18px);
-}
-
-/* Hover vs touch differentiation */
-@media (hover: hover) {
-  .hover-lift:hover { transform: translateY(-4px); transition: transform 0.15s ease-out; }
-}
-@media (hover: none) {
-  .hover-lift:active { transform: scale(0.98); transition: transform 0.08s ease-out; }
 }
 
 /* Mobile touch optimization — expanded tap targets */
@@ -442,6 +414,38 @@ html {
 }
 .hover-scale-105:hover { transform: scale(1.05); }
 
+/* Micro-interactions: tactile press feedback for buttons */
+.press-feedback {
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+}
+.press-feedback:active {
+  transform: scale(0.96);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Smooth focus ring animation */
+.focus-ring {
+  transition: box-shadow 0.2s ease-out, outline-color 0.2s ease-out;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+/* Window entrance animation enhancement */
+.window-enter {
+  animation: window-open 0.35s cubic-bezier(0.25, 1.1, 0.5, 1.1) forwards;
+}
+
+/* Glow effect on hover for interactive cards */
+.glow-hover {
+  transition: box-shadow 0.3s ease-out, transform 0.2s ease-out;
+}
+.glow-hover:hover {
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.15), 0 4px 12px rgba(0,0,0,0.3);
+  transform: translateY(-1px);
+}
+
 /* Custom Scrollbar Styles */
 .scrollbar-thin::-webkit-scrollbar {
   width: 5px;
@@ -475,28 +479,9 @@ html {
     border-radius: 0 !important;
     max-height: 100% !important;
   }
-  .assistant-float-btn {
-    width: 56px !important;
-    height: 56px !important;
-  }
-  .assistant-bubble {
-    max-width: 85% !important;
-  }
-  .assistant-input-area {
-    padding: 12px !important;
-  }
-  .assistant-header {
-    padding: 12px 16px !important;
-    min-height: 52px !important;
-  }
 }
 
-@media (min-width: 481px) and (max-width: 768px) {
-  .assistant-float-btn {
-    width: 52px !important;
-    height: 52px !important;
-  }
-}
+
 
 @media (min-width: 769px) and (max-width: 1024px) {
   .assistant-chat-window {
@@ -515,13 +500,6 @@ html {
   .assistant-chat-window {
     width: 35vw !important;
     max-height: 70vh !important;
-  }
-}
-
-/* Touch optimization for assistant elements */
-@media (hover: none) and (pointer: coarse) {
-  .assistant-bubble {
-    max-width: 88% !important;
   }
 }
 

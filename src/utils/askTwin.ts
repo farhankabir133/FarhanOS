@@ -19,6 +19,11 @@ export interface AssistantAction {
 export interface AskTwinOptions {
   message: string;
   history: AskTwinHistoryMessage[];
+  context?: {
+    openWindows?: string[];
+    activeWindow?: string;
+    visitCount?: number;
+  };
   onDelta?: (fullText: string) => void;
   onSources?: (items: AskTwinSourceRef[]) => void;
   onFollowups?: (items: string[]) => void;
@@ -180,6 +185,7 @@ export async function askTwin({
 async function askTwinOnce({
   message,
   history,
+  context,
   onDelta,
   onSources,
   onFollowups,
@@ -189,7 +195,7 @@ async function askTwinOnce({
   const res = await fetch(`${getApiBaseUrl()}/api/ask-twin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history }),
+    body: JSON.stringify({ message, history, context }),
     signal,
   });
 

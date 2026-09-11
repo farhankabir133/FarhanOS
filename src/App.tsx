@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback, startTransition, useId } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useMemo, useCallback, startTransition } from 'react';
 const AssistantLauncher = lazy(() => import('./components/AssistantLauncher'));
 import {
   Terminal, Cpu, Layers, GitBranch, BookOpen, Network, FileText,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { FarhanAIIcon } from './components/FarhanAIIcon';
 import ClockText from './components/Clock';
+import SkeletonWindow from './components/SkeletonWindow';
 import { portfolioData } from './data/portfolioData';
 import { Project, Paper, TimelineEvent, Article, Theme } from './types';
 import LandingPage from './components/LandingPage';
@@ -143,6 +144,43 @@ export default function App() {
     return () => {
       window.removeEventListener('resize', handleResize);
       clearTimeout(timeoutId);
+    };
+  }, []);
+
+  // Pre-warm RAG knowledge base index during idle time
+  useEffect(() => {
+    const warmup = async () => {
+      try {
+        const base = getApiBaseUrl();
+        await fetch(`${base}/api/ask-twin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'ping', history: [] }),
+        });
+      } catch { /* ignore warmup errors */ }
+    };
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(() => { warmup(); }, { timeout: 10000 });
+    } else {
+      setTimeout(warmup, 3000);
+    }
+  }, []);
+
+  // Resume AudioContext after first user interaction (Chrome autoplay policy)
+  useEffect(() => {
+    const resume = () => {
+      try {
+        const ac = (window as any)._farhanosAudioCtx;
+        if (ac && ac.state === 'suspended') ac.resume();
+      } catch { /* ignore */ }
+      document.removeEventListener('click', resume);
+      document.removeEventListener('keydown', resume);
+    };
+    document.addEventListener('click', resume);
+    document.addEventListener('keydown', resume);
+    return () => {
+      document.removeEventListener('click', resume);
+      document.removeEventListener('keydown', resume);
     };
   }, []);
 
@@ -1301,7 +1339,7 @@ export default function App() {
               {/* Window Bar Header */}
               <div 
                 onMouseDown={(e) => handleMouseDown(winId, e)}
-                className={`h-9 px-3 flex items-center justify-between cursor-move select-none ${styleSet.windowHeader}`}
+                className={`h-10 md:h-9 px-3 flex items-center justify-between cursor-move select-none ${styleSet.windowHeader}`}
               >
                 <div className="flex items-center gap-2 font-semibold tracking-tight text-xs">
                   <WinIcon className="w-3.5 h-3.5 opacity-80" />
@@ -1311,30 +1349,30 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2" onMouseDown={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1 md:gap-2" onMouseDown={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => minimizeWindow(winId)}
-                    className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
+                    className="p-1.5 md:p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
                     title="Minimize"
                     aria-label="Minimize window"
                   >
-                    <Minimize2 className="w-3 h-3" />
+                    <Minimize2 className="w-3.5 h-3.5 md:w-3 md:h-3" />
                   </button>
                   <button
                     onClick={() => toggleMaximize(winId)}
-                    className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
+                    className="p-1.5 md:p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
                     title="Toggle Maximize"
                     aria-label="Toggle maximize"
                   >
-                    <Maximize2 className="w-3 h-3" />
+                    <Maximize2 className="w-3.5 h-3.5 md:w-3 md:h-3" />
                   </button>
                   <button
                     onClick={() => closeWindow(winId)}
-                    className="p-1 text-rose-400 hover:text-rose-500 rounded hover:bg-rose-500/10"
+                    className="p-1.5 md:p-1 text-rose-400 hover:text-rose-500 rounded hover:bg-rose-500/10"
                     title="Close Window"
                     aria-label="Close window"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5 md:w-3 md:h-3" />
                   </button>
                 </div>
               </div>
@@ -1355,7 +1393,7 @@ export default function App() {
                 
                 {/* A. DIGITAL TWIN AI ASSISTANT PANEL */}
                 {winId === 'twin' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading twin engine...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={4} />}>
                     <TwinWindow
                       twinMessages={twinMessages}
                       twinLoading={twinLoading}
@@ -1373,7 +1411,7 @@ export default function App() {
 
                 {/* B. PROJECT GALAXY COMMAND PANEL */}
                 {winId === 'projects' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading project galaxy...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={6} />}>
                     <ProjectsWindow
                       styleSet={styleSet}
                       selectedProject={selectedProject}
@@ -1387,7 +1425,7 @@ export default function App() {
 
                 {/* C. LINGUISTIC RESEARCH LAB PANEL */}
                 {winId === 'research' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading research lab...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={5} />}>
                     <ResearchWindow
                       styleSet={styleSet}
                       selectedPaper={selectedPaper}
@@ -1400,15 +1438,15 @@ export default function App() {
 
                 {/* D. GITHUB INTELLIGENCE MONITOR PANEL */}
                 {winId === 'github' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading telemetry stream...</div>}>
-                    <GithubWindow styleSet={styleSet} triggerSound={triggerSound} />
+                  <Suspense fallback={<SkeletonWindow lines={4} />}>
+                    <GithubWindow styleSet={styleSet} />
                   </Suspense>
                 )}
 
 
                 {/* E. WRITING UNIVERSE / BLOG PANEL WITH AUDIO TTS NARRATOR */}
                 {winId === 'writing' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading narrative chronicles...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={5} />}>
                     <WritingWindow
                       articles={articles}
                       selectedArticle={selectedArticle}
@@ -1425,7 +1463,7 @@ export default function App() {
 
                 {/* F. DIGITAL GARDEN KNOWLEDGE GRAPH PANEL */}
                 {winId === 'garden' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading garden...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={3} />}>
                     <GardenWindow
                       styleSet={styleSet}
                       hoveredGardenNode={hoveredGardenNode}
@@ -1438,7 +1476,7 @@ export default function App() {
 
                 {/* G. AI TAILORED RESUME GENERATOR */}
                 {winId === 'resume' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading resume...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={5} />}>
                     <ResumeWindow
                       styleSet={styleSet}
                       resumeAudience={resumeAudience}
@@ -1451,7 +1489,7 @@ export default function App() {
 
                 {/* H. INTERACTIVE TIMELINE / EXPERIENCE BLOCK */}
                 {winId === 'timeline' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading chronology...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={4} />}>
                     <TimelineWindow
                       styleSet={styleSet}
                       selectedTimeline={selectedTimeline}
@@ -1463,7 +1501,7 @@ export default function App() {
 
                 {/* I. PROFESSIONAL TIMELINE / CHRONOLOGY BLOCK */}
                 {winId === 'profTimeline' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading career chronology...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={4} />}>
                     <ProfTimelineWindow osTimelineProgressLineRef={osTimelineProgressLineRef} />
                   </Suspense>
                 )}
@@ -1472,7 +1510,7 @@ export default function App() {
                 {/* I. TECH OBSERVATORY / SKILLS OBSERVER */}
                 {/* I. SKILLS MATRIX / OBSERVATORY PANEL */}
                 {winId === 'skills' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading skill matrices...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={6} />}>
                     <SkillsWindow
                       filteredSkills={filteredSkills}
                       skillFilter={skillFilter}
@@ -1486,7 +1524,7 @@ export default function App() {
                 {/* J. COLLABORATION HUB / STRATEGIC BRIEF PREVIEW */}
                 {/* J. COLLABORATION HUB / STRATEGIC BRIEF PREVIEW */}
                 {winId === 'brief' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading mission brief...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={3} />}>
                     <BriefWindow
                       briefForm={briefForm}
                       setBriefForm={setBriefForm}
@@ -1502,28 +1540,28 @@ export default function App() {
 
                 {/* L. IDEATION PAD / DRAWING WHITEBOARD */}
                 {winId === 'whiteboard' && (
-                  <Suspense fallback={<div className="flex items-center justify-center h-full text-zinc-500 text-xs">Loading Ideation Pad...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={3} />}>
                     <Whiteboard theme={theme} triggerSound={triggerSound} />
                   </Suspense>
                 )}
 
                 {/* K. SYSTEM BUILD MONITOR / RELEASE LOGS */}
                 {winId === 'builds' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading build diagnostics...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={5} />}>
                     <BuildsWindow />
                   </Suspense>
                 )}
 
                 {/* M. ABOUT / PERSONAL STORY */}
                 {winId === 'about' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading profile...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={4} />}>
                     <AboutWindow styleSet={styleSet} />
                   </Suspense>
                 )}
 
                 {/* N. VISITOR PREFERENCES / CUSTOMIZATION */}
                 {winId === 'settings' && (
-                  <Suspense fallback={<div className="text-[10px] text-zinc-500 animate-pulse">Loading preferences...</div>}>
+                  <Suspense fallback={<SkeletonWindow lines={3} />}>
                     <SettingsWindow
                       styleSet={styleSet}
                       muted={muted}
@@ -1547,10 +1585,10 @@ export default function App() {
       </main>
 
       {/* 6. SYSTEM FOOTER WORKSPACE DOCK */}
-      <footer className="h-16 bg-black/45 backdrop-blur-2xl border-t border-zinc-800/40 flex items-center justify-center relative select-none">
+      <footer className="h-14 md:h-16 bg-black/45 backdrop-blur-2xl border-t border-zinc-800/40 flex items-center justify-center relative select-none">
         
         {/* Dynamic task bar container of apps */}
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-zinc-950/65 border border-zinc-800/60 rounded-2xl shadow-xl max-w-[95vw] overflow-x-auto scrollbar-none select-none" style={{ scrollSnapType: 'x mandatory' }}>
+        <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 bg-zinc-950/65 border border-zinc-800/60 rounded-2xl shadow-xl max-w-[95vw] overflow-x-auto scrollbar-none select-none" style={{ scrollSnapType: 'x mandatory' }}>
           {desktopIcons.map((ico) => {
             const ActiveIcon = ico.icon;
             const isOpen = openWindows.includes(ico.id);
@@ -1571,7 +1609,7 @@ export default function App() {
                     openWindow(ico.id);
                   }
                 }}
-                className={`p-2 rounded-xl transition-all relative cursor-pointer ${ico.color} transform hover:scale-[1.29] active:scale-95 duration-100`}
+                className={`p-2.5 md:p-2 rounded-xl transition-all relative cursor-pointer ${ico.color} transform hover:scale-[1.29] active:scale-95 duration-100`}
                 title={ico.label}
                 aria-label={ico.label}
               >
@@ -1731,6 +1769,8 @@ export default function App() {
       triggerSound={triggerSound}
       placement={viewMode === 'landing' ? 'landing-left' : 'global-bottom-left'}
       onAction={handleAssistantAction}
+      openWindows={openWindows}
+      activeWindow={focusedWindow}
     />
     </Suspense>
   </div>

@@ -52,6 +52,7 @@ export default function LandingPage({
   const [activeTab, setActiveTab] = useState<'All' | 'AI/ML' | 'Frontend' | 'Backend' | 'Database' | 'DevOps'>('All');
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [testimonialPaused, setTestimonialPaused] = useState(false);
 
@@ -66,6 +67,13 @@ export default function LandingPage({
     const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent));
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   const timelineRef = useRef<HTMLDivElement | null>(null);
@@ -289,10 +297,12 @@ export default function LandingPage({
       >
         Skip to main content
       </a>
-      {/* 3D background starfield simulation */}
-      <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
-        <ThreeWormhole isWarping={isWarping} theme={theme} />
-      </Suspense>
+      {/* 3D background starfield simulation — skipped on mobile for performance */}
+      {!isMobile && (
+        <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
+          <ThreeWormhole isWarping={isWarping} theme={theme} />
+        </Suspense>
+      )}
 
       {/* Background glow meshes */}
       <div className={`pointer-events-none fixed inset-0 z-0 bg-gradient-to-br ${styleSet.gradientBg} opacity-80`} />

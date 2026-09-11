@@ -4,7 +4,6 @@ import { getApiBaseUrl } from '../../utils/apiConfig';
 
 interface GithubWindowProps {
   styleSet: StyleSet;
-  triggerSound: (freq: number, duration: number) => void;
 }
 
 export default function GithubWindow({ styleSet }: GithubWindowProps) {

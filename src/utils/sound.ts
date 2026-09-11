@@ -8,15 +8,6 @@ let muted = false;
 
 const STORAGE_KEY = 'farhanos:muted';
 
-export function initMutedFromStorage(): boolean {
-  try {
-    muted = localStorage.getItem(STORAGE_KEY) === '1';
-  } catch {
-    muted = false;
-  }
-  return muted;
-}
-
 export function setMuted(value: boolean): void {
   muted = value;
   try {
@@ -26,10 +17,6 @@ export function setMuted(value: boolean): void {
   }
 }
 
-export function isMuted(): boolean {
-  return muted;
-}
-
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
   const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -37,6 +24,7 @@ function getCtx(): AudioContext | null {
   if (!ctx) {
     try {
       ctx = new AC();
+      (window as any)._farhanosAudioCtx = ctx;
     } catch {
       return null;
     }
@@ -82,19 +70,4 @@ export function playSound(
   }
 }
 
-// Named cues used across the OS for consistent feedback.
-export const sfx = {
-  click: () => playSound(820, 0.04, { type: 'triangle', gain: 0.03 }),
-  open: () => playSound(680, 0.06, { type: 'sine', gain: 0.035 }),
-  close: () => playSound(420, 0.07, { type: 'sine', gain: 0.03, slideTo: 240 }),
-  error: () => playSound(180, 0.12, { type: 'sawtooth', gain: 0.04, slideTo: 120 }),
-  success: () => {
-    playSound(660, 0.07, { type: 'sine', gain: 0.04 });
-    setTimeout(() => playSound(990, 0.09, { type: 'sine', gain: 0.04 }), 70);
-  },
-  boot: () => {
-    [220, 330, 440, 660].forEach((f, i) =>
-      setTimeout(() => playSound(f, 0.12, { type: 'sine', gain: 0.04 }), i * 110),
-    );
-  },
-};
+

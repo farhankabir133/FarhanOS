@@ -145,7 +145,8 @@ const MAX_TOOL_TURNS = 4;
 export async function* streamAskTwin(
   rawMessage: unknown,
   rawHistory: unknown,
-  rag?: RagSearcher
+  rag?: RagSearcher,
+  sessionContext?: { openWindows?: string[]; activeWindow?: string; visitCount?: number }
 ): AsyncGenerator<AskTwinEvent> {
   const message = validateAskTwinInput(rawMessage, rawHistory);
 
@@ -160,6 +161,24 @@ export async function* streamAskTwin(
 
   let systemPrompt = buildAskTwinSystemPrompt();
   const sources: Array<{ title: string }> = [];
+
+  // Inject session context for contextual awareness
+  if (sessionContext) {
+    const contextParts: string[] = [];
+    if (sessionContext.openWindows && sessionContext.openWindows.length > 0) {
+      contextParts.push(`Visitor has these OS windows open: ${sessionContext.openWindows.join(', ')}. Reference them naturally if relevant.`);
+    }
+    if (sessionContext.activeWindow) {
+      contextParts.push(`Visitor is currently viewing: ${sessionContext.activeWindow}.`);
+    }
+    if (sessionContext.visitCount && sessionContext.visitCount > 1) {
+      contextParts.push(`This is visit #${sessionContext.visitCount} — returning visitor.`);
+    }
+    if (contextParts.length > 0) {
+      systemPrompt += `\n\nSESSION CONTEXT:\n${contextParts.join('\n')}`;
+    }
+  }
+
   if (rag) {
     try {
       // Blend the latest user turn into the query so follow-ups like

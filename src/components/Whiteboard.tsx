@@ -443,6 +443,7 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
             disabled={history.length === 0}
             className={`p-1.5 rounded transition-all duration-200 ${history.length === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10 hover:scale-110 active:scale-90 text-zinc-350 hover:text-white'}`}
             title="Undo stroke (Ctrl+Z)"
+            aria-label="Undo stroke"
           >
             <Undo2 className="w-4 h-4" />
           </button>
@@ -452,6 +453,7 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
             disabled={redoStack.length === 0}
             className={`p-1.5 rounded transition-all duration-200 ${redoStack.length === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/10 hover:scale-110 active:scale-90 text-zinc-350 hover:text-white'}`}
             title="Redo stroke (Ctrl+Y)"
+            aria-label="Redo stroke"
           >
             <Redo2 className="w-4 h-4" />
           </button>
@@ -581,6 +583,7 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
             onClick={handleClear}
             className="p-1.5 rounded transition-all duration-200 hover:bg-rose-500/20 hover:scale-110 active:scale-90 text-rose-400 hover:text-rose-300"
             title="Clear canvas"
+            aria-label="Clear canvas"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -589,6 +592,7 @@ export default function Whiteboard({ theme, triggerSound }: WhiteboardProps) {
             onClick={handleDownload}
             className="p-1.5 rounded transition-all duration-200 hover:bg-emerald-500/20 hover:scale-110 active:scale-90 text-emerald-400 hover:text-emerald-300"
             title="Download visual sketch (.png)"
+            aria-label="Download sketch"
           >
             <Download className="w-3.5 h-3.5" />
           </button>

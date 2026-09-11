@@ -157,6 +157,7 @@ export default function TwinWindow({
           onClick={handleSendTwinMessage}
           disabled={!twinInput.trim() || twinLoading}
           className={`p-2.5 rounded-lg cursor-pointer ${styleSet.btnPrimary}`}
+          aria-label="Send message"
         >
           <Send className="w-3.5 h-3.5" />
         </button>

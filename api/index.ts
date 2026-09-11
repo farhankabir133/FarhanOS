@@ -71,7 +71,7 @@ export default async function handler(req: any, res: any) {
       res.flushHeaders?.();
 
       try {
-        for await (const event of streamAskTwin(req.body?.message, req.body?.history, rag)) {
+        for await (const event of streamAskTwin(req.body?.message, req.body?.history, rag, req.body?.context)) {
           res.write(`data: ${JSON.stringify(event)}\n\n`);
         }
         res.write('data: [DONE]\n\n');

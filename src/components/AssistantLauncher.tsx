@@ -17,6 +17,10 @@ export interface AssistantLauncherProps {
   defaultOpen?: boolean;
   /** Executes OS actions requested by the assistant (open windows/themes/links). */
   onAction?: (action: AssistantAction) => void;
+  /** Currently open OS windows for contextual awareness. */
+  openWindows?: string[];
+  /** Currently focused window for contextual awareness. */
+  activeWindow?: string;
 }
 
 interface Message {
@@ -40,12 +44,21 @@ const QUICK_ACTIONS = [
 ];
 
 const STORAGE_KEY = 'farhanos.twin.chat';
+const VISIT_KEY = 'farhanos.visits';
 
 const WELCOME_MESSAGE: Message = {
   id: 'welcome',
   role: 'assistant',
   content:
     "Systems fully operational. I am Farhan's personal AI — his certified neural clone. Query clinical pipelines, NLP architectures, or engineering profiles.",
+  timestamp: new Date(),
+};
+
+const RETURNING_WELCOME: Message = {
+  id: 'welcome-returning',
+  role: 'assistant',
+  content:
+    "Welcome back. Farhan's neural clone is online and ready. What would you like to explore today?",
   timestamp: new Date(),
 };
 
@@ -68,6 +81,14 @@ const loadStoredMessages = (): Message[] => {
   } catch {
     // ignore corrupt / unavailable storage
   }
+
+  // Detect returning visitor
+  try {
+    const visits = parseInt(localStorage.getItem(VISIT_KEY) || '0', 10);
+    localStorage.setItem(VISIT_KEY, String(visits + 1));
+    if (visits > 0) return [RETURNING_WELCOME];
+  } catch { /* ignore */ }
+
   return [WELCOME_MESSAGE];
 };
 
@@ -77,6 +98,8 @@ export default function AssistantLauncher({
   placement = 'global-bottom-left',
   defaultOpen = false,
   onAction,
+  openWindows = [],
+  activeWindow,
 }: AssistantLauncherProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [messages, setMessages] = useState<Message[]>(loadStoredMessages);
@@ -226,6 +249,11 @@ export default function AssistantLauncher({
         const reply = await askTwin({
           message: content,
           history,
+          context: {
+            openWindows,
+            activeWindow,
+            visitCount: parseInt(localStorage.getItem(VISIT_KEY) || '0', 10),
+          },
           signal: controller.signal,
           onDelta: (full) => {
             setAiState('responding');
